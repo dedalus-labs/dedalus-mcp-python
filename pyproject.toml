@@ -1,0 +1,443 @@
+# =============================================================================
+# BUILD SYSTEM
+# =============================================================================
+
+[build-system]
+requires = ["uv_build>=0.8.22,<0.9.0"]
+build-backend = "uv_build"
+
+# =============================================================================
+# PROJECT CONFIGURATION
+# =============================================================================
+
+[project]
+name = "openmcp"
+version = "0.1.0a0"
+description = "The Dedalus Labs OpenMCP project"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Windsor Nguyen", email = "win@dedaluslabs.ai" },
+]
+maintainers = [
+    { name = "Windsor Nguyen", email = "win@dedaluslabs.ai" },
+]
+keywords = ["openmcp", "mcp", "agents", "fastapi", "service"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Web Environment",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
+]
+
+dependencies = [
+    "pydantic>=2.12.0",
+    "rich>=14.0.0",
+    "orjson>=3.11.0",
+]
+
+# =============================================================================
+# PROJECT URLS
+# =============================================================================
+
+[project.urls]
+Homepage = "https://github.com/dedalus-labs/openmcp"
+Repository = "https://github.com/dedalus-labs/openmcp"
+Issues = "https://github.com/dedalus-labs/openmcp/issues"
+
+# =============================================================================
+# PROJECT SCRIPTS
+# =============================================================================
+
+[project.scripts]
+openmcp = "cli.main:app"
+
+# =============================================================================
+# DEPENDENCY GROUPS
+# =============================================================================
+
+[dependency-groups]
+# CLI tooling (excluded from production builds)
+cli = ["typer>=0.19.2", "griffe>=1.14.0"]
+
+# Test suite dependencies
+test = [
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "pytest-mock>=3.15.1",
+    "pytest-cov>=7.0.0",
+    "pytest-xdist>=3.8.0",
+    "pytest-benchmark>=5.1.0",
+    "httpx>=0.28.1",
+    "pytest-httpx>=0.35.0",
+    "respx>=0.22.0",
+    "hypothesis>=6.140.2",
+    "faker>=37.8.0",
+    "fakeredis>=2.32.0",
+    "anyio>=4.11.0",
+    "inline-snapshot>=0.29.2",
+]
+
+# Linting and static analysis tools
+lint = ["ruff>=0.13.3", "pre-commit>=4.3.0", "ty>=0.0.1a21", "vulture>=2.14"]
+
+# Debugging tools
+debug = ["pdbpp>=0.10.3", "icecream>=2.1.8"]
+
+# Developer convenience bundle (includes all dev groups)
+dev = [
+    { include-group = "cli" },
+    { include-group = "test" },
+    { include-group = "lint" },
+    { include-group = "debug" },
+]
+
+# Documentation build tooling
+docs = [
+    "mkdocs>=1.6.0",
+    "mkdocs-material>=9.5.0",
+    "mkdocstrings[python]>=0.26.0",
+]
+
+# Profiling helpers for performance investigations
+performance = [
+    "pyinstrument>=4.7.0",
+    "memory-profiler>=0.61.0",
+    "line-profiler>=4.1.0",
+]
+
+# =============================================================================
+# UV CONFIGURATION
+# =============================================================================
+
+[tool.uv]
+preview = true           # Enable all preview features
+package = true           # Install project itself
+default-groups = ["dev"] # Include dev group by default
+
+# Exclude patterns for cleaner builds
+exclude = [
+    "dist",
+    "**/__pycache__",
+    "**/build",
+    "**/.pytest_cache",
+    "**/.mypy_cache",
+]
+
+# Performance optimizations
+compile-bytecode = true # 10-20% faster startup
+link-mode = "hardlink"  # Fastest cache linking (macOS/Linux)
+
+# Concurrency settings
+concurrent-downloads = 50 # Balanced for stability
+concurrent-builds = 4     # Prevent system overload
+concurrent-installs = 4   # Safe concurrency level
+
+# Resolution strategy
+resolution = "highest"      # Latest compatible versions
+prerelease = "if-necessary" # Allow prereleases when needed
+fork-strategy = "fewest"    # Minimize version conflicts
+
+# Index optimization
+index-strategy = "first-index" # Use first matching index
+
+# Python version management
+python-preference = "managed"  # Use uv-managed Python installations
+python-downloads = "automatic" # Auto-download Python versions
+
+# Dependency constraints for version management
+[tool.uv.dependency-constraints]
+numpy = ">=1.24.0,<2.0.0" # Pin major version for stability
+scipy = ">=1.11.0,<2.0.0" # Scientific computing stability
+
+# Source configuration for development
+[tool.uv.sources]
+# Example for local development packages
+# my-local-package = { path = "../my-local-package", editable = true }
+# experimental-feature = { git = "https://github.com/user/repo.git", branch = "experimental" }
+
+# =============================================================================
+# RUFF CONFIGURATION - GOOGLE PYTHON STYLE GUIDE
+# =============================================================================
+
+[tool.ruff]
+line-length = 120 # Modern Python standard (Django, FastAPI)
+target-version = "py312" # Target Python 3.12
+extend-exclude = [
+    "build/",
+    "dist/",
+    ".venv/",
+    "__pycache__/",
+    "openmcp/",     # Deployment directory placeholder
+]
+
+
+# =============================================================================
+# RUFF FORMATTING
+# =============================================================================
+
+[tool.ruff.format]
+docstring-code-format = true     # Format code in docstrings
+docstring-code-line-length = 72  # Google style for docstrings
+skip-magic-trailing-comma = true # Preserve one-liners, don't auto-expand 
+quote-style = "double"           # Google style uses double quotes
+indent-style = "space"           # Google style uses spaces (4 spaces)
+
+# =============================================================================
+# RUFF LINTING
+# =============================================================================
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "W",
+    "F",
+    "I",
+    "UP",
+    "B",
+    "C4",
+    "SIM",
+    "RUF",
+    "D",
+    "N",
+    "ANN",
+    "TCH",
+    "S",
+    "BLE",
+    "TRY",
+    "RSE",
+    "RET",
+    "PERF",
+    "FLY",
+    "FURB",
+    "ARG",
+    "COM",
+    "DTZ",
+    "EM",
+    "ERA",
+    "EXE",
+    "FBT",
+    "G",
+    "ICN",
+    "INP",
+    "INT",
+    "ISC",
+    "LOG",
+    "PD",
+    "PGH",
+    "PIE",
+    "PL",
+    "PT",
+    "PTH",
+    "PYI",
+    "Q",
+    "SLF",
+    "SLOT",
+    "T20",
+    "TID",
+]
+
+ignore = [
+    "COM812",
+    "E501",
+    "ISC001",
+    "E402",
+    "TID252",
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "D105",
+    "D107",
+    "S101",
+    "T201",
+    "RET504",
+]
+
+unfixable = ["B", "TRY", "RUF"]
+
+# =============================================================================
+# RUFF LINTING - PYDOCSTYLE
+# =============================================================================
+
+[tool.ruff.lint.pydocstyle]
+convention = "google" # Google docstring style
+
+# =============================================================================
+# RUFF LINTING - ISORT
+# =============================================================================
+
+[tool.ruff.lint.isort]
+known-first-party = ["openmcp", "cli", "core", "utils", "rt"]
+force-single-line = false
+force-sort-within-sections = true
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder",
+]
+split-on-trailing-comma = true
+lines-after-imports = 2
+relative-imports-order = "closest-to-furthest"
+
+
+# =============================================================================
+# RUFF LINTING - FLAKE8-QUOTES
+# =============================================================================
+
+[tool.ruff.lint.flake8-quotes]
+docstring-quotes = "double"
+inline-quotes = "double"
+
+# =============================================================================
+# RUFF LINTING - FLAKE8-ANNOTATIONS
+# =============================================================================
+
+[tool.ruff.lint.flake8-annotations]
+allow-star-arg-any = true
+ignore-fully-untyped = true
+
+# =============================================================================
+# RUFF LINTING - PYLINT
+# =============================================================================
+
+[tool.ruff.lint.pylint]
+max-args = 8 # Google style allows reasonable number of args
+
+# =============================================================================
+# PYTEST CONFIGURATION
+# =============================================================================
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--tb=short",
+    "--cov=openmcp",
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+    "--cov-fail-under=60",
+    "-v",
+    "--color=yes",
+    "--dist=loadfile",
+    "--max-worker-restart=3",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "manual: marks tests that should only be run manually (not in CI)",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+    "e2e: marks tests as end-to-end tests",
+    "requires_api_key: marks tests that require valid API key",
+    "allow_call_model_methods: allows tests to call model methods directly",
+    "requires_db: marks tests that require database connection",
+    "realtime: marks tests for realtime functionality",
+    "mcp: marks tests for MCP functionality",
+]
+filterwarnings = [
+    "error",
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+    "ignore::pytest.PytestUnraisableExceptionWarning",
+]
+log_cli = false
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+
+# =============================================================================
+# COVERAGE CONFIGURATION
+# =============================================================================
+
+[tool.coverage.run]
+source = ["openmcp"]
+omit = ["tests/*", "*/tests/*", "test_*.py", "*_test.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\(.*Protocol.*\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+# =============================================================================
+# TY CONFIGURATION - ULTRA-FAST TYPE CHECKING
+# =============================================================================
+
+[tool.ty.rules]
+invalid-assignment = "error"
+invalid-return-type = "error"
+invalid-argument-type = "error"
+missing-argument = "error"
+too-many-positional-arguments = "error"
+unresolved-reference = "error"
+invalid-base = "error"
+conflicting-metaclass = "error"
+subclass-of-final-class = "error"
+possibly-unbound-attribute = "warn"
+undefined-reveal = "warn"
+unknown-rule = "warn"
+division-by-zero = "ignore"
+unused-ignore-comment = "ignore"
+
+# =============================================================================
+# TY ENVIRONMENT CONFIGURATION
+# =============================================================================
+
+[tool.ty.environment]
+root = ["src"]
+python-platform = "darwin" # macOS optimized
+python-version = "3.12"    # Target Python version
+
+# =============================================================================
+# TY TERMINAL CONFIGURATION
+# =============================================================================
+
+[tool.ty.terminal]
+output-format = "concise"
+error-on-warning = false
+
+# =============================================================================
+# TY SOURCE CONFIGURATION
+# =============================================================================
+
+[tool.ty.src]
+include = ["**/*.py", "**/*.pyi"]
+exclude = [
+    "build/**",
+    "dist/**",
+    ".venv/**",
+    "__pycache__/**",
+    "*.egg-info/**",
+    ".pytest_cache/**",
+    ".ruff_cache/**",
+    ".mypy_cache/**",
+]
+respect-ignore-files = true
