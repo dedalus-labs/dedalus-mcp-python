@@ -14,11 +14,28 @@ from __future__ import annotations
 import base64
 import json
 from collections.abc import Iterable
+from dataclasses import asdict, is_dataclass
 from typing import Any
 
 from .. import types
 
+try:  # pragma: no cover - optional import when pydantic is present
+    from pydantic import BaseModel
+except Exception:  # pragma: no cover - fall back if the import path changes
+    BaseModel = None
+
 __all__ = ["normalize_tool_result", "normalize_resource_payload"]
+
+
+_CONTENT_CLASSES = (
+    types.TextContent,
+    types.ImageContent,
+    types.AudioContent,
+    types.ResourceLink,
+    types.EmbeddedResource,
+)
+
+_JSONIFY_SENTINEL = object()
 
 
 def normalize_tool_result(value: Any) -> types.CallToolResult:
@@ -35,6 +52,11 @@ def normalize_tool_result(value: Any) -> types.CallToolResult:
         except Exception:  # pragma: no cover - defensive; fallback to generic path
             pass
 
+    if is_dataclass(value):
+        value = asdict(value)
+    elif BaseModel and isinstance(value, BaseModel) and not isinstance(value, _CONTENT_CLASSES):
+        value = value.model_dump(mode="json")
+
     structured: Any | None = None
     payload = value
 
@@ -42,6 +64,10 @@ def normalize_tool_result(value: Any) -> types.CallToolResult:
         payload, structured = value
     elif isinstance(value, dict):
         structured = value
+
+    json_ready = _jsonify(payload)
+    if structured is None and json_ready is not _JSONIFY_SENTINEL:
+        structured = json_ready if isinstance(json_ready, dict) else {"result": json_ready}
 
     content_blocks = _coerce_content_blocks(payload)
 
@@ -54,6 +80,11 @@ def normalize_tool_result(value: Any) -> types.CallToolResult:
 def _coerce_content_blocks(source: Any) -> list[types.ContentBlock]:
     if source is None:
         return []
+
+    if is_dataclass(source):
+        source = asdict(source)
+    elif BaseModel and isinstance(source, BaseModel) and not isinstance(source, _CONTENT_CLASSES):
+        source = source.model_dump(mode="json")
 
     if isinstance(source, types.ContentBlock):
         return [source]
@@ -93,10 +124,11 @@ def _as_text_content(value: Any) -> types.TextContent:
         return value
     if isinstance(value, str):
         return types.TextContent(type="text", text=value)
-    try:
-        text = json.dumps(value, ensure_ascii=False)
-    except Exception:
+    json_ready = _jsonify(value)
+    if json_ready is _JSONIFY_SENTINEL:
         text = str(value)
+    else:
+        text = json.dumps(json_ready, ensure_ascii=False)
     return types.TextContent(type="text", text=text)
 
 
@@ -113,6 +145,11 @@ def normalize_resource_payload(uri: str, declared_mime: str | None, payload: Any
         isinstance(item, (types.TextResourceContents, types.BlobResourceContents)) for item in payload
     ):
         return types.ReadResourceResult(contents=payload)
+
+    if is_dataclass(payload):
+        payload = asdict(payload)
+    elif BaseModel and isinstance(payload, BaseModel) and not isinstance(payload, _CONTENT_CLASSES):
+        payload = payload.model_dump(mode="json")
 
     if isinstance(payload, dict):
         try:
@@ -132,7 +169,44 @@ def normalize_resource_payload(uri: str, declared_mime: str | None, payload: Any
         return types.ReadResourceResult(contents=[blob])
 
     mime = declared_mime or "text/plain"
-    text = str(payload)
+    if isinstance(payload, str):
+        text = payload
+    else:
+        json_ready = _jsonify(payload)
+        if json_ready is _JSONIFY_SENTINEL:
+            text = str(payload)
+        else:
+            text = json.dumps(json_ready, ensure_ascii=False)
     return types.ReadResourceResult(
         contents=[types.TextResourceContents(uri=uri, mimeType=mime, text=text)]
     )
+
+
+def _jsonify(value: Any) -> Any:
+    if is_dataclass(value):
+        value = asdict(value)
+    elif BaseModel and isinstance(value, BaseModel) and not isinstance(value, _CONTENT_CLASSES):
+        value = value.model_dump(mode="json")
+
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+
+    if isinstance(value, dict):
+        result: dict[str, Any] = {}
+        for key, sub in value.items():
+            json_sub = _jsonify(sub)
+            if json_sub is _JSONIFY_SENTINEL:
+                return _JSONIFY_SENTINEL
+            result[str(key)] = json_sub
+        return result
+
+    if isinstance(value, (list, tuple, set)):
+        result_list: list[Any] = []
+        for item in value:
+            json_item = _jsonify(item)
+            if json_item is _JSONIFY_SENTINEL:
+                return _JSONIFY_SENTINEL
+            result_list.append(json_item)
+        return result_list
+
+    return _JSONIFY_SENTINEL

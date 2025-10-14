@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import base64
+import json
+from dataclasses import dataclass
 
 from openmcp import types
 from openmcp.server.adapters import normalize_resource_payload, normalize_tool_result
@@ -10,7 +12,7 @@ def test_normalize_tool_result_from_string() -> None:
     result = normalize_tool_result("hello")
     assert isinstance(result, types.CallToolResult)
     assert result.content and result.content[0].text == "hello"
-    assert result.structuredContent is None
+    assert result.structuredContent == {"result": "hello"}
 
 
 def test_normalize_tool_result_with_structured_tuple() -> None:
@@ -55,3 +57,28 @@ def test_normalize_resource_payload_passthrough() -> None:
         contents=[types.TextResourceContents(uri="resource://demo/ready", mimeType="text/plain", text="ok")]
     )
     assert normalize_resource_payload("resource://demo/ready", None, existing) is existing
+
+
+def test_normalize_tool_result_dataclass() -> None:
+    @dataclass
+    class Result:
+        total: int
+
+    output = normalize_tool_result(Result(total=5))
+    assert output.structuredContent == {"total": 5}
+    assert output.content[0].text == json.dumps({"total": 5})
+
+
+def test_normalize_tool_result_scalar() -> None:
+    result = normalize_tool_result(42)
+    assert result.structuredContent == {"result": 42}
+    assert result.content[0].text == "42"
+
+
+def test_normalize_resource_payload_dataclass() -> None:
+    @dataclass
+    class Resource:
+        message: str
+
+    out = normalize_resource_payload("resource://demo/dataclass", None, Resource(message="hi"))
+    assert out.contents[0].text == json.dumps({"message": "hi"})

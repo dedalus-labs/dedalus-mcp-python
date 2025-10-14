@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import inspect
 import types as pytypes
-from typing import Any, Callable, Iterable, NotRequired, TypedDict
+from typing import Any, Callable, Iterable, NotRequired, TypedDict, get_args, get_origin, get_type_hints
 
 from pydantic import TypeAdapter
 
@@ -132,7 +132,7 @@ class ToolsService:
                 name=spec.name,
                 description=spec.description or None,
                 inputSchema=spec.input_schema or self._build_input_schema(spec.fn),
-                outputSchema=spec.output_schema,
+                outputSchema=spec.output_schema or self._build_output_schema(spec.fn),
                 annotations=annotations,
                 icons=icons,
             )
@@ -198,4 +198,72 @@ class ToolsService:
         schema["additionalProperties"] = False
         if required:
             schema["required"] = required
+        _prune_titles(schema)
         return schema
+
+    def _build_output_schema(self, fn: Callable[..., Any]) -> dict[str, Any] | None:
+        signature = inspect.signature(fn)
+        annotation = signature.return_annotation
+        if annotation in (inspect.Signature.empty, inspect._empty, Any, None):  # type: ignore[attr-defined]
+            return None
+
+        try:
+            resolved = get_type_hints(fn, include_extras=True)
+            annotation = resolved.get("return", annotation)
+        except Exception:
+            pass
+
+        if annotation in (Any, None, types.CallToolResult, types.ServerResult):
+            return None
+
+        if _annotation_contains(annotation, _OUTPUT_SCHEMA_BLOCKLIST):
+            return None
+
+        try:
+            schema = TypeAdapter(annotation).json_schema(mode="serialization")
+        except Exception:
+            return None
+
+        schema.pop("$defs", None)
+        _prune_titles(schema)
+
+        if schema.get("type") != "object":
+            schema = {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {"result": schema},
+                "required": ["result"],
+            }
+        return schema
+
+
+def _annotation_contains(annotation: Any, targets: tuple[type[Any], ...]) -> bool:
+    origin = get_origin(annotation)
+    if origin is None:
+        return any(
+            annotation is target or (inspect.isclass(annotation) and issubclass(annotation, target))
+            for target in targets
+            if inspect.isclass(target)
+        )
+    return any(_annotation_contains(arg, targets) for arg in get_args(annotation))
+
+
+def _prune_titles(schema: Any) -> None:
+    if isinstance(schema, dict):
+        schema.pop("title", None)
+        for value in schema.values():
+            _prune_titles(value)
+    elif isinstance(schema, list):
+        for item in schema:
+            _prune_titles(item)
+
+
+_OUTPUT_SCHEMA_BLOCKLIST: tuple[type[Any], ...] = (
+    types.CallToolResult,
+    types.ServerResult,
+    types.TextContent,
+    types.ImageContent,
+    types.AudioContent,
+    types.ResourceLink,
+    types.EmbeddedResource,
+)

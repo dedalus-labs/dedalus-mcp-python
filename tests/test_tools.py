@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Any
 
 import pytest
@@ -27,6 +28,7 @@ async def test_collecting_registers_tools():
     assert not result.isError
     assert result.content
     assert result.content[0].text == "11"
+    assert result.structuredContent == {"result": 11}
 
 
 @pytest.mark.asyncio
@@ -52,6 +54,7 @@ async def test_allowlist_controls_visibility():
     assert "add" in server.tool_names
     result = await server.invoke_tool("add", a=1, b=2)
     assert result.content[0].text == "3"
+    assert result.structuredContent == {"result": 3}
 
 
 @pytest.mark.asyncio
@@ -68,6 +71,7 @@ async def test_registering_outside_collecting():
     assert "multiply" in server.tool_names
     result = await server.invoke_tool("multiply", a=3, b=4)
     assert result.content[0].text == "12"
+    assert result.structuredContent == {"result": 12}
 
 
 @pytest.mark.asyncio
@@ -224,6 +228,29 @@ async def test_tools_metadata_fields_present():
     assert tool_entry.annotations.readOnlyHint is True
     assert tool_entry.icons
     assert tool_entry.icons[0].src == "file:///icon.png"
+
+
+@pytest.mark.anyio
+async def test_tool_output_schema_inferred_from_return_type():
+    server = MCPServer("tools-output-schema")
+
+    @dataclass
+    class Result:
+        total: int
+
+    with server.collecting():
+
+        @tool()
+        async def sum_values(values: list[int]) -> Result:
+            return Result(total=sum(values))
+
+    tool_def = server.tools.definitions["sum_values"]
+    assert tool_def.outputSchema is not None
+    props = tool_def.outputSchema.get("properties")
+    assert props and "total" in props
+
+    result = await server.invoke_tool("sum_values", values=[1, 2, 3])
+    assert result.structuredContent == {"total": 6}
 
 
 @pytest.mark.anyio
