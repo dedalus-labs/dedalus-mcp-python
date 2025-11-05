@@ -6,19 +6,59 @@
 
 """Full capability demo server.
 
-Run with:
+Demonstrates all MCP server capabilities per docs/mcp/core/understanding-mcp-servers.md:
+
+1. Tools (docs/mcp/spec/schema-reference/tools-*.md)
+   - add: basic tool with progress tracking
+   - sleep: demonstrates long-running operations with progress updates
+
+2. Resources (docs/mcp/spec/schema-reference/resources-*.md)
+   - resource://time: dynamic resource with live timestamp
+
+3. Prompts (docs/mcp/spec/schema-reference/prompts-*.md)
+   - plan-vacation: demonstrates prompt templates with arguments
+
+4. Completion (docs/mcp/capabilities/completion/completion-complete.md)
+   - Context-aware completion for prompt arguments
+
+5. Sampling (docs/mcp/capabilities/sampling/*.md)
+   - Custom sampling handler override
+
+6. Elicitation (docs/mcp/spec/schema-reference/elicitation-*.md)
+   - User input elicitation handler
+
+Also demonstrates notification support for capability changes per lifecycle-phases.md.
+
+Run with::
+
     uv run python examples/full_demo/server.py
 """
 
 from __future__ import annotations
 
 import asyncio
+import logging
 from datetime import datetime
 from typing import Any
 
 import anyio
 
-from openmcp import MCPServer, NotificationFlags, completion, get_context, prompt, resource, tool, types
+from openmcp import MCPServer, completion, get_context, prompt, resource, tool
+from openmcp.server import NotificationFlags
+from openmcp.types import (
+    CompletionArgument,
+    CompletionContext,
+    CreateMessageRequestParams,
+    CreateMessageResult,
+    ElicitRequestParams,
+    ElicitResult,
+    PromptArgument,
+    TextContent,
+)
+
+# Suppress logs for cleaner demo output
+for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
+    logging.getLogger(logger_name).setLevel(logging.CRITICAL)
 
 
 server = MCPServer(
@@ -57,7 +97,7 @@ with server.binding():
     @prompt(
         name="plan-vacation",
         description="Guide the model through planning a vacation",
-        arguments=[types.PromptArgument(name="destination", description="Where to travel", required=True)],
+        arguments=[PromptArgument(name="destination", description="Where to travel", required=True)],
     )
     def plan_prompt(args: dict[str, str]) -> list[dict[str, str]]:
         destination = args.get("destination", "unknown")
@@ -67,33 +107,30 @@ with server.binding():
         ]
 
     @completion(prompt="plan-vacation")
-    async def plan_completion(argument: types.CompletionArgument, context: types.CompletionContext | None):
+    async def plan_completion(argument: CompletionArgument, context: CompletionContext | None):
+        """Provide synthetic completion for plan-vacation prompt."""
         return ["This is a synthetic completion."]
 
 
-@completion(prompt="plan-vacation")
-async def plan_completion(argument: types.CompletionArgument, context: types.CompletionContext | None):
-    return ["This is a synthetic completion."]
+async def sampling_handler(ref: Any, params: CreateMessageRequestParams, context: Any) -> CreateMessageResult:
+    """Handle sampling/createMessage requests."""
+    return CreateMessageResult(content=[TextContent(type="text", text="Sampled by demo server")])
 
 
-async def sampling_handler(
-    ref: Any, params: types.CreateMessageRequestParams, context: Any
-) -> types.CreateMessageResult:
-    return types.CreateMessageResult(content=[types.TextContent(type="text", text="Sampled by demo server")])
+server.sampling.create_message = sampling_handler
 
 
-server.sampling.create_message = sampling_handler  # demonstration override
-
-
-async def elicitation_handler(ref: Any, params: types.ElicitRequestParams, context: Any) -> types.ElicitResult:
-    return types.ElicitResult(fields={"confirm": True})
+async def elicitation_handler(ref: Any, params: ElicitRequestParams, context: Any) -> ElicitResult:
+    """Handle elicitation/create requests."""
+    return ElicitResult(fields={"confirm": True})
 
 
 server.elicitation.create = elicitation_handler
 
 
 async def main() -> None:
-    await server.serve()
+    """Serve the full-demo MCP server."""
+    await server.serve(transport="streamable-http", verbose=False, log_level="critical", uvicorn_options={"access_log": False})
 
 
 if __name__ == "__main__":

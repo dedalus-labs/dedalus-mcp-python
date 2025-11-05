@@ -12,8 +12,8 @@ from typing import Any, Literal
 from mcp.shared.exceptions import McpError
 import pytest
 
-from openmcp import NotificationFlags, types
-from openmcp.server import MCPServer
+from openmcp import types
+from openmcp.server import MCPServer, NotificationFlags
 from openmcp.tool import tool
 from openmcp.utils.schema import resolve_output_schema
 from tests.helpers import DummySession, run_with_context

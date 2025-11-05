@@ -1,8 +1,28 @@
-"""Demonstrate custom logging configuration for OpenMCP.
+# ==============================================================================
+#                  © 2025 Dedalus Labs, Inc. and affiliates
+#                            Licensed under MIT
+#               github.com/dedalus-labs/openmcp-python/LICENSE
+# ==============================================================================
 
-This example keeps the framework dependency-light while showing how an
-application can opt into structured JSON logging using ``orjson`` and
-structured payloads built with Pydantic.
+"""Custom logging configuration for OpenMCP.
+
+Demonstrates how to configure structured JSON logging using orjson and Pydantic
+for production applications. Shows three patterns: JSON logging, custom colors,
+and filtered handlers.
+
+Pattern:
+1. Use setup_logger() with json_serializer for structured logging
+2. Subclass ColoredFormatter to customize color schemes
+3. Subclass OpenMCPHandler to add filtering logic
+
+When to use this pattern:
+- Production environments requiring structured logs
+- Custom color schemes for development ergonomics
+- Filtered logging to reduce noise from verbose modules
+- Integration with log aggregation systems (ELK, Splunk, Datadog)
+
+Reference:
+    - Logger utilities: src/openmcp/utils/logger.py
 """
 
 from __future__ import annotations
@@ -17,14 +37,19 @@ from pydantic import BaseModel
 from openmcp import MCPServer, tool
 from openmcp.utils.logger import ColoredFormatter, OpenMCPHandler, get_logger, setup_logger
 
+# Suppress SDK and server logs for cleaner demo output
+for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
+    logging.getLogger(logger_name).setLevel(logging.CRITICAL)
 
 try:
     import orjson  # type: ignore[import-not-found]
-except ImportError:  # pragma: no cover - optional dependency
+except ImportError:  # pragma: no cover
     orjson = None
 
 
 class LogEvent(BaseModel):
+    """Structured log payload."""
+
     stage: str
     message: str
     severity: str
@@ -35,154 +60,89 @@ def _serialize(payload: dict[str, Any]) -> str:
     if orjson is not None:
         encoded = orjson.dumps(payload, option=orjson.OPT_APPEND_NEWLINE)
         return cast("bytes", encoded).decode()
-
     return json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
 
 
-setup_logger(
-    use_json=True,
-    json_serializer=_serialize,
-    payload_transformer=lambda payload: {
-        **payload,
-        "context": LogEvent(**payload.get("context", {})).model_dump() if payload.get("context") else None,
-    },
-    force=True,
-)
-
-log = get_logger(__name__)
-server = MCPServer("custom-logging")
-
-
-@tool()
-async def echo(message: str) -> str:
-    event = LogEvent(stage="echo", message=message, severity="info")
-    log.info("tool-invoked", **event.model_dump())
-    return message
+# Example 1: JSON logging for production
+def configure_json_logging() -> None:
+    """Configure structured JSON logging."""
+    setup_logger(
+        use_json=True,
+        json_serializer=_serialize,
+        payload_transformer=lambda p: {
+            **p,
+            "context": LogEvent(**p.get("context", {})).model_dump() if p.get("context") else None,
+        },
+        force=True,
+    )
 
 
-# ==============================================================================
-# Additional Examples: Color Customization and Handler Extension
-# ==============================================================================
+# Example 2: Custom color scheme
+class PastelColors(ColoredFormatter):
+    """Pastel color scheme for development."""
 
-def example_custom_colors() -> None:
-    """Override colors by subclassing ColoredFormatter (pastel scheme)."""
-    class CustomColors(ColoredFormatter):
-        """Pastel color scheme."""
-        LEVEL_COLORS: ClassVar[dict[str, str]] = {
-            "DEBUG": "\033[38;5;117m",   # Light blue
-            "INFO": "\033[38;5;156m",    # Light green
-            "WARNING": "\033[38;5;222m", # Light orange
-            "ERROR": "\033[38;5;210m",   # Light red
-            "CRITICAL": "\033[38;5;201m",# Bright pink
-        }
-
-    setup_logger(level=logging.DEBUG, force=True)
-    root = logging.getLogger()
-    for handler in root.handlers:
-        handler.setFormatter(CustomColors(
-            fmt="%(asctime)s %(levelname)s [%(name)s] %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
-        ))
-
-    logger = get_logger("example.custom")
-    logger.debug("Debug: Pastel light blue")
-    logger.info("Info: Pastel light green")
-    logger.warning("Warning: Pastel orange")
-    logger.error("Error: Pastel light red")
-    logger.critical("Critical: Bright pink")
+    LEVEL_COLORS: ClassVar[dict[str, str]] = {
+        "DEBUG": "\033[38;5;117m",  # Light blue
+        "INFO": "\033[38;5;156m",  # Light green
+        "WARNING": "\033[38;5;222m",  # Light orange
+        "ERROR": "\033[38;5;210m",  # Light red
+        "CRITICAL": "\033[38;5;201m",  # Bright pink
+    }
 
 
-def example_custom_handler() -> None:
-    """Subclass OpenMCPHandler to add filtering logic."""
-    class FilteredHandler(OpenMCPHandler):
-        """Handler that filters out debug messages from specific modules."""
+# Example 3: Filtered handler
+class FilteredHandler(OpenMCPHandler):
+    """Handler that filters out debug messages from specific modules."""
 
-        def emit(self, record: logging.LogRecord) -> None:
-            if record.levelno == logging.DEBUG and "noisy" in record.name:
-                return
-            super().emit(record)
-
-    handler = FilteredHandler()
-    handler.setLevel(logging.DEBUG)
-    handler.setFormatter(ColoredFormatter(
-        fmt="%(asctime)s %(levelname)s [%(name)s] %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
-    ))
-
-    root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
-    root.handlers.clear()
-    root.addHandler(handler)
-
-    logger = get_logger("example.filtered")
-    noisy_logger = get_logger("example.noisy")
-
-    logger.debug("This will show")
-    noisy_logger.debug("This is filtered out")
-    logger.info("Info messages always show")
+    def emit(self, record: logging.LogRecord) -> None:
+        if record.levelno == logging.DEBUG and "noisy" in record.name:
+            return
+        super().emit(record)
 
 
 async def main() -> None:
     """Run MCP server with custom JSON logging."""
-    async with asyncio.TaskGroup() as tg:
-        tg.create_task(server.serve_stdio(validate=False))
+    configure_json_logging()
+    server = MCPServer("custom-logging")
+
+    with server.binding():
+
+        @tool()
+        async def echo(message: str) -> str:
+            event = LogEvent(stage="echo", message=message, severity="info")
+            log = get_logger(__name__)
+            log.info("tool-invoked", **event.model_dump())
+            return message
+
+    await server.serve_stdio(validate=False)
 
 
-def example_default_colors() -> None:
-    """Show our default color scheme."""
+def demo_colors() -> None:
+    """Show different color schemes."""
+    print("\n=== Default Colors ===")
     setup_logger(level=logging.DEBUG, force=True)
     logger = get_logger("default")
     logger.debug("Debug: Cyan")
     logger.info("Info: Green")
     logger.warning("Warning: Yellow")
     logger.error("Error: Red")
-    logger.critical("Critical: Magenta")
 
-
-def example_python_colors() -> None:
-    """Python 3.13+ style: bright red/magenta for errors."""
-    class PythonColors(ColoredFormatter):
-        """Python-style bright colors for errors."""
-        LEVEL_COLORS: ClassVar[dict[str, str]] = {
-            "DEBUG": "\033[36m",      # Cyan (normal)
-            "INFO": "\033[32m",       # Green (normal)
-            "WARNING": "\033[33m",    # Yellow (normal)
-            "ERROR": "\033[1;31m",    # Bold bright red (like Python exceptions)
-            "CRITICAL": "\033[1;35m", # Bold bright magenta (like Python error spans)
-        }
-
+    print("\n=== Pastel Colors ===")
     setup_logger(level=logging.DEBUG, force=True)
     root = logging.getLogger()
     for handler in root.handlers:
-        handler.setFormatter(PythonColors(
-            fmt="%(asctime)s %(levelname)s [%(name)s] %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
-        ))
-
-    logger = get_logger("python-style")
-    logger.debug("Debug: Cyan")
-    logger.info("Info: Green")
-    logger.warning("Warning: Yellow")
-    logger.error("Error: BOLD BRIGHT RED (Python exception style)")
-    logger.critical("Critical: BOLD BRIGHT MAGENTA (Python error span style)")
+        handler.setFormatter(PastelColors(fmt="%(levelname)s %(message)s"))
+    logger = get_logger("pastel")
+    logger.debug("Debug: Light blue")
+    logger.info("Info: Light green")
+    logger.warning("Warning: Light orange")
+    logger.error("Error: Light red")
 
 
 if __name__ == "__main__":
     import sys
 
-    if "--examples" in sys.argv or "--demo" in sys.argv:
-        # Run standalone examples (no server)
-        print("\n=== Our Default Colors ===")
-        example_default_colors()
-
-        print("\n=== Python 3.13+ Style (Bright Errors) ===")
-        example_python_colors()
-
-        print("\n=== Custom Pastel Colors ===")
-        example_custom_colors()
-
-        print("\n=== Custom Handler (Filtering) ===")
-        example_custom_handler()
+    if "--demo" in sys.argv:
+        demo_colors()
     else:
-        # Run as MCP server (use with MCP client)
         asyncio.run(main())

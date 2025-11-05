@@ -26,38 +26,48 @@ with server.binding():
 server.allow_tools(["add"])  # shout stays registered but hidden
 ```
 
-### Dependency-driven allow-lists
+### Dependency injection & session-scoped authorization
+
+`Depends()` enables FastAPI-style dependency injection for runtime capability gating, business rules (plan tiers, feature flags), and request-scoped state injection:
 
 ```python
-from openmcp import MCPServer, Depends, get_context, tool
+from openmcp import MCPServer, tool
+from openmcp.context import Context
+from openmcp.server.dependencies import Depends
 
 server = MCPServer("plans")
-USERS = {"bob": {"tier": "basic"}, "alice": {"tier": "pro"}}
+USERS = {"bob": "basic", "alice": "pro"}
+SESSION_USERS: dict[str, str] = {}  # Maps MCP session ID → user ID
 
 
-def get_current_user(user_id: str) -> dict[str, str]:
+def get_tier(ctx: Context) -> str:
+    """Extract user tier from session-scoped storage."""
+    session_id = ctx.session_id
+    user_id = SESSION_USERS.get(session_id, "bob")
     return USERS[user_id]
 
 
-def require_pro(user: dict[str, str]) -> bool:
-    return user["tier"] == "pro"
+def require_pro(tier: str) -> bool:
+    return tier == "pro"
 
 
 with server.binding():
 
-    @tool(description="Premium forecast", enabled=Depends(require_pro, get_current_user))
-    async def premium(days: int = 7, ctx=Depends(get_context)) -> dict[str, str | int]:
-        await ctx.info("running premium forecast", data={"days": days})
+    @tool(description="Premium forecast", enabled=Depends(require_pro, get_tier))
+    async def premium(days: int = 7) -> dict[str, str | int]:
         return {"plan": "pro", "days": days}
 ```
+
+**Auto-injection**: Parameters typed as `Context` are automatically injected—no need for `Depends(get_context)`. The framework inspects type hints and supplies the current request context at resolution time.
+
+**Session-scoped authorization**: Store user identity keyed by `ctx.session_id` (unique per MCP client connection). Each `tools/list` or `tools/call` request re-evaluates `enabled` predicates with fresh dependency resolution, so you can gate capabilities per authenticated session. See the MCP session lifecycle in `docs/mcp/core/lifecycle/lifecycle-phases.md`.
+
+**Import patterns**: Core exports (`MCPServer`, `tool`, `get_context`) live in `openmcp.__init__.py`; advanced features like `Depends` are in submodules (`openmcp.server.dependencies`).
+
+**Full example**: [`examples/tools/allow_list.py`](../../examples/tools/allow_list.py) demonstrates session-scoped authorization with two users ("bob"/"alice") where `premium_tool` only appears in alice's `tools/list` response.
 
 - Spec receipts: `docs/mcp/spec/schema-reference/tools-list.md`, `tools-call.md`
 - Input schema inference leans on `pydantic.TypeAdapter`; unsupported annotations fall back to permissive schemas.
 - Return annotations automatically generate `outputSchema` metadata (non-object outputs are wrapped as `{ "result": ... }`) and the runtime normalizer produces matching `structuredContent` so clients can consume structured results directly.
 - For list change notifications, toggle `NotificationFlags.tools_changed` and emit updates when your registry mutates.
-- Use `get_context()` from `docs/openmcp/context.md` to emit logs or progress
-  telemetry directly from tool handlers without importing SDK internals.
-- `Depends()` supports nested dependencies and is cached per request via
-  :class:`openmcp.context.Context`. Use it to express plan tiers, feature flags,
-  or to inject request-scoped data (for example, ``ctx: Context``) without
-  exposing extra parameters to clients.
+- `Depends()` supports nested dependencies, cycle detection (raises `CircularDependencyError`), and per-request caching via `Context`. Dependencies are resolved once per MCP request and cached for reuse within that request scope.

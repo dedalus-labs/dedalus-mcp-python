@@ -29,7 +29,8 @@ from mcp.client.session import ClientSession
 from mcp.shared.session import RequestResponder
 import pytest
 
-from openmcp import MCPServer, NotificationFlags, resource, types
+from openmcp import MCPServer, resource, types
+from openmcp.server import NotificationFlags
 
 
 async def _exercise_transport(

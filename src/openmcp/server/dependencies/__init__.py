@@ -24,24 +24,32 @@ def register_injectable_type(typ: type) -> None:
 
 
 def _find_context_param(func: Callable[..., Any]) -> str | None:
-    """Inspect function signature to find a Context-typed parameter."""
-    try:
-        sig = inspect.signature(func)
-    except (ValueError, TypeError):
-        return None
+    """Inspect function signature to find a Context-typed parameter.
+
+    Uses get_type_hints to properly resolve string annotations and handle
+    forward references, ensuring the Context class identity check works correctly.
+    """
+    from typing import get_type_hints
 
     # Import here to avoid circular dependency
     from ...context import Context
 
-    for param_name, param in sig.parameters.items():
-        if param.annotation == inspect.Parameter.empty:
+    try:
+        hints = get_type_hints(func)
+    except Exception:
+        # get_type_hints can fail for various reasons (missing globals, etc.)
+        return None
+
+    for param_name, param_type in hints.items():
+        # Skip return type hint
+        if param_name == "return":
             continue
 
         # Handle generic aliases (e.g., Optional[Context])
-        origin = get_origin(param.annotation)
-        param_type = origin if origin is not None else param.annotation
+        origin = get_origin(param_type)
+        resolved_type = origin if origin is not None else param_type
 
-        if param_type is Context:
+        if resolved_type is Context:
             return param_name
 
     return None

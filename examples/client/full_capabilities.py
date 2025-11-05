@@ -4,18 +4,16 @@
 #               github.com/dedalus-labs/openmcp-python/LICENSE
 # ==============================================================================
 
-"""DRAFT: Client with all capabilities enabled.
+"""Client with all capabilities enabled.
 
 Demonstrates a fully-featured MCP client that advertises all optional
-capabilities: sampling, elicitation, roots, and logging. This represents
-a production-ready client configuration.
+capabilities: sampling, elicitation, roots, and logging.
 
-See: https://modelcontextprotocol.io/specification/2025-06-18/
-See also: docs/openmcp/sampling.md, docs/openmcp/elicitation.md, docs/openmcp/roots.md
+Pattern: Combine multiple capability handlers in ClientCapabilitiesConfig.
 
-Run with:
-    export ANTHROPIC_API_KEY=your-key
-    uv run python examples/client/full_capabilities.py
+Spec: https://modelcontextprotocol.io/specification/2025-06-18/
+
+Run: export ANTHROPIC_API_KEY=your-key && uv run python examples/client/full_capabilities.py
 """
 
 from __future__ import annotations
@@ -26,22 +24,39 @@ from pathlib import Path
 import anyio
 import anthropic
 
-from openmcp import types
 from openmcp.client import ClientCapabilitiesConfig, open_connection
+from openmcp.types import (
+    ClientRequest,
+    CreateMessageRequestParams,
+    CreateMessageResult,
+    ElicitRequestParams,
+    ElicitResult,
+    ErrorData,
+    ListToolsRequest,
+    ListToolsResult,
+    LoggingMessageNotificationParams,
+    Role,
+    Root,
+    StopReason,
+    TextContent,
+)
 
 
 SERVER_URL = "http://127.0.0.1:8000/mcp"
 
 
 async def sampling_handler(
-    _context: object, params: types.CreateMessageRequestParams
-) -> types.CreateMessageResult | types.ErrorData:
+    _context: object, params: CreateMessageRequestParams
+) -> CreateMessageResult | ErrorData:
     """Handle sampling requests with Anthropic API."""
     try:
         client = anthropic.AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
         messages = [
-            {"role": msg.role, "content": msg.content.text if hasattr(msg.content, "text") else str(msg.content)}
+            {
+                "role": msg.role,
+                "content": msg.content.text if hasattr(msg.content, "text") else str(msg.content),
+            }
             for msg in params.messages
         ]
 
@@ -53,46 +68,37 @@ async def sampling_handler(
             model=model, messages=messages, max_tokens=params.maxTokens or 1024
         )
 
-        return types.CreateMessageResult(
+        return CreateMessageResult(
             model=response.model,
-            content=types.TextContent(type="text", text=response.content[0].text),
-            role=types.Role.assistant,
-            stopReason=types.StopReason.endTurn,
+            content=TextContent(type="text", text=response.content[0].text),
+            role=Role.assistant,
+            stopReason=StopReason.endTurn,
         )
     except Exception as e:
-        return types.ErrorData(code=-32603, message=f"Sampling failed: {e}")
+        return ErrorData(code=-32603, message=f"Sampling failed: {e}")
 
 
 async def elicitation_handler(
-    _context: object, params: types.ElicitRequestParams
-) -> types.ElicitResult | types.ErrorData:
-    """Handle elicitation requests via CLI prompts."""
+    _context: object, params: ElicitRequestParams
+) -> ElicitResult | ErrorData:
+    """Handle elicitation requests via CLI prompts (auto-accepts for demo)."""
     try:
-        print(f"\n{'=' * 60}")
-        print(f"Server requests: {params.message}")
-        print(f"{'=' * 60}\n")
-
-        # For demo, auto-accept with minimal data
-        # In production, you'd collect actual user input
-        schema = params.requestedSchema
-        properties = schema.get("properties", {})
-
+        print(f"\n{'=' * 60}\nServer requests: {params.message}\n{'=' * 60}\n")
+        properties = params.requestedSchema.get("properties", {})
         content: dict[str, object] = {}
         for field_name, field_schema in properties.items():
             field_type = field_schema.get("type", "string")
-            if field_type == "boolean":
-                content[field_name] = True
-            elif field_type in ("integer", "number"):
-                content[field_name] = 42
-            else:
-                content[field_name] = "demo-value"
-
-        return types.ElicitResult(action="accept", content=content)
+            content[field_name] = (
+                True
+                if field_type == "boolean"
+                else 42 if field_type in ("integer", "number") else "demo-value"
+            )
+        return ElicitResult(action="accept", content=content)
     except Exception as e:
-        return types.ErrorData(code=-32603, message=f"Elicitation failed: {e}")
+        return ErrorData(code=-32603, message=f"Elicitation failed: {e}")
 
 
-def logging_handler(params: types.LoggingMessageNotificationParams) -> None:
+def logging_handler(params: LoggingMessageNotificationParams) -> None:
     """Handle logging notifications from server."""
     level = params.level.upper() if params.level else "INFO"
     print(f"[SERVER {level}] {params.data or params.logger}")
@@ -100,30 +106,26 @@ def logging_handler(params: types.LoggingMessageNotificationParams) -> None:
 
 async def main() -> None:
     """Connect with all client capabilities enabled."""
-
-    # Configure all capabilities
+    initial_roots = [
+        Root(uri=Path.cwd().as_uri(), name="Working Directory"),
+        Root(uri=Path("/tmp").as_uri(), name="Temp"),
+    ]
     capabilities = ClientCapabilitiesConfig(
         sampling=sampling_handler,
         elicitation=elicitation_handler,
         logging=logging_handler,
         enable_roots=True,
-        initial_roots=[
-            types.Root(uri=Path.cwd().as_uri(), name="Working Directory"),
-            types.Root(uri=Path("/tmp").as_uri(), name="Temp"),
-        ],
+        initial_roots=initial_roots,
     )
 
     async with open_connection(
-        url=SERVER_URL,
-        transport="streamable-http",
-        capabilities=capabilities,
+        url=SERVER_URL, transport="streamable-http", capabilities=capabilities
     ) as client:
-        print("Connected with all capabilities enabled")
-        print(f"Server: {client.initialize_result.serverInfo.name}")
-        print(f"Protocol: {client.initialize_result.protocolVersion}")
+        init = client.initialize_result
+        print(f"Connected with all capabilities enabled")
+        print(f"Server: {init.serverInfo.name} | Protocol: {init.protocolVersion}")
 
-        # Show advertised capabilities
-        caps = client.initialize_result.capabilities
+        caps = init.capabilities
         print("\nClient capabilities:")
         if hasattr(caps, "sampling") and caps.sampling:
             print("  - sampling: enabled")
@@ -131,20 +133,14 @@ async def main() -> None:
             print("  - elicitation: enabled")
         if hasattr(caps, "roots") and caps.roots:
             print("  - roots: enabled")
-            roots = await client.list_roots()
-            for root in roots:
+            for root in await client.list_roots():
                 print(f"    - {root.name}: {root.uri}")
 
-        # List available tools
-        tools_result = await client.send_request(
-            types.ClientRequest(types.ListToolsRequest()),
-            types.ListToolsResult,
-        )
-        print(f"\nAvailable tools: {len(tools_result.tools)}")
-        for tool in tools_result.tools[:5]:  # Show first 5
+        tools = (await client.send_request(ClientRequest(ListToolsRequest()), ListToolsResult)).tools
+        print(f"\nAvailable tools: {len(tools)}")
+        for tool in tools[:5]:
             print(f"  - {tool.name}: {tool.description or 'no description'}")
 
-        # Keep connection alive for server to use our capabilities
         print("\nClient ready. Server can now use all advertised capabilities.")
         await anyio.sleep(30)
 

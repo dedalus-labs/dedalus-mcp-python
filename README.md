@@ -211,6 +211,32 @@ Servers request structured user input. Schema validation (top-level properties o
 
 ## Authorization
 
+**Session-scoped capability gating** (per-connection tool visibility):
+
+```python
+from openmcp.context import Context
+from openmcp.server.dependencies import Depends
+
+USERS = {"bob": "basic", "alice": "pro"}
+SESSION_USERS: dict[str, str] = {}  # Maps MCP session ID → user ID
+
+def get_tier(ctx: Context) -> str:
+    """Auto-injected Context via type hint—no Depends() needed."""
+    user_id = SESSION_USERS.get(ctx.session_id, "bob")
+    return USERS[user_id]
+
+def require_pro(tier: str) -> bool:
+    return tier == "pro"
+
+@tool(enabled=Depends(require_pro, get_tier))
+async def premium_tool() -> str:
+    return "Pro-only feature"
+```
+
+Dependencies re-evaluate on each request, so bob sees `[]`, alice sees `[premium_tool]`. Full example: [`examples/tools/allow_list.py`](examples/tools/allow_list.py).
+
+**OAuth 2.1 framework** (provider-based):
+
 ```python
 class MyAuthProvider(AuthorizationProvider):
     async def validate(self, token: str) -> AuthorizationContext:

@@ -4,27 +4,37 @@
 #               github.com/dedalus-labs/openmcp-python/LICENSE
 # ==============================================================================
 
-"""DRAFT: Basic tool example with automatic schema inference.
+"""Minimal tool registration with automatic schema inference.
 
-Demonstrates:
-- Minimal tool registration with @tool decorator
-- Automatic JSON Schema generation from type hints
-- Sync and async tool functions
-- Simple return types (str, dict, list)
+Demonstrates the simplest tool patterns with OpenMCP: sync/async functions
+with type-hinted parameters automatically generate JSON Schema without
+explicit decoration. This is the foundation for all tool-based MCP servers.
 
-Spec reference:
-https://modelcontextprotocol.io/specification/2025-06-18/server/tools
+Pattern:
+- @tool decorator registers functions as MCP tools
+- Type hints → JSON Schema (parameters + return type)
+- Sync and async functions work identically
+- No schema boilerplate required
 
-Usage:
-    uv run python examples/tools/basic_tool.py
+When to use:
+- Starting point for any MCP server with tools
+- APIs, computations, or data retrieval
+- Functions with well-defined inputs/outputs
+
+Spec: https://modelcontextprotocol.io/specification/2025-06-18/server/tools
+Usage: uv run python examples/tools/basic_tool.py
 """
 
 from __future__ import annotations
 
 import asyncio
+import logging
 
 from openmcp import MCPServer, tool
 
+# Suppress logs for clean demo output
+for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
+    logging.getLogger(logger_name).setLevel(logging.CRITICAL)
 
 server = MCPServer("basic-tools")
 
@@ -48,7 +58,7 @@ with server.binding():
 
 
 async def main() -> None:
-    await server.serve()
+    await server.serve(transport="streamable-http", verbose=False, log_level="critical")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,8 @@
 import pytest
 import types
 
-from openmcp import MCPServer, Depends, tool
+from openmcp import MCPServer, tool
+from openmcp.server.dependencies import Depends
 from openmcp.server.dependencies.solver import resolve
 import openmcp.context as context_module
 
@@ -180,7 +181,7 @@ async def test_use_cache_false():
 
 @pytest.mark.anyio
 async def test_auto_inject_context(monkeypatch):
-    from openmcp import Context
+    from openmcp.context import Context
 
     dummy_context = types.SimpleNamespace(dependency_cache={}, request_id="auto-inject-123")
     # Patch where solver imports get_context from

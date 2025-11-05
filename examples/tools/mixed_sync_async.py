@@ -4,32 +4,42 @@
 #               github.com/dedalus-labs/openmcp-python/LICENSE
 # ==============================================================================
 
-"""Sync vs Async tools demonstration.
+"""Sync vs async tool functions work identically.
 
-Shows that OpenMCP transparently handles both synchronous and asynchronous
-tool functions via utils.maybe_await_with_args. The framework inspects
-callables at invocation time and awaits only when necessary.
+Demonstrates framework transparency: sync functions execute directly, async
+functions are awaited. No special decoration needed—type inspection at
+runtime handles both cases. Use sync for CPU-bound work, async for I/O.
 
-Spec reference:
-https://modelcontextprotocol.io/specification/2025-06-18/server/tools
+Pattern:
+- Sync tools: def tool_name(...) → direct execution
+- Async tools: async def tool_name(...) → awaited by framework
+- Framework uses utils.maybe_await_with_args internally
+- No await overhead for sync functions
 
-Usage:
-    uv run python examples/tools/mixed_sync_async.py
+When to use sync:
+- Pure computation (math, string ops)
+- No I/O (network, disk, subprocess)
+- Sub-millisecond execution
 
-    # In another terminal:
-    curl -X POST http://127.0.0.1:8000/mcp \
-      -H "Content-Type: application/json" \
-      -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
+When to use async:
+- Network requests (HTTP, gRPC, database)
+- File I/O or long-running operations
+- Need to yield control during waits
+
+Spec: https://modelcontextprotocol.io/specification/2025-06-18/server/tools
+Usage: uv run python examples/tools/mixed_sync_async.py
 """
 
 from __future__ import annotations
 
 import asyncio
-import json
-import time
+import logging
 
 from openmcp import MCPServer, tool
 
+# Suppress logs for clean demo output
+for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
+    logging.getLogger(logger_name).setLevel(logging.CRITICAL)
 
 server = MCPServer(name="mixed-sync-async-demo")
 
@@ -56,16 +66,10 @@ with server.binding():
         return {"result": b}
 
     @tool(description="Synchronous validation - fast, deterministic")
-    def validate_email(email: str) -> dict[str, str]:
-        """Simple validation logic - no async needed.
-
-        Framework calls this directly without await overhead.
-        """
+    def validate_email(email: str) -> dict[str, bool | str]:
+        """Simple validation logic - no async needed."""
         is_valid = "@" in email and "." in email.split("@")[-1]
-        return {
-            "valid": str(is_valid),
-            "reason": "Valid format" if is_valid else "Missing @ or domain"
-        }
+        return {"valid": is_valid, "reason": "Valid format" if is_valid else "Missing @ or domain"}
 
     @tool(description="Asynchronous I/O - network fetch simulation")
     async def fetch_weather(city: str) -> dict[str, str | float]:
@@ -86,68 +90,23 @@ with server.binding():
         }
 
     @tool(description="Asynchronous database query simulation")
-    async def query_user_data(user_id: int) -> dict[str, str | int]:
-        """Database access is inherently async in Python.
-
-        Real implementation would use asyncpg, motor, etc.
-        """
+    async def query_user(user_id: int) -> dict[str, str | int]:
+        """Database access—inherently async. Real impl uses asyncpg, motor, etc."""
         await asyncio.sleep(0.2)  # Simulate query time
-        return {
-            "user_id": user_id,
-            "username": f"user_{user_id}",
-            "status": "active",
-            "last_login": "2025-01-03T12:00:00Z"
-        }
-
-    @tool(description="Hybrid: sync preprocessing + async I/O")
-    async def process_and_store(data: str, destination: str) -> dict[str, str | int]:
-        """Common pattern: validate sync, then async I/O.
-
-        Sync validation is fast (no await needed internally),
-        but the tool itself is async for the storage step.
-        """
-        # Sync preprocessing
-        normalized = data.strip().upper()
-        size = len(normalized)
-
-        # Async storage simulation
-        await asyncio.sleep(0.1)
-
-        return {
-            "status": "stored",
-            "destination": destination,
-            "bytes": size,
-            "checksum": f"sha256:{hash(normalized) & 0xFFFFFFFF:08x}"
-        }
-
-
-async def demo_invocation() -> None:
-    """Show that both sync and async tools work seamlessly."""
-    print("=== Registered Tools ===")
-    print("Tools registered (mix of sync and async):")
-    print("  - calculate_fibonacci (sync)")
-    print("  - validate_email (sync)")
-    print("  - fetch_weather (async)")
-    print("  - query_user_data (async)")
-    print("  - process_and_store (async)")
-
-    print("\n=== Framework handles both transparently ===")
-    print("All tools invoked via same call_tool API, regardless of sync/async.")
+        return {"user_id": user_id, "username": f"user_{user_id}", "status": "active"}
 
 
 async def main() -> None:
-    print("Starting Mixed Sync/Async Server\n")
+    print("=== Mixed Sync/Async Demo ===")
+    print("Registered tools:")
+    print("  - calculate_fibonacci (sync, CPU-bound)")
+    print("  - validate_email (sync, pure function)")
+    print("  - fetch_weather (async, network I/O)")
+    print("  - query_user (async, database I/O)")
+    print("\nFramework handles both transparently via same call_tool API.")
+    print("Server: http://127.0.0.1:8000/mcp\n")
 
-    # Run demo before starting server
-    await demo_invocation()
-
-    print("\n=== Server Running ===")
-    print("Listening on http://127.0.0.1:8000/mcp")
-    print("Try: curl -X POST http://127.0.0.1:8000/mcp \\")
-    print("  -H 'Content-Type: application/json' \\")
-    print("  -d '{\"jsonrpc\": \"2.0\", \"method\": \"tools/list\", \"id\": 1}'")
-
-    await server.serve()
+    await server.serve(transport="streamable-http", verbose=False, log_level="critical")
 
 
 if __name__ == "__main__":

@@ -60,7 +60,14 @@ async def _resolve_dependency(
         # Build kwargs for auto-injected parameters
         injectable_kwargs = {}
         if call.context_param_name:
-            injectable_kwargs[call.context_param_name] = get_context()
+            try:
+                injectable_kwargs[call.context_param_name] = get_context()
+            except LookupError as exc:
+                name = _get_callable_name(call)
+                raise DependencyResolutionError(
+                    f"Dependency '{name}' requires Context but no request context is active. "
+                    f"Ensure this is called from within a request handler or use run_with_context() in tests."
+                ) from exc
 
         # Call the dependency with resolved args and injectable kwargs
         try:

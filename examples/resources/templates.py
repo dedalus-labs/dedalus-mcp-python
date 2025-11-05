@@ -4,27 +4,39 @@
 #               github.com/dedalus-labs/openmcp-python/LICENSE
 # ==============================================================================
 
-"""DRAFT: URI template resource example.
+"""URI templates for parameterized resources.
 
-Demonstrates resource templates with parameterized URIs following RFC 6570.
-Templates advertise patterns; actual resources are registered separately.
+Demonstrates RFC 6570 URI templates: advertise patterns like
+user://{username}/profile, then register concrete resources matching those
+patterns. Enables discoverable, RESTful resource hierarchies.
 
-Spec:
-- https://modelcontextprotocol.io/specification/2025-06-18/server/resources
-- resources/templates/list returns available patterns
-- resources/read resolves specific URIs
+Pattern:
+- @resource_template(uri_template="...") advertises pattern
+- @resource(uri="...") registers concrete instances
+- Clients see templates via resources/templates/list
+- Clients read resources via resources/read with concrete URI
 
-Usage:
-    uv run python examples/resources/templates.py
+When to use:
+- RESTful resource hierarchies (users, projects, files)
+- Dynamic resource discovery
+- Convention-based resource organization
+- API documentation endpoints
+
+Spec: https://modelcontextprotocol.io/specification/2025-06-18/server/resources
+Usage: uv run python examples/resources/templates.py
 """
 
 from __future__ import annotations
 
 import asyncio
 import json
+import logging
 
 from openmcp import MCPServer, resource, resource_template
 
+# Suppress logs for clean demo output
+for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
+    logging.getLogger(logger_name).setLevel(logging.CRITICAL)
 
 server = MCPServer("template-resources")
 
@@ -88,7 +100,7 @@ with server.binding():
 
 
 async def main() -> None:
-    await server.serve(transport="streamable-http", port=8080)
+    await server.serve(transport="streamable-http", verbose=False, log_level="critical")
 
 
 if __name__ == "__main__":

@@ -7,8 +7,8 @@ Validates session ID properties follow MCP spec requirements:
 import pytest
 import types as py_types
 
-from openmcp import Context, MCPClient
-from openmcp.context import _CURRENT_CONTEXT
+from openmcp import MCPClient
+from openmcp.context import Context, _CURRENT_CONTEXT
 
 
 @pytest.mark.anyio
@@ -101,7 +101,8 @@ async def test_client_session_id_callback_returns_none():
 @pytest.mark.anyio
 async def test_session_scoped_authorization_pattern():
     """Test session-scoped authorization using session_id mapping."""
-    from openmcp import Depends, MCPServer, tool
+    from openmcp import MCPServer, tool
+    from openmcp.server.dependencies import Depends
     from mcp.server.lowlevel.server import request_ctx
     from mcp.shared.context import RequestContext
 

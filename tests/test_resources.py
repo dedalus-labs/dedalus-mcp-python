@@ -20,7 +20,8 @@ import anyio
 from mcp.shared.exceptions import McpError
 import pytest
 
-from openmcp import MCPServer, NotificationFlags, resource, types
+from openmcp import MCPServer, resource, types
+from openmcp.server import NotificationFlags
 from tests.helpers import DummySession, FailingSession, run_with_context
 
 

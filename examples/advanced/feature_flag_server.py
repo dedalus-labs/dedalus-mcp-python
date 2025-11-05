@@ -1,15 +1,36 @@
 """Feature-flagged tool exposure using dynamic mode.
 
-Run with ``uv run`` and toggle the feature flag via the ``set_feature`` coroutine.
-Dynamic behaviour requires ``allow_dynamic_tools=True`` and callers MUST emit
-``notifications/tools/list_changed`` after each mutation.
+Demonstrates runtime tool registration/unregistration based on feature flags.
+Dynamic behavior requires allow_dynamic_tools=True and callers MUST emit
+notifications/tools/list_changed after each mutation.
+
+Pattern:
+1. Create server with allow_dynamic_tools=True
+2. Use server.binding() to register/unregister tools
+3. Call server.notify_tools_list_changed() after mutations
+4. Clients receive tools/list_changed notifications
+
+When to use this pattern:
+- A/B testing with gradual feature rollout
+- Kill switches for unstable features
+- Environment-specific tool exposure
+- Multi-tenant feature gating
+
+Reference:
+    - Dynamic tools: docs/mcp/spec/schema-reference/tools-list.md
+    - Notifications: docs/mcp/spec/schema-reference/notifications.md
 """
 
 from __future__ import annotations
 
 import asyncio
+import logging
 
 from openmcp import MCPServer, tool
+
+# Suppress SDK and server logs for cleaner demo output
+for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
+    logging.getLogger(logger_name).setLevel(logging.CRITICAL)
 
 
 server = MCPServer("feature-flagged", allow_dynamic_tools=True)
@@ -17,11 +38,7 @@ _flag_enabled = False
 
 
 def bootstrap() -> MCPServer:
-    """Register the baseline tool set.
-
-    Returns:
-        Configured ``MCPServer`` instance.
-    """
+    """Register the baseline tool set."""
     with server.binding():
 
         @tool(description="Ping the server")
@@ -54,10 +71,7 @@ async def set_feature(*, enabled: bool = False) -> None:
 async def main() -> None:
     """Launch the server in STDIO mode for development."""
     bootstrap()
-    print(
-        "Serving feature-flagged tools. Toggle by calling "
-        "`await set_feature(True|False)` from another task or REPL."
-    )
+    print("Serving feature-flagged tools. Toggle via: await set_feature(enabled=True|False)")
     async with asyncio.TaskGroup() as tg:
         tg.create_task(server.serve_stdio(validate=False))
 

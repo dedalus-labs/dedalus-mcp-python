@@ -4,29 +4,39 @@
 #               github.com/dedalus-labs/openmcp-python/LICENSE
 # ==============================================================================
 
-"""DRAFT: Advanced type hints for rich input schemas.
+"""Advanced type hints for rich parameter schemas.
 
-Demonstrates:
-- Literal types for enum-like parameters
-- Optional parameters with defaults
-- Dataclass parameters for structured inputs
-- Schema inference from complex type annotations
+Demonstrates Python type system integration with MCP JSON Schema: Literal
+types become enums, dataclasses nest as objects, Optional creates nullable
+fields. No manual schema writing required—type hints drive everything.
 
-Spec reference:
-https://modelcontextprotocol.io/specification/2025-06-18/server/tools
+Pattern:
+- Literal[...] → JSON Schema enum constraints
+- Optional[T] and defaults → optional parameters
+- @dataclass → nested object schema
+- Union types → oneOf/anyOf schemas
 
-Usage:
-    uv run python examples/tools/typed_tool.py
+When to use:
+- Tools with constrained inputs (enums, formats)
+- Structured configuration objects
+- Type-safe interfaces with validation
+
+Spec: https://modelcontextprotocol.io/specification/2025-06-18/server/tools
+Usage: uv run python examples/tools/typed_tool.py
 """
 
 from __future__ import annotations
 
 import asyncio
+import logging
 from dataclasses import dataclass
 from typing import Literal
 
 from openmcp import MCPServer, tool
 
+# Suppress logs for clean demo output
+for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
+    logging.getLogger(logger_name).setLevel(logging.CRITICAL)
 
 server = MCPServer("typed-tools")
 
@@ -65,7 +75,7 @@ with server.binding():
 
 
 async def main() -> None:
-    await server.serve()
+    await server.serve(transport="streamable-http", verbose=False, log_level="critical")
 
 
 if __name__ == "__main__":

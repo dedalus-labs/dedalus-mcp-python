@@ -4,22 +4,42 @@
 #               github.com/dedalus-labs/openmcp-python/LICENSE
 # ==============================================================================
 
-"""Multi-turn conversation with system, assistant, and user messages.
+"""Multi-turn conversations with typed message content.
 
-DRAFT: Shows complex conversation flows with multiple message roles.
+Demonstrates complex prompt patterns using explicit type constructors for
+fine-grained control over message structure. Returns GetPromptResult with
+fully-typed PromptMessage and TextContent objects for multi-turn flows.
+
+Pattern:
+- Return GetPromptResult directly (vs list[dict] auto-conversion)
+- Construct PromptMessage objects with explicit role and content
+- Use TextContent for typed text blocks (supports future content types)
+- Build sequential message flows (context → examples → query)
+
+When to use:
+- Multi-turn conversation templates
+- Complex debugging or analysis workflows
+- Structured prompt sequences (system → context → task)
+- Type-safe message construction
+
 Spec: https://modelcontextprotocol.io/specification/2025-06-18/server/prompts
-
+Reference: docs/mcp/spec/schema-reference/prompts-get.md
 Usage: uv run python examples/prompts/multi_message.py
 """
 
 from __future__ import annotations
 
 import asyncio
+import logging
 
-from openmcp import MCPServer, prompt, types
+from openmcp import MCPServer, prompt
+from openmcp.types import GetPromptResult, PromptMessage, TextContent
 
+# Suppress logs for clean demo output
+for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
+    logging.getLogger(logger_name).setLevel(logging.CRITICAL)
 
-server = MCPServer("multi-message-prompt-demo")
+server = MCPServer("multi-message-prompts")
 
 with server.binding():
 
@@ -31,10 +51,11 @@ with server.binding():
             {"name": "code_snippet", "required": True},
         ],
     )
-    def debug_session_prompt(arguments: dict[str, str] | None) -> types.GetPromptResult:
-        """Return GetPromptResult with explicit PromptMessage + TextContent objects.
+    def debug_session_prompt(arguments: dict[str, str] | None) -> GetPromptResult:
+        """Return fully-typed multi-turn conversation template.
 
-        Most explicit form for multi-turn conversations with typed content blocks.
+        Uses explicit type constructors (PromptMessage, TextContent) for
+        structured message sequences. Alternative to list[dict] shorthand.
         """
         if not arguments:
             raise ValueError("Arguments required")
@@ -43,29 +64,34 @@ with server.binding():
         code = arguments["code_snippet"]
 
         messages = [
-            types.PromptMessage(
+            PromptMessage(
                 role="assistant",
-                content=types.TextContent(
+                content=TextContent(
                     type="text",
                     text="You are a debugging assistant. Analyze errors methodically: "
                     "1) Identify root cause, 2) Explain why, 3) Suggest fix.",
                 ),
             ),
-            types.PromptMessage(
+            PromptMessage(
                 role="user",
-                content=types.TextContent(type="text", text=f"Error:\n```\n{error_msg}\n```"),
+                content=TextContent(type="text", text=f"Error:\n```\n{error_msg}\n```"),
             ),
-            types.PromptMessage(
+            PromptMessage(
                 role="user",
-                content=types.TextContent(type="text", text=f"Code:\n```\n{code}\n```\n\nWhat's wrong?"),
+                content=TextContent(type="text", text=f"Code:\n```\n{code}\n```\n\nWhat's wrong?"),
             ),
         ]
 
-        return types.GetPromptResult(description="Debugging session for error analysis", messages=messages)
+        return GetPromptResult(description="Debugging session for error analysis", messages=messages)
 
 
 async def main() -> None:
-    await server.serve(transport="streamable-http")
+    await server.serve(
+        transport="streamable-http",
+        verbose=False,
+        log_level="critical",
+        uvicorn_options={"access_log": False},
+    )
 
 
 if __name__ == "__main__":

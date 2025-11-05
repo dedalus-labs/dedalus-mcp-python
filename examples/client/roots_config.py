@@ -4,13 +4,25 @@
 #               github.com/dedalus-labs/openmcp-python/LICENSE
 # ==============================================================================
 
-"""DRAFT: Client advertising filesystem roots to MCP servers.
+"""Client advertising filesystem roots to MCP servers.
 
 Demonstrates how to configure the roots capability to establish filesystem
 boundaries for servers. The server can only access paths within these roots,
 preventing directory traversal attacks.
 
-See: https://modelcontextprotocol.io/specification/2025-06-18/client/roots
+Pattern:
+1. Define initial Root objects with file:// URIs
+2. Configure ClientCapabilitiesConfig with enable_roots=True and initial_roots
+3. Use client.update_roots() to dynamically modify boundaries
+4. Server receives roots/list_changed notifications
+
+When to use this pattern:
+- Sandboxing server filesystem access for security
+- Multi-tenant systems where each client needs different boundaries
+- Development environments requiring safe test isolation
+- Production systems enforcing principle of least privilege
+
+Spec: https://modelcontextprotocol.io/specification/2025-06-18/client/roots
 See also: docs/openmcp/roots.md
 
 Run with:
@@ -23,8 +35,8 @@ from pathlib import Path
 
 import anyio
 
-from openmcp import types
 from openmcp.client import ClientCapabilitiesConfig, open_connection
+from openmcp.types import Root
 
 
 SERVER_URL = "http://127.0.0.1:8000/mcp"
@@ -32,21 +44,12 @@ SERVER_URL = "http://127.0.0.1:8000/mcp"
 
 async def main() -> None:
     """Connect to a server with filesystem roots configured."""
-
-    # Define which directories the server can access
-    # Use file:// URIs for cross-platform compatibility
     project_root = Path.cwd()
     temp_dir = Path("/tmp")
 
     initial_roots = [
-        types.Root(
-            uri=project_root.as_uri(),  # file:///path/to/project
-            name="Project Directory",
-        ),
-        types.Root(
-            uri=temp_dir.as_uri(),  # file:///tmp
-            name="Temporary Files",
-        ),
+        Root(uri=project_root.as_uri(), name="Project Directory"),
+        Root(uri=temp_dir.as_uri(), name="Temporary Files"),
     ]
 
     capabilities = ClientCapabilitiesConfig(
@@ -55,39 +58,26 @@ async def main() -> None:
     )
 
     async with open_connection(
-        url=SERVER_URL,
-        transport="streamable-http",
-        capabilities=capabilities,
+        url=SERVER_URL, transport="streamable-http", capabilities=capabilities
     ) as client:
         print("Connected with roots capability enabled")
         print(f"Server info: {client.initialize_result.serverInfo.name}")
-        print(f"\nAdvertised roots:")
+        print("\nAdvertised roots:")
         for root in await client.list_roots():
             print(f"  - {root.name}: {root.uri}")
 
         # Demonstrate dynamic root updates
-        # Add a new root after connection
         await anyio.sleep(2)
         print("\nAdding new root...")
 
-        new_roots = initial_roots + [
-            types.Root(
-                uri=Path.home().as_uri(),
-                name="Home Directory",
-            )
-        ]
-
+        new_roots = initial_roots + [Root(uri=Path.home().as_uri(), name="Home Directory")]
         await client.update_roots(new_roots, notify=True)
+
         print("Updated roots:")
         for root in await client.list_roots():
             print(f"  - {root.name}: {root.uri}")
 
-        # The server receives a notifications/roots/list_changed notification
-        # and can re-query roots/list to see the new boundaries
-
-        # Keep connection alive to demonstrate server-side validation
         print("\nServer can now validate paths against these roots")
-        print("Try calling a file operation tool - it will be validated")
         await anyio.sleep(10)
 
 

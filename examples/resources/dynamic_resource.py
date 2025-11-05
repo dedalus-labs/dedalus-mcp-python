@@ -4,28 +4,41 @@
 #               github.com/dedalus-labs/openmcp-python/LICENSE
 # ==============================================================================
 
-"""DRAFT: Dynamic resource example.
+"""Dynamic resources with computed content.
 
-Demonstrates resources that compute fresh data on each read: timestamps,
-system metrics, database queries. Contrasts with static resources.
+Demonstrates resources that generate fresh data per-request: timestamps,
+system metrics, database queries. Resource functions execute on every
+resources/read, enabling dynamic content without subscriptions.
 
-Spec:
-- https://modelcontextprotocol.io/specification/2025-06-18/server/resources
-- Resource functions are called per resources/read request
-- Use get_context() for logging during resource generation
+Pattern:
+- Resource function called on each resources/read request
+- Compute fresh data (query DB, read system state, generate reports)
+- Use get_context() for request-scoped logging
+- Return new content each time (non-deterministic)
 
-Usage:
-    uv run python examples/resources/dynamic_resource.py
+When to use:
+- Current timestamps or dates
+- System metrics (memory, CPU, disk)
+- Database query results
+- Generated reports or summaries
+- Non-cacheable dynamic data
+
+Spec: https://modelcontextprotocol.io/specification/2025-06-18/server/resources
+Usage: uv run python examples/resources/dynamic_resource.py
 """
 
 from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from datetime import datetime
 
 from openmcp import MCPServer, get_context, resource
 
+# Suppress logs for clean demo output
+for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
+    logging.getLogger(logger_name).setLevel(logging.CRITICAL)
 
 server = MCPServer("dynamic-resources")
 
@@ -90,7 +103,7 @@ with server.binding():
 
 
 async def main() -> None:
-    await server.serve(transport="streamable-http", port=8080)
+    await server.serve(transport="streamable-http", verbose=False, log_level="critical")
 
 
 if __name__ == "__main__":

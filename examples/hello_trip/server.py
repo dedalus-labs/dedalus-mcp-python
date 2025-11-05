@@ -6,18 +6,24 @@
 
 """Minimal end-to-end MCP server demo.
 
-This example shows how to wire tools, resources, prompts, and transports using
-OpenMCP. It aligns with the concepts in ``docs/mcp/core/understanding-mcp-servers``.
+Demonstrates the complete server lifecycle with tools, resources, and prompts as
+specified in docs/mcp/core/lifecycle/lifecycle-phases.md. Each capability maps to
+its corresponding spec section:
+
+- Tools: docs/mcp/spec/schema-reference/tools-*.md
+- Resources: docs/mcp/spec/schema-reference/resources-*.md
+- Prompts: docs/mcp/spec/schema-reference/prompts-*.md
+
+The server exposes:
+
+* Tool ``plan_trip`` – travel plan with progress tracking and logging
+* Resource ``travel://tips/barcelona`` – static travel tips (resources-read.md)
+* Prompt ``plan-vacation`` – demonstrates prompt rendering (prompts-get.md)
 
 Usage::
 
     uv run python examples/hello_trip/server.py --transport stdio
-
-The server exposes:
-
-* Tool ``plan_trip`` – echoes a travel plan summary
-* Resource ``travel://tips/barcelona`` – static travel tips
-* Prompt ``plan-vacation`` – demonstrates prompt rendering
+    uv run python examples/hello_trip/server.py --transport streamable-http
 
 Try it alongside ``client.py`` to see the full flow.
 """
@@ -25,9 +31,14 @@ Try it alongside ``client.py`` to see the full flow.
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import Any
 
 from openmcp import MCPServer, get_context, prompt, resource, tool
+
+# Suppress logs for cleaner demo output
+for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
+    logging.getLogger(logger_name).setLevel(logging.CRITICAL)
 
 
 server = MCPServer("hello-trip")
@@ -76,7 +87,11 @@ with server.binding():
 
 
 async def main(transport: str = "streamable-http") -> None:
-    await server.serve(transport=transport)
+    """Serve the hello-trip MCP server on the specified transport."""
+    kwargs = {"transport": transport}
+    if transport == "streamable-http":
+        kwargs.update({"verbose": False, "log_level": "critical", "uvicorn_options": {"access_log": False}})
+    await server.serve(**kwargs)
 
 
 if __name__ == "__main__":

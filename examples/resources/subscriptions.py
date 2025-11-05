@@ -4,26 +4,39 @@
 #               github.com/dedalus-labs/openmcp-python/LICENSE
 # ==============================================================================
 
-"""DRAFT: Resource subscription example.
+"""Resource subscriptions with change notifications.
 
-Demonstrates resources/subscribe pattern where clients receive notifications
-when resource content changes via `notifications/resources/updated`.
+Demonstrates push-based resource updates: clients subscribe to resources via
+resources/subscribe, server broadcasts notifications/resources/updated when
+content changes. Enables real-time data feeds without polling.
 
-Spec:
-- https://modelcontextprotocol.io/specification/2025-06-18/server/resources
-- resources/subscribe registers client interest
-- server.notify_resource_updated() broadcasts to subscribers
+Pattern:
+- Client calls resources/subscribe with URI
+- Server tracks subscribers per URI
+- Server calls notify_resource_updated(uri) on changes
+- All subscribers receive notifications/resources/updated
+- Clients re-fetch via resources/read
 
-Usage:
-    uv run python examples/resources/subscriptions.py
+When to use:
+- Real-time status dashboards
+- Live metrics or counters
+- File watchers or log tailing
+- Push notifications for data changes
+
+Spec: https://modelcontextprotocol.io/specification/2025-06-18/server/resources
+Usage: uv run python examples/resources/subscriptions.py
 """
 
 from __future__ import annotations
 
 import asyncio
+import logging
 
 from openmcp import MCPServer, resource
 
+# Suppress logs for clean demo output
+for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
+    logging.getLogger(logger_name).setLevel(logging.CRITICAL)
 
 server = MCPServer("subscription-resources")
 
@@ -76,10 +89,8 @@ async def simulate_updates():
 
 
 async def main() -> None:
-    # Start background update simulation
     asyncio.create_task(simulate_updates())
-
-    await server.serve(transport="streamable-http", port=8080)
+    await server.serve(transport="streamable-http", verbose=False, log_level="critical")
 
 
 if __name__ == "__main__":

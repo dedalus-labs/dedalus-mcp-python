@@ -4,13 +4,25 @@
 #               github.com/dedalus-labs/openmcp-python/LICENSE
 # ==============================================================================
 
-"""DRAFT: Client implementing elicitation capability for MCP servers.
+"""Client implementing elicitation capability for MCP servers.
 
 Demonstrates how to handle elicitation/create requests from servers that need
 user input during tool execution. This example uses simple CLI prompts but
 could be adapted for GUI dialogs, web forms, etc.
 
-See: https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation
+Pattern:
+1. Define async handler accepting (context, ElicitRequestParams)
+2. Parse requestedSchema to understand required fields
+3. Collect user input matching schema types
+4. Return ElicitResult with action (accept/decline/cancel) and content
+
+When to use this pattern:
+- Tools requiring user confirmation (delete operations, payments)
+- Dynamic form collection during execution
+- Multi-step workflows with human-in-the-loop
+- Permission elevation requests
+
+Spec: https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation
 See also: docs/openmcp/elicitation.md
 
 Run with:
@@ -19,37 +31,36 @@ Run with:
 
 from __future__ import annotations
 
-import sys
-
 import anyio
 
-from openmcp import types
 from openmcp.client import ClientCapabilitiesConfig, open_connection
+from openmcp.types import (
+    CallToolRequest,
+    CallToolRequestParams,
+    CallToolResult,
+    ClientRequest,
+    ElicitRequestParams,
+    ElicitResult,
+    ErrorData,
+)
 
 
 SERVER_URL = "http://127.0.0.1:8000/mcp"
 
 
 async def elicitation_handler(
-    _context: object, params: types.ElicitRequestParams
-) -> types.ElicitResult | types.ErrorData:
-    """Handle elicitation/create requests by prompting the user via CLI.
-
-    The server calls this when it needs user input. We present the message,
-    collect input matching the schema, and return the result with the
-    appropriate action (accept, decline, cancel).
-    """
+    _context: object, params: ElicitRequestParams
+) -> ElicitResult | ErrorData:
+    """Handle elicitation/create requests by prompting the user via CLI."""
     try:
         print(f"\n{'=' * 60}")
         print(f"Server requests input: {params.message}")
         print(f"{'=' * 60}\n")
 
-        # Parse the schema to understand what fields are needed
         schema = params.requestedSchema
         properties = schema.get("properties", {})
         required = schema.get("required", [])
 
-        # Collect user input for each field
         content: dict[str, object] = {}
         for field_name, field_schema in properties.items():
             field_type = field_schema.get("type", "string")
@@ -60,19 +71,16 @@ async def elicitation_handler(
                 prompt += " [optional]"
             prompt += ": "
 
-            # Simple CLI input loop
             while True:
                 try:
                     user_input = await anyio.to_thread.run_sync(input, prompt)
 
-                    # Handle empty input
                     if not user_input:
                         if is_required:
                             print(f"  Error: {field_name} is required")
                             continue
                         break
 
-                    # Type coercion based on schema
                     if field_type == "boolean":
                         content[field_name] = user_input.lower() in ("true", "yes", "1", "y")
                     elif field_type == "integer":
@@ -87,47 +95,39 @@ async def elicitation_handler(
                 except ValueError:
                     print(f"  Error: Expected {field_type}, try again")
 
-        # Ask for confirmation
         confirm = await anyio.to_thread.run_sync(input, "\nSubmit? [Y/n/cancel]: ")
 
         if confirm.lower() == "cancel":
-            return types.ElicitResult(action="cancel", content={})
+            return ElicitResult(action="cancel", content={})
         elif confirm.lower() == "n":
-            return types.ElicitResult(action="decline", content={})
+            return ElicitResult(action="decline", content={})
         else:
-            return types.ElicitResult(action="accept", content=content)
+            return ElicitResult(action="accept", content=content)
 
     except Exception as e:
-        return types.ErrorData(code=-32603, message=f"Elicitation failed: {e}")
+        return ErrorData(code=-32603, message=f"Elicitation failed: {e}")
 
 
 async def main() -> None:
     """Connect to a server that uses elicitation and handle its requests."""
-    capabilities = ClientCapabilitiesConfig(
-        elicitation=elicitation_handler  # Advertise that we support elicitation
-    )
+    capabilities = ClientCapabilitiesConfig(elicitation=elicitation_handler)
 
     async with open_connection(
-        url=SERVER_URL,
-        transport="streamable-http",
-        capabilities=capabilities,
+        url=SERVER_URL, transport="streamable-http", capabilities=capabilities
     ) as client:
         print("Connected with elicitation capability enabled")
         print(f"Server info: {client.initialize_result.serverInfo.name}")
 
-        # Call a tool that triggers elicitation
-        # Example: A tool that deletes files and needs confirmation
         try:
             result = await client.send_request(
-                types.ClientRequest(
-                    types.CallToolRequest(
-                        params=types.CallToolRequestParams(
-                            name="some_tool_needing_confirmation",
-                            arguments={},
+                ClientRequest(
+                    CallToolRequest(
+                        params=CallToolRequestParams(
+                            name="some_tool_needing_confirmation", arguments={}
                         )
                     )
                 ),
-                types.CallToolResult,
+                CallToolResult,
             )
             print(f"\nTool result: {result.content}")
         except Exception as e:

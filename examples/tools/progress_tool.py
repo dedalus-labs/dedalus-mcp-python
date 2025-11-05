@@ -4,27 +4,38 @@
 #               github.com/dedalus-labs/openmcp-python/LICENSE
 # ==============================================================================
 
-"""DRAFT: Long-running tool with progress notifications.
+"""Long-running tool with progress tracking.
 
-Demonstrates:
-- Progress tracking with ctx.progress()
-- Async operations with progress updates
-- Structured logging (info/debug)
-- Progress token requirement (client must supply _meta.progressToken)
+Demonstrates incremental progress reporting for async operations. Clients
+receive notifications/progress updates during execution, enabling UI
+progress bars and status displays. Requires client to supply progressToken.
 
-Spec reference:
-https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress
+Pattern:
+- async with ctx.progress(total=N) as tracker
+- await tracker.advance(delta, message="...")
+- Framework sends notifications/progress to client
+- ctx.info/debug for structured logging
 
-Usage:
-    uv run python examples/tools/progress_tool.py
+When to use:
+- Operations > 1 second duration
+- Batch processing with known item counts
+- Network requests with incremental updates
+- User feedback during long computations
+
+Spec: https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress
+Usage: uv run python examples/tools/progress_tool.py
 """
 
 from __future__ import annotations
 
 import asyncio
+import logging
 
 from openmcp import MCPServer, get_context, tool
 
+# Suppress logs for clean demo output
+for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
+    logging.getLogger(logger_name).setLevel(logging.CRITICAL)
 
 server = MCPServer("progress-demo")
 
@@ -53,7 +64,7 @@ with server.binding():
 
 
 async def main() -> None:
-    await server.serve()
+    await server.serve(transport="streamable-http", verbose=False, log_level="critical")
 
 
 if __name__ == "__main__":

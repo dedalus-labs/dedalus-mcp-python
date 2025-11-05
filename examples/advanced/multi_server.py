@@ -4,14 +4,23 @@
 #               github.com/dedalus-labs/openmcp-python/LICENSE
 # ==============================================================================
 
-"""[DRAFT] Multi-server ambient registration pattern.
+"""Multi-server ambient registration pattern.
 
 Demonstrates how to use ambient registration to share the same tool function
 across multiple MCP server instances, each serving different transports or
 configurations.
 
-Run:
-    uv run python examples/advanced/multi_server.py
+Pattern:
+1. Create multiple MCPServer instances with different configs
+2. Use `server.binding()` context to scope tool registration
+3. Conditionally register tools based on server configuration
+4. Run servers concurrently on different transports
+
+When to use this pattern:
+- Running same tools on multiple transports (HTTP + stdio)
+- Different tool subsets per environment (public vs internal)
+- Feature-based server variants (basic vs premium)
+- Multi-tenant deployments with per-tenant tool sets
 
 Reference:
     - Ambient registration: docs/openmcp/ambient-registration.md
@@ -21,8 +30,13 @@ Reference:
 from __future__ import annotations
 
 import asyncio
+import logging
 
 from openmcp import MCPServer, tool
+
+# Suppress SDK and server logs for cleaner demo output
+for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
+    logging.getLogger(logger_name).setLevel(logging.CRITICAL)
 
 
 # Shared tool function that will be registered on multiple servers
@@ -100,4 +114,4 @@ if __name__ == "__main__":
     print("Multi-server example: public-calc on :8001, internal-calc on stdio")
     print("Public server has: calc_basic, echo")
     print("Internal server has: calc_full, power, echo, reset")
-    # asyncio.run(main())  # Uncomment to actually run
+    asyncio.run(main())

@@ -4,26 +4,39 @@
 #               github.com/dedalus-labs/openmcp-python/LICENSE
 # ==============================================================================
 
-"""DRAFT: Binary resource example.
+"""Binary resources with base64 encoding.
 
-Demonstrates serving binary content (images, PDFs, etc.) as base64-encoded blobs.
-When a resource returns bytes, the server wraps it in BlobResourceContents.
+Demonstrates serving binary content (images, certificates, archives) via MCP.
+Framework auto-wraps bytes return values in BlobResourceContents with base64
+encoding. Useful for non-text data that clients need to retrieve.
 
-Spec:
-- https://modelcontextprotocol.io/specification/2025-06-18/server/resources
-- BlobResourceContents contains base64-encoded data
+Pattern:
+- Resource function returns bytes
+- Framework wraps in BlobResourceContents(blob=base64_string)
+- mime_type identifies binary format (image/png, application/pdf)
+- Clients decode base64 to recover original bytes
 
-Usage:
-    uv run python examples/resources/binary_resource.py
+When to use:
+- Images, logos, diagrams
+- Certificates, keys (PEM/DER format)
+- Archives, binary protocols
+- Generated PDFs or media
+
+Spec: https://modelcontextprotocol.io/specification/2025-06-18/server/resources
+Usage: uv run python examples/resources/binary_resource.py
 """
 
 from __future__ import annotations
 
 import asyncio
 import base64
+import logging
 
 from openmcp import MCPServer, resource
 
+# Suppress logs for clean demo output
+for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
+    logging.getLogger(logger_name).setLevel(logging.CRITICAL)
 
 server = MCPServer("binary-resources")
 
@@ -76,7 +89,7 @@ BnRlc3RDQTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwPPZ0r7lR3zlJGd7
 
 
 async def main() -> None:
-    await server.serve(transport="streamable-http", port=8080)
+    await server.serve(transport="streamable-http", verbose=False, log_level="critical")
 
 
 if __name__ == "__main__":

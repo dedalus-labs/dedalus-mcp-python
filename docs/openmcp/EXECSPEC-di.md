@@ -1,7 +1,8 @@
 # Dependency Injection & Tool Allow-Lists – Execution Spec
 
-**Owner:** Codex  
-**Last updated:** 2025-11-04
+**Owner:** Codex
+**Last updated:** 2025-11-05
+**Status:** COMPLETE
 
 ## Objective
 Deliver a FastAPI-inspired dependency injection (DI) system for OpenMCP so
@@ -121,12 +122,54 @@ We’ll port the minimal subset of FastAPI’s dependency machinery:
 - **State leakage**: use contextvars to isolate per request caches.
 - **Complexity creep**: keep implementation minimal; skip overrides/yield for v1.
 
+## Implementation Notes
+
+### Auto-injection (completed 2025-11-05)
+The resolver now inspects function signatures using `get_type_hints()` and automatically injects parameters typed as `Context`. This means:
+
+```python
+# Old style (still works)
+def get_tier(ctx=Depends(get_context)) -> str:
+    return ctx.session_id
+
+# New style (preferred)
+def get_tier(ctx: Context) -> str:
+    return ctx.session_id
+```
+
+The `_find_context_param()` helper in `dependencies/__init__.py` locates Context-typed parameters and stores the name in `DependencyCall.context_param_name`. The resolver (`solver.py`) then injects `get_context()` at resolution time without user intervention.
+
+### Session-scoped authorization pattern
+The canonical pattern for per-session capability gating:
+
+1. Store user identity in `SESSION_USERS: dict[str, str]` keyed by `ctx.session_id`
+2. Extract tier/role from session ID in a dependency function
+3. Gate tools with `enabled=Depends(require_role, get_tier)`
+
+Each MCP request re-evaluates dependencies, so authorization is dynamic per connection. See `examples/tools/allow_list.py` for a complete example.
+
+### Error handling
+- **Circular dependencies**: `CircularDependencyError` raised during graph construction
+- **Resolution failures**: Logged as warnings; tool excluded from `tools/list`
+- **Type hints**: `get_type_hints()` failures are caught; auto-injection silently skipped
+
+### Cache behavior
+Dependencies with `use_cache=True` (default) are resolved once per request and cached in `Context.dependency_cache`. Cache key is a tuple of `id()` values for the dependency call graph.
+
 ## Deliverables
 
-✅ New dependency module (`Depends`, resolver, models).
+✅ New dependency module (`Depends`, resolver, models) in `src/openmcp/server/dependencies/`
 
-✅ Tools integration & runtime allow-list gating.
+✅ Auto-injection of Context via type hints
 
-✅ Updated allow-list example + docs (tools.md, cookbook.md).
+✅ `context_param_name` field in `DependencyCall` model
 
-✅ Dependency-focused test suite passing under `uv run pytest` (`tests/server/test_dependencies.py`).
+✅ Tools integration & runtime allow-list gating
+
+✅ Cycle detection via `CircularDependencyError`
+
+✅ Updated allow-list example (`examples/tools/allow_list.py`) demonstrating session-scoped authorization
+
+✅ Updated docs (`docs/openmcp/tools.md`)
+
+✅ Dependency-focused test suite passing under `uv run pytest` (`tests/server/test_dependencies.py`)

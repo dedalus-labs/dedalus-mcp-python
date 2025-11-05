@@ -4,24 +4,42 @@
 #               github.com/dedalus-labs/openmcp-python/LICENSE
 # ==============================================================================
 
-"""Basic prompt template example.
+"""Static prompt templates with fixed message sequences.
 
-DRAFT: Demonstrates simplest prompt registration with static messages.
+Demonstrates the simplest prompt registration pattern: static message templates
+that guide model behavior without runtime parameters. Prompts define reusable
+conversation starters that clients can invoke via prompts/get.
+
+Pattern:
+- @prompt decorator registers prompt by name
+- Functions return list[dict] (auto-converted to PromptMessage objects)
+- No parameters required—templates are static
+- Messages define role-based conversation sequences
+
+When to use:
+- Standard conversation templates (code review, debugging, analysis)
+- Fixed system instructions or personas
+- Reusable conversation patterns across sessions
+- Boilerplate reduction for common model interactions
+
 Spec: https://modelcontextprotocol.io/specification/2025-06-18/server/prompts
-
+Reference: docs/mcp/spec/schema-reference/prompts-get.md
 Usage: uv run python examples/prompts/basic_prompt.py
 """
 
 from __future__ import annotations
 
 import asyncio
+import logging
 
 from openmcp import MCPServer, prompt
 
+# Suppress logs for clean demo output
+for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
+    logging.getLogger(logger_name).setLevel(logging.CRITICAL)
 
-server = MCPServer("basic-prompt-demo")
+server = MCPServer("basic-prompts")
 
-# All prompts must be registered within server.binding() context
 with server.binding():
 
     @prompt(
@@ -29,10 +47,10 @@ with server.binding():
         description="Guide the model through a code review process",
     )
     def code_review_prompt(arguments: dict[str, str] | None) -> list[dict[str, str]]:
-        """Return static conversation template.
+        """Static code review template.
 
-        Return types: list[dict], list[PromptMessage], or GetPromptResult.
-        Simple dicts are auto-converted to PromptMessage objects.
+        Returns list[dict] which framework converts to PromptMessage objects.
+        Each dict must have 'role' and 'content' keys.
         """
         return [
             {
@@ -44,7 +62,12 @@ with server.binding():
 
 
 async def main() -> None:
-    await server.serve(transport="streamable-http")
+    await server.serve(
+        transport="streamable-http",
+        verbose=False,
+        log_level="critical",
+        uvicorn_options={"access_log": False},
+    )
 
 
 if __name__ == "__main__":

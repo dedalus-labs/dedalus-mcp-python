@@ -4,13 +4,22 @@
 #               github.com/dedalus-labs/openmcp-python/LICENSE
 # ==============================================================================
 
-"""[DRAFT] Custom transport registration pattern.
+"""Custom transport registration pattern.
 
 Demonstrates how to implement and register a custom transport for MCP servers.
 This example shows a Unix domain socket transport, useful for local IPC.
 
-Run:
-    uv run python examples/advanced/custom_transport.py
+Pattern:
+1. Subclass BaseTransport and define TRANSPORT tuple
+2. Implement async run() method with connection handling
+3. Register transport with server.register_transport()
+4. Serve using custom transport name
+
+When to use this pattern:
+- High-throughput local communication without TCP overhead
+- Process isolation with file-based permissions
+- Container-to-host communication via volume mounts
+- Custom protocols (WebSocket, gRPC, named pipes)
 
 Reference:
     - Transport base: src/openmcp/server/transports/base.py
@@ -21,14 +30,18 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
 import anyio
-from anyio.streams.stapled import StapledObjectStream
 
 from openmcp import MCPServer, tool
 from openmcp.server.transports.base import BaseTransport
+
+# Suppress SDK and server logs for cleaner demo output
+for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
+    logging.getLogger(logger_name).setLevel(logging.CRITICAL)
 
 
 class UnixSocketTransport(BaseTransport):
@@ -132,4 +145,4 @@ async def multi_transport_server() -> None:
 if __name__ == "__main__":
     print("Custom transport example: Unix domain socket MCP server")
     print("Socket path: /tmp/mcp-demo.sock")
-    # asyncio.run(main())  # Uncomment to run
+    asyncio.run(main())

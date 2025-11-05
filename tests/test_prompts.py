@@ -16,7 +16,8 @@ from __future__ import annotations
 from mcp.shared.exceptions import McpError
 import pytest
 
-from openmcp import MCPServer, NotificationFlags, prompt, types
+from openmcp import MCPServer, prompt, types
+from openmcp.server import NotificationFlags
 from tests.helpers import DummySession, run_with_context
 
 
