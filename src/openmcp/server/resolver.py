@@ -1,14 +1,11 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Connection resolver with credential custody split.
 
 Resolves connection handles to clients with security split:
-- Org credentials: vault → driver → client (in-process)
-- User credentials: backend → execution → result (forwarded)
+- Org credentials: vault -> driver -> client (in-process)
+- User credentials: backend -> execution -> result (forwarded)
 
 Defense-in-depth:
 - Token validation before resolution
@@ -127,9 +124,7 @@ class ExecutionBackendClient(Protocol):
     """
 
     async def execute_with_credential(
-        self,
-        encrypted_cred: dict[str, Any],
-        upstream_call: dict[str, Any],
+        self, encrypted_cred: dict[str, Any], upstream_call: dict[str, Any]
     ) -> dict[str, Any]:
         """Execute operation with user credential on backend.
 
@@ -151,11 +146,7 @@ class Driver(Protocol):
     Implements connection logic for specific database/API types.
     """
 
-    async def create_client(
-        self,
-        secret: str,
-        params: dict[str, Any] | None = None,
-    ) -> Any:
+    async def create_client(self, secret: str, params: dict[str, Any] | None = None) -> Any:
         """Create client from decrypted secret.
 
         Args:
@@ -174,8 +165,8 @@ class ConnectionResolver:
     """Resolves connection handles to clients with credential custody split.
 
     Routes based on auth type:
-    - org credentials: vault → driver → client (in-process)
-    - user credentials: backend → execution → result (forwarded)
+    - org credentials: vault -> driver -> client (in-process)
+    - user credentials: backend -> execution -> result (forwarded)
 
     Security features:
     - Token validation before resolution
@@ -198,7 +189,7 @@ class ConnectionResolver:
             config: Resolver configuration
             vault: Vault connector for org credentials
             backend: Execution backend client for user credentials
-            drivers: Driver registry mapping driver_type → Driver
+            drivers: Driver registry mapping driver_type -> Driver
         """
         self.config = config
         self._vault = vault
@@ -214,16 +205,9 @@ class ConnectionResolver:
             driver: Driver implementation
         """
         self._drivers[driver_type] = driver
-        self._logger.debug(
-            "driver registered",
-            extra={"event": "resolver.driver.register", "driver_type": driver_type},
-        )
+        self._logger.debug("driver registered", extra={"event": "resolver.driver.register", "driver_type": driver_type})
 
-    async def resolve_client(
-        self,
-        handle: str,
-        request_context: dict[str, Any],
-    ) -> Any:
+    async def resolve_client(self, handle: str, request_context: dict[str, Any]) -> Any:
         """Resolve handle to client with credential custody split.
 
         Args:
@@ -273,12 +257,8 @@ class ConnectionResolver:
             self._audit_log("resolve_failed", handle, f"invalid_auth_type: {metadata.auth_type}")
             raise ResolverError(f"invalid auth type: {metadata.auth_type}")
 
-    async def _resolve_org_credential(
-        self,
-        handle: str,
-        metadata: ConnectionMetadata,
-    ) -> Any:
-        """Resolve org credential: vault → driver → client (in-process).
+    async def _resolve_org_credential(self, handle: str, metadata: ConnectionMetadata) -> Any:
+        """Resolve org credential: vault -> driver -> client (in-process).
 
         Args:
             handle: Connection handle
@@ -317,12 +297,9 @@ class ConnectionResolver:
             self._zeroize_secret(secret)
 
     async def _resolve_user_credential(
-        self,
-        handle: str,
-        metadata: ConnectionMetadata,
-        request_context: dict[str, Any],
+        self, handle: str, metadata: ConnectionMetadata, request_context: dict[str, Any]
     ) -> dict[str, Any]:
-        """Resolve user credential: backend → execution → result (forwarded).
+        """Resolve user credential: backend -> execution -> result (forwarded).
 
         Args:
             handle: Connection handle
@@ -364,11 +341,7 @@ class ConnectionResolver:
             self._audit_log("resolve_failed", handle, f"backend_execution_error: {e}")
             raise BackendError(f"backend execution failed: {e}") from e
 
-    def _validate_handle_authorization(
-        self,
-        handle: str,
-        auth_context: Any,
-    ) -> None:
+    def _validate_handle_authorization(self, handle: str, auth_context: Any) -> None:
         """Validate handle is authorized in token claims.
 
         Args:
@@ -384,12 +357,7 @@ class ConnectionResolver:
             self._audit_log("authorization_failed", handle, "handle_not_in_token")
             raise UnauthorizedHandleError(f"handle not authorized: {handle}")
 
-    def _validate_fingerprint(
-        self,
-        handle: str,
-        metadata: ConnectionMetadata,
-        auth_context: Any,
-    ) -> None:
+    def _validate_fingerprint(self, handle: str, metadata: ConnectionMetadata, auth_context: Any) -> None:
         """Validate fingerprint matches token claim.
 
         Args:
@@ -418,12 +386,7 @@ class ConnectionResolver:
         # In production, consider using ctypes or secure memory libraries
         del secret
 
-    def _audit_log(
-        self,
-        event: str,
-        handle: str,
-        detail: str,
-    ) -> None:
+    def _audit_log(self, event: str, handle: str, detail: str) -> None:
         """Log audit event for resolution attempt.
 
         Args:
@@ -435,12 +398,7 @@ class ConnectionResolver:
             return
 
         self._logger.info(
-            f"connection resolution: {event}",
-            extra={
-                "event": f"resolver.{event}",
-                "handle": handle,
-                "detail": detail,
-            },
+            f"connection resolution: {event}", extra={"event": f"resolver.{event}", "handle": handle, "detail": detail}
         )
 
 

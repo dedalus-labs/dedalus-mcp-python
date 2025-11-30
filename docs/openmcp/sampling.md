@@ -18,7 +18,7 @@ Key characteristics:
 - **Capability advertisement**: Clients advertise `sampling` in the `initialize` handshake; servers check this before sending requests.
 - **Request structure**: Servers send `CreateMessageRequest` with messages, model preferences, sampling parameters, and optional metadata.
 - **Response structure**: Clients return `CreateMessageResult` containing the model's completion, stop reason, and token usage statistics.
-- **Error handling**: Missing capability → `METHOD_NOT_FOUND` (-32601). Clients may also return application-level errors for rate limits, content policy violations, or model failures.
+- **Error handling**: Missing capability -> `METHOD_NOT_FOUND` (-32601). Clients may also return application-level errors for rate limits, content policy violations, or model failures.
 
 ## Server-Side Usage
 
@@ -51,7 +51,7 @@ async def explain(topic: str) -> str:
 The `create_message()` method:
 1. Verifies the client advertised the sampling capability (raises `METHOD_NOT_FOUND` if missing)
 2. Enforces concurrency limits (default: max 4 concurrent requests per session)
-3. Applies circuit breaker logic (3 failures → 30s cooldown)
+3. Applies circuit breaker logic (3 failures -> 30s cooldown)
 4. Adds a `requestId` to metadata if not already present
 5. Sends the request to the client via the MCP session
 6. Waits up to 60 seconds (default timeout) for the response
@@ -195,13 +195,13 @@ The sampling service implements a **per-session circuit breaker** to prevent cas
 **Example failure sequence**:
 
 ```python
-# Request 1: timeout after 60s → consecutive_failures = 1
-# Request 2: timeout after 60s → consecutive_failures = 2
-# Request 3: timeout after 60s → consecutive_failures = 3, cooldown_until = now + 30s
+# Request 1: timeout after 60s -> consecutive_failures = 1
+# Request 2: timeout after 60s -> consecutive_failures = 2
+# Request 3: timeout after 60s -> consecutive_failures = 3, cooldown_until = now + 30s
 # Request 4 (t+5s): rejected immediately with SERVICE_UNAVAILABLE
 # Request 5 (t+35s): allowed through (cooldown expired)
-#   - If success → consecutive_failures = 0, circuit closed
-#   - If failure → consecutive_failures = 4, cooldown_until = now + 30s
+#   - If success -> consecutive_failures = 0, circuit closed
+#   - If failure -> consecutive_failures = 4, cooldown_until = now + 30s
 ```
 
 You cannot currently configure the threshold (3 failures) or cooldown duration (30s). These values are derived from production incident patterns and will become configurable if telemetry shows different workloads require tuning.

@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """JWT validation service for OAuth 2.1 resource servers.
 
@@ -355,7 +352,7 @@ class JWTValidator(AuthorizationProvider):
                 if dt.tzinfo is None:
                     dt = dt.replace(tzinfo=timezone.utc)
                 return dt.timestamp()
-        except Exception:  # pragma: no cover - defensive; datetime parsing rarely used
+        except Exception:
             return None
 
         return None

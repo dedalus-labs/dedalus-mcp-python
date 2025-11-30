@@ -6,7 +6,7 @@
 
 **Solution**: Ship a minimal logging helper built on `logging` + MCP notifications and let applications layer richer tooling when needed. The logging service handles the MCP contract while `openmcp.utils.logger.setup_logger()` offers a single entry point for baseline configuration.
 
-**OpenMCP**: `MCPServer` bundles a default `logging/setLevel` handler that maps MCP levels (`debug` → `emergency`) onto Python’s logging levels, updating both the root logger and the scoped logger returned by `openmcp.utils.get_logger`. The logging service also installs a lightweight handler that mirrors Python log records to `notifications/message` so any configured client receives log events, satisfying both [`logging/setLevel`](https://modelcontextprotocol.io/specification/2025-06-18/schema-reference/logging-setLevel) and [`notifications/message`](https://modelcontextprotocol.io/specification/2025-06-18/schema-reference/notifications-message) in the public spec.
+**OpenMCP**: `MCPServer` bundles a default `logging/setLevel` handler that maps MCP levels (`debug` -> `emergency`) onto Python’s logging levels, updating both the root logger and the scoped logger returned by `openmcp.utils.get_logger`. The logging service also installs a lightweight handler that mirrors Python log records to `notifications/message` so any configured client receives log events, satisfying both [`logging/setLevel`](https://modelcontextprotocol.io/specification/2025-06-18/schema-reference/logging-setLevel) and [`notifications/message`](https://modelcontextprotocol.io/specification/2025-06-18/schema-reference/notifications-message) in the public spec.
 
 ```python
 from openmcp import MCPServer

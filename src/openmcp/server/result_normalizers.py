@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Normalization helpers for server-facing handler results.
 
@@ -51,7 +48,7 @@ def normalize_tool_result(value: Any) -> types.CallToolResult:
     ):
         try:
             return types.CallToolResult(**value)
-        except (TypeError, ValueError):  # pragma: no cover - defensive; fallback to generic path
+        except (TypeError, ValueError):
             # Invalid kwargs for CallToolResult; treat as generic dict
             pass
 

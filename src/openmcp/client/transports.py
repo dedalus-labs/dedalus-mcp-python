@@ -1,14 +1,12 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """HTTP transport helpers for :mod:`openmcp.client`.
 
+TODO: Check this.
 This module provides variants of the streamable HTTP transport described in the
 Model Context Protocol specification (see
-``docs/mcp/core/transports/streamable-http.md``).  ``lambda_http_client`` mirrors
+the MCP specification). ``lambda_http_client`` mirrors
 the reference SDK implementation but deliberately avoids registering a
 server-push GET stream so that it works with stateless environments such as AWS
 Lambda.  The behavior aligns with the "POST-only" pattern noted in the spec's
@@ -25,22 +23,12 @@ import anyio
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 import httpx
 
-from .._sdk_loader import ensure_sdk_importable
+from mcp.client.streamable_http import GetSessionIdCallback, StreamableHTTPTransport
+from mcp.shared._httpx_utils import McpHttpClientFactory, create_mcp_http_client
+from mcp.shared.message import SessionMessage
 
 
-ensure_sdk_importable()
-
-from mcp.client.streamable_http import (  # type: ignore  # noqa: E402
-    GetSessionIdCallback,
-    StreamableHTTPTransport,
-)
-from mcp.shared._httpx_utils import (  # type: ignore  # noqa: E402
-    McpHttpClientFactory,
-    create_mcp_http_client,
-)
-from mcp.shared.message import SessionMessage  # type: ignore  # noqa: E402
-
-
+# TODO: Do we even need this anymore?
 @asynccontextmanager
 async def lambda_http_client(
     url: str,
@@ -62,12 +50,12 @@ async def lambda_http_client(
     """Create a streamable HTTP transport without the persistent GET stream.
 
     The Model Context Protocol allows streamable HTTP transports to keep a
-    server-push channel open (``docs/mcp/core/transports/streamable-http.md``),
+    server-push channel open (see https://modelcontextprotocol.io/specification/2024-11-05/basic/transports),
     but serverless hosts like AWS Lambda cannot maintain such long-lived
     connections.  ``lambda_http_client`` mirrors the reference SDK's
     ``streamablehttp_client`` implementation while replacing the
     ``start_get_stream`` callback with a no-op.  This keeps each JSON-RPC request
-    self-contained (``initialize`` → operation → optional ``session/close``) and
+    self-contained (``initialize`` -> operation -> optional ``session/close``) and
     matches the stateless guidance in ``docs/openmcp/transports.md``.
 
     Yields:

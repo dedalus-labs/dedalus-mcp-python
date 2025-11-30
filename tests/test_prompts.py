@@ -1,14 +1,11 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Prompt capability tests.
 
-Exercises the prompt lifecycle defined in
-``docs/mcp/spec/schema-reference/prompts-list.md`` and
-``docs/mcp/spec/schema-reference/prompts-get.md``.
+Exercises the prompt lifecycle per MCP spec.
+
+See: https://modelcontextprotocol.io/specification/2024-11-05/server/prompts
 """
 
 from __future__ import annotations
@@ -16,7 +13,9 @@ from __future__ import annotations
 from mcp.shared.exceptions import McpError
 import pytest
 
-from openmcp import MCPServer, prompt, types
+from openmcp import MCPServer, prompt
+from openmcp.types.server.prompts import ListPromptsRequest
+from openmcp.types.shared.base import INVALID_PARAMS, PaginatedRequestParams
 from openmcp.server import NotificationFlags
 from tests.helpers import DummySession, run_with_context
 
@@ -58,7 +57,7 @@ async def test_prompt_missing_argument_raises_mcp_error() -> None:
     with pytest.raises(McpError) as excinfo:
         await server.invoke_prompt("needs-arg")
 
-    assert excinfo.value.error.code == types.INVALID_PARAMS
+    assert excinfo.value.error.code == INVALID_PARAMS
 
 
 @pytest.mark.anyio
@@ -68,7 +67,7 @@ async def test_prompt_unknown_name_raises_mcp_error() -> None:
     with pytest.raises(McpError) as excinfo:
         await server.invoke_prompt("does-not-exist")
 
-    assert excinfo.value.error.code == types.INVALID_PARAMS
+    assert excinfo.value.error.code == INVALID_PARAMS
 
 
 @pytest.mark.anyio
@@ -93,7 +92,7 @@ async def test_prompt_none_result_produces_empty_messages() -> None:
     with server.binding():
 
         @prompt("noop", description="No output")
-        def noop(arguments: dict[str, str] | None = None):  # pragma: no cover - invoked below
+        def noop(arguments: dict[str, str] | None = None):
             return None
 
     result = await server.invoke_prompt("noop")
@@ -117,20 +116,20 @@ async def test_prompts_list_pagination() -> None:
 
             make_prompt(idx)
 
-    handler = server.request_handlers[types.ListPromptsRequest]
+    handler = server.request_handlers[ListPromptsRequest]
 
-    first = await run_with_context(DummySession("prompts-1"), handler, types.ListPromptsRequest())
+    first = await run_with_context(DummySession("prompts-1"), handler, ListPromptsRequest())
     first_result = first.root
     assert len(first_result.prompts) == 50
     assert first_result.nextCursor == "50"
 
-    second_request = types.ListPromptsRequest(params=types.PaginatedRequestParams(cursor="50"))
+    second_request = ListPromptsRequest(params=PaginatedRequestParams(cursor="50"))
     second = await run_with_context(DummySession("prompts-2"), handler, second_request)
     second_result = second.root
     assert len(second_result.prompts) == 50
     assert second_result.nextCursor == "100"
 
-    third_request = types.ListPromptsRequest(params=types.PaginatedRequestParams(cursor="100"))
+    third_request = ListPromptsRequest(params=PaginatedRequestParams(cursor="100"))
     third = await run_with_context(DummySession("prompts-3"), handler, third_request)
     third_result = third.root
     assert len(third_result.prompts) == 20
@@ -147,13 +146,13 @@ async def test_prompts_list_invalid_cursor() -> None:
         def _one(arguments: dict[str, str] | None = None):
             return [("user", "hi")]
 
-    handler = server.request_handlers[types.ListPromptsRequest]
-    request = types.ListPromptsRequest(params=types.PaginatedRequestParams(cursor="bad"))
+    handler = server.request_handlers[ListPromptsRequest]
+    request = ListPromptsRequest(params=PaginatedRequestParams(cursor="bad"))
 
     with pytest.raises(McpError) as excinfo:
         await run_with_context(DummySession("prompts-invalid"), handler, request)
 
-    assert excinfo.value.error.code == types.INVALID_PARAMS
+    assert excinfo.value.error.code == INVALID_PARAMS
 
 
 @pytest.mark.anyio
@@ -167,8 +166,8 @@ async def test_prompts_list_cursor_past_end() -> None:
             def _prompt(arguments: dict[str, str] | None = None, _i=idx):
                 return [("user", str(_i))]
 
-    handler = server.request_handlers[types.ListPromptsRequest]
-    request = types.ListPromptsRequest(params=types.PaginatedRequestParams(cursor="400"))
+    handler = server.request_handlers[ListPromptsRequest]
+    request = ListPromptsRequest(params=PaginatedRequestParams(cursor="400"))
     response = await run_with_context(DummySession("prompts-past"), handler, request)
 
     assert response.root.prompts == []
@@ -178,10 +177,10 @@ async def test_prompts_list_cursor_past_end() -> None:
 @pytest.mark.anyio
 async def test_prompts_list_changed_notification_enabled() -> None:
     server = MCPServer("prompts-list-changed", notification_flags=NotificationFlags(prompts_changed=True))
-    handler = server.request_handlers[types.ListPromptsRequest]
+    handler = server.request_handlers[ListPromptsRequest]
     session = DummySession("prompt-observer")
 
-    await run_with_context(session, handler, types.ListPromptsRequest())
+    await run_with_context(session, handler, ListPromptsRequest())
     await server.notify_prompts_list_changed()
 
     assert session.notifications
@@ -191,10 +190,10 @@ async def test_prompts_list_changed_notification_enabled() -> None:
 @pytest.mark.anyio
 async def test_prompts_list_changed_notification_disabled() -> None:
     server = MCPServer("prompts-list-changed-off")
-    handler = server.request_handlers[types.ListPromptsRequest]
+    handler = server.request_handlers[ListPromptsRequest]
     session = DummySession("prompt-observer-off")
 
-    await run_with_context(session, handler, types.ListPromptsRequest())
+    await run_with_context(session, handler, ListPromptsRequest())
     await server.notify_prompts_list_changed()
 
     assert all(note.root.method != "notifications/prompts/list_changed" for note in session.notifications)

@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Multi-turn conversations with typed message content.
 
@@ -14,12 +11,12 @@ Pattern:
 - Return GetPromptResult directly (vs list[dict] auto-conversion)
 - Construct PromptMessage objects with explicit role and content
 - Use TextContent for typed text blocks (supports future content types)
-- Build sequential message flows (context → examples → query)
+- Build sequential message flows (context -> examples -> query)
 
 When to use:
 - Multi-turn conversation templates
 - Complex debugging or analysis workflows
-- Structured prompt sequences (system → context → task)
+- Structured prompt sequences (system -> context -> task)
 - Type-safe message construction
 
 Spec: https://modelcontextprotocol.io/specification/2025-06-18/server/prompts
@@ -46,10 +43,7 @@ with server.binding():
     @prompt(
         name="debug-session",
         description="Guide a debugging session with context and examples",
-        arguments=[
-            {"name": "error_message", "required": True},
-            {"name": "code_snippet", "required": True},
-        ],
+        arguments=[{"name": "error_message", "required": True}, {"name": "code_snippet", "required": True}],
     )
     def debug_session_prompt(arguments: dict[str, str] | None) -> GetPromptResult:
         """Return fully-typed multi-turn conversation template.
@@ -72,13 +66,9 @@ with server.binding():
                     "1) Identify root cause, 2) Explain why, 3) Suggest fix.",
                 ),
             ),
+            PromptMessage(role="user", content=TextContent(type="text", text=f"Error:\n```\n{error_msg}\n```")),
             PromptMessage(
-                role="user",
-                content=TextContent(type="text", text=f"Error:\n```\n{error_msg}\n```"),
-            ),
-            PromptMessage(
-                role="user",
-                content=TextContent(type="text", text=f"Code:\n```\n{code}\n```\n\nWhat's wrong?"),
+                role="user", content=TextContent(type="text", text=f"Code:\n```\n{code}\n```\n\nWhat's wrong?")
             ),
         ]
 
@@ -87,10 +77,7 @@ with server.binding():
 
 async def main() -> None:
     await server.serve(
-        transport="streamable-http",
-        verbose=False,
-        log_level="critical",
-        uvicorn_options={"access_log": False},
+        transport="streamable-http", verbose=False, log_level="critical", uvicorn_options={"access_log": False}
     )
 
 

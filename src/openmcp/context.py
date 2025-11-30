@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Request context helpers for OpenMCP handlers.
 
@@ -26,11 +23,6 @@ from contextvars import ContextVar, Token
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, cast
 
-from ._sdk_loader import ensure_sdk_importable
-
-
-ensure_sdk_importable()
-
 from mcp.server.lowlevel.server import request_ctx
 from mcp.shared.context import RequestContext
 from mcp.types import LoggingLevel, ProgressToken
@@ -39,8 +31,9 @@ from .progress import ProgressConfig, ProgressTelemetry, ProgressTracker
 from .progress import progress as progress_manager
 
 
-if TYPE_CHECKING:  # pragma: no cover - typing only
+if TYPE_CHECKING:
     from mcp.server.session import ServerSession
+    from .dispatch import DispatchResult
     from .server.core import MCPServer
     from .server.dependencies.models import DependencyCall, ResolvedDependency
     from .server.resolver import ConnectionResolver
@@ -220,12 +213,7 @@ class Context:
         """Return the coalescing progress context manager for this request."""
         return progress_manager(total=total, config=config, telemetry=telemetry)
 
-    async def resolve_client(
-        self,
-        handle: str,
-        *,
-        operation: Mapping[str, Any] | None = None,
-    ) -> Any:
+    async def resolve_client(self, handle: str, *, operation: Mapping[str, Any] | None = None) -> Any:
         """Resolve a connection handle into a driver client via the configured resolver."""
 
         if not isinstance(handle, str):
@@ -237,6 +225,59 @@ class Context:
 
         request_payload = self._build_resolver_context(operation)
         return await resolver.resolve_client(handle, request_payload)
+
+    async def dispatch(
+        self, connection_handle: str, intent: str, arguments: dict[str, Any] | None = None
+    ) -> "DispatchResult":
+        """Dispatch a privileged operation via a connection handle.
+
+        This method gates access using the `ddls:connections` claim from the
+        authorization context, then forwards to the configured dispatch backend.
+
+        Args:
+            connection_handle: Identifier for the connection (e.g., "ddls:conn:01ABC-github")
+            intent: Operation identifier (e.g., "github:create_issue")
+            arguments: Operation-specific arguments
+
+        Returns:
+            DispatchResult with success/failure and data/error
+
+        Raises:
+            RuntimeError: If dispatch backend is not configured
+            ConnectionHandleNotAuthorizedError: If handle not in JWT claims
+
+        Example:
+            >>> result = await ctx.dispatch(
+            ...     connection_handle="ddls:conn:01ABC-github",
+            ...     intent="github:create_issue",
+            ...     arguments={"title": "Bug", "body": "Description"},
+            ... )
+            >>> if result.success:
+            ...     print(result.data)
+        """
+        from .dispatch import DispatchBackend, DispatchRequest, DispatchResult
+        from .server.services.connection_gate import ConnectionHandleGate
+
+        # Get dispatch backend from runtime
+        runtime = self.runtime
+        if not isinstance(runtime, Mapping):
+            raise RuntimeError("Dispatch backend not configured")
+
+        backend = runtime.get("dispatch_backend")
+        if backend is None or not isinstance(backend, DispatchBackend):
+            raise RuntimeError("Dispatch backend not configured")
+
+        # Gate check: verify handle is authorized in JWT claims
+        auth_context = self.auth_context
+        if auth_context is not None:
+            claims = getattr(auth_context, "claims", {})
+            gate = ConnectionHandleGate.from_claims(claims)
+            gate.check(connection_handle)  # Raises if not authorized
+
+        # Build and execute dispatch request
+        request = DispatchRequest(connection_handle=connection_handle, intent=intent, arguments=arguments or {})
+
+        return await backend.dispatch(request)
 
     # ------------------------------------------------------------------
     # Construction helpers

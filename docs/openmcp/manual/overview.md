@@ -22,7 +22,7 @@ wire behavior identical to the MCP specification.
 └────────────────────────────────────────────────────────────┘
 ```
 
-The reference SDK handles protocol lifecycle (initialize → initialized → normal operation) and JSON-RPC
+The reference SDK handles protocol lifecycle (initialize -> initialized -> normal operation) and JSON-RPC
 plumbing. OpenMCP layers on:
 
 - **Registration ergonomics** – decorators and `binding()` scopes to declare capabilities.

@@ -106,7 +106,7 @@ async def test_session_scoped_authorization_pattern():
     from mcp.server.lowlevel.server import request_ctx
     from mcp.shared.context import RequestContext
 
-    # Simulated session → user mapping
+    # Simulated session -> user mapping
     SESSION_USERS = {"session-1": "alice", "session-2": "bob"}
     USERS = {"alice": "pro", "bob": "basic"}
 

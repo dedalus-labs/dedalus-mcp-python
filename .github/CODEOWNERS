@@ -1,0 +1,14 @@
+# Code Owners
+# These owners will be requested for review on PRs touching these paths.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Core framework
+/src/openmcp/ @dedalus-labs/openmcp
+
+# CI/CD and infrastructure
+/.github/ @dedalus-labs/openmcp
+/pyproject.toml @dedalus-labs/openmcp
+
+# Documentation
+/docs/ @dedalus-labs/openmcp
+/README.md @dedalus-labs/openmcp

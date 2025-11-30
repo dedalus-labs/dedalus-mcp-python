@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Error handling and validation patterns for tools.
 
@@ -12,8 +9,8 @@ and converts to isError=True results. Use explicit results for custom error
 metadata or when exceptions don't fit the pattern.
 
 Pattern:
-- raise ValueError/Exception → auto-wrapped as CallToolResult(isError=True)
-- return CallToolResult(isError=True, ...) → explicit error control
+- raise ValueError/Exception -> auto-wrapped as CallToolResult(isError=True)
+- return CallToolResult(isError=True, ...) -> explicit error control
 - ctx.error/warning for structured logging
 - Framework handles JSON-RPC error codes
 
@@ -63,18 +60,12 @@ with server.binding():
 
         if user_id <= 0:
             await ctx.warning("invalid user_id", data={"user_id": user_id})
-            return CallToolResult(
-                content=[TextContent(type="text", text="User ID must be positive")],
-                isError=True,
-            )
+            return CallToolResult(content=[TextContent(type="text", text="User ID must be positive")], isError=True)
 
         # Simulate not found
         if user_id == 999:
             await ctx.info("user not found", data={"user_id": user_id})
-            return CallToolResult(
-                content=[TextContent(type="text", text=f"User {user_id} not found")],
-                isError=True,
-            )
+            return CallToolResult(content=[TextContent(type="text", text=f"User {user_id} not found")], isError=True)
 
         return {"id": str(user_id), "name": f"User {user_id}"}
 

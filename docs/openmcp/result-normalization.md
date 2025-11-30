@@ -273,12 +273,12 @@ The normalizer generates `structuredContent` automatically when:
 - The return value is a tuple, and the second element is a dict
 
 The generation uses `_jsonify()`, which recursively converts:
-- Primitives (`str`, `int`, `float`, `bool`, `None`) → passthrough
-- Dicts → recursively convert values, stringify keys
-- Lists/tuples/sets → recursively convert elements
-- Dataclasses → `asdict()`, then recurse
-- Pydantic models → `model_dump(mode="json")`, then recurse
-- Non-serializable objects → `_JSONIFY_SENTINEL` (no `structuredContent` generated)
+- Primitives (`str`, `int`, `float`, `bool`, `None`) -> passthrough
+- Dicts -> recursively convert values, stringify keys
+- Lists/tuples/sets -> recursively convert elements
+- Dataclasses -> `asdict()`, then recurse
+- Pydantic models -> `model_dump(mode="json")`, then recurse
+- Non-serializable objects -> `_JSONIFY_SENTINEL` (no `structuredContent` generated)
 
 If `_jsonify()` succeeds:
 - Dicts are used directly as `structuredContent`

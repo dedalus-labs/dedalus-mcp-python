@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 from __future__ import annotations
 
@@ -71,7 +68,7 @@ def test_http_security_override() -> None:
 @pytest.mark.anyio
 async def test_streamable_http_application_rejects_non_http_scope() -> None:
     class DummyManager:
-        async def handle_request(self, *_args: object, **_kwargs: object) -> None:  # pragma: no cover - defensive
+        async def handle_request(self, *_args: object, **_kwargs: object) -> None:
             message = "handle_request should not be invoked for non-http scopes"
             raise AssertionError(message)
 
@@ -79,10 +76,10 @@ async def test_streamable_http_application_rejects_non_http_scope() -> None:
         session_manager=DummyManager(), transport_label="Streamable HTTP transport", allowed_scopes=("http",)
     )
 
-    async def receive() -> dict[str, object]:  # pragma: no cover - never called
+    async def receive() -> dict[str, object]:
         return {"type": "http.disconnect"}
 
-    async def send(_message: dict[str, object]) -> None:  # pragma: no cover - never called
+    async def send(_message: dict[str, object]) -> None:
         message = "send should not be invoked for non-http scopes"
         raise AssertionError(message)
 

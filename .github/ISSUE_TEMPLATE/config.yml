@@ -1,0 +1,11 @@
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
+---
+blank_issues_enabled: false
+contact_links:
+  - name: Question / Discussion
+    url: https://github.com/dedalus-labs/openmcp-python/discussions
+    about: Ask questions and discuss ideas
+  - name: Security Issue
+    url: https://github.com/dedalus-labs/openmcp-python/security/advisories/new
+    about: Report security vulnerabilities privately

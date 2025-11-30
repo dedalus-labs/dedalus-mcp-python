@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 from __future__ import annotations
 
@@ -128,10 +125,7 @@ def test_prm_respects_x_forwarded_headers(metadata_manager: AuthorizationManager
     # Test with X-Forwarded headers
     resp = client.get(
         "/.well-known/oauth-protected-resource",
-        headers={
-            "X-Forwarded-Proto": "https",
-            "X-Forwarded-Host": "api.example.com",
-        },
+        headers={"X-Forwarded-Proto": "https", "X-Forwarded-Host": "api.example.com"},
     )
     assert resp.status_code == 200
     data = resp.json()
@@ -155,10 +149,7 @@ def test_prm_uses_host_header(metadata_manager: AuthorizationManager) -> None:
     app = Starlette(routes=[metadata_manager.starlette_route()])
     client = TestClient(app)
 
-    resp = client.get(
-        "/.well-known/oauth-protected-resource",
-        headers={"Host": "custom.example.com"},
-    )
+    resp = client.get("/.well-known/oauth-protected-resource", headers={"Host": "custom.example.com"})
     assert resp.status_code == 200
     data = resp.json()
     # Should use Host header
@@ -172,6 +163,7 @@ def test_prm_uses_host_header(metadata_manager: AuthorizationManager) -> None:
 
 def test_middleware_blocks_requests_without_token(metadata_manager: AuthorizationManager) -> None:
     """Middleware returns 401 when Authorization header is missing."""
+
     async def endpoint(request):
         return JSONResponse({"ok": True})
 
@@ -220,6 +212,7 @@ def test_middleware_rejects_invalid_token(metadata_manager: AuthorizationManager
 
 def test_middleware_www_authenticate_header_format(metadata_manager: AuthorizationManager) -> None:
     """Middleware returns properly formatted WWW-Authenticate header."""
+
     async def endpoint(request):
         return JSONResponse({"ok": True})
 
@@ -232,7 +225,11 @@ def test_middleware_www_authenticate_header_format(metadata_manager: Authorizati
     www_auth = resp.headers["WWW-Authenticate"]
     assert www_auth.startswith("Bearer")
     assert 'error="invalid_token"' in www_auth
-    assert "authorization_uri=" in www_auth
+    # RFC 9728 Protected Resource Metadata (MCP 2025-06-18+).
+    # For 2025-03-26, clients would use /.well-known/oauth-authorization-server instead.
+    # We emit resource_metadata unconditionally since the 401 happens before protocol
+    # negotiation and RFC 6750 says clients SHOULD ignore unknown parameters.
+    assert "resource_metadata=" in www_auth
 
 
 def test_middleware_stores_auth_context_in_scope(metadata_manager: AuthorizationManager, dummy_provider) -> None:
@@ -241,13 +238,7 @@ def test_middleware_stores_auth_context_in_scope(metadata_manager: Authorization
 
     async def endpoint(request):
         ctx = request.scope.get("openmcp.auth")
-        return JSONResponse(
-            {
-                "subject": ctx.subject,
-                "scopes": ctx.scopes,
-                "claims": ctx.claims,
-            }
-        )
+        return JSONResponse({"subject": ctx.subject, "scopes": ctx.scopes, "claims": ctx.claims})
 
     app = Starlette(routes=[Route("/mcp", endpoint, methods=["GET"])])
     wrapped = metadata_manager.wrap_asgi(app)
@@ -280,6 +271,7 @@ def test_middleware_bypasses_prm_endpoint(metadata_manager: AuthorizationManager
 
 def test_malformed_authorization_header_missing_scheme(metadata_manager: AuthorizationManager) -> None:
     """Middleware rejects Authorization header without 'Bearer' scheme."""
+
     async def endpoint(request):
         return JSONResponse({"ok": True})
 
@@ -329,6 +321,7 @@ def test_token_with_whitespace(metadata_manager: AuthorizationManager, dummy_pro
 
 def test_empty_authorization_header(metadata_manager: AuthorizationManager) -> None:
     """Middleware rejects empty Authorization header."""
+
     async def endpoint(request):
         return JSONResponse({"ok": True})
 
@@ -342,6 +335,7 @@ def test_empty_authorization_header(metadata_manager: AuthorizationManager) -> N
 
 def test_bearer_without_token(metadata_manager: AuthorizationManager) -> None:
     """Middleware rejects 'Bearer' without token."""
+
     async def endpoint(request):
         return JSONResponse({"ok": True})
 
@@ -435,11 +429,7 @@ def test_provider_delegation(metadata_manager: AuthorizationManager) -> None:
 
     class CustomProvider:
         async def validate(self, token: str) -> AuthorizationContext:
-            return AuthorizationContext(
-                subject=f"user-{token}",
-                scopes=["custom:scope"],
-                claims={"custom": "claim"},
-            )
+            return AuthorizationContext(subject=f"user-{token}", scopes=["custom:scope"], claims={"custom": "claim"})
 
     metadata_manager.set_provider(CustomProvider())
 
@@ -563,9 +553,7 @@ def test_concurrent_requests(metadata_manager: AuthorizationManager, dummy_provi
 def test_authorization_context_creation() -> None:
     """AuthorizationContext can be created with all fields."""
     ctx = AuthorizationContext(
-        subject="user123",
-        scopes=["read", "write"],
-        claims={"email": "user@example.com", "role": "admin"},
+        subject="user123", scopes=["read", "write"], claims={"email": "user@example.com", "role": "admin"}
     )
     assert ctx.subject == "user123"
     assert ctx.scopes == ["read", "write"]
@@ -587,6 +575,7 @@ def test_authorization_context_none_subject() -> None:
 
 def test_error_response_format(metadata_manager: AuthorizationManager) -> None:
     """Error responses have correct JSON structure."""
+
     async def endpoint(request):
         return JSONResponse({"ok": True})
 

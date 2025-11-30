@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Minimal end-to-end MCP server demo.
 
@@ -41,49 +38,51 @@ for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"
     logging.getLogger(logger_name).setLevel(logging.CRITICAL)
 
 
-server = MCPServer("hello-trip")
+@tool(
+    description="Summarize a travel plan",
+    tags={"travel", "demo"},
+    output_schema={
+        "type": "object",
+        "properties": {"summary": {"type": "string"}, "suggestion": {"type": "string"}},
+        "required": ["summary"],
+    },
+)
+async def plan_trip(destination: str, days: int, budget: float) -> dict[str, Any]:
+    ctx = get_context()
+    await ctx.info("planning trip", data={"destination": destination, "days": days, "budget": budget})
 
-with server.binding():
+    async with ctx.progress(total=3) as tracker:
+        await tracker.advance(1, message="Gathering highlights")
+        await asyncio.sleep(0)
+        await tracker.advance(1, message="Estimating costs")
+        await asyncio.sleep(0)
+        await tracker.advance(1, message="Summarising itinerary")
 
-    @tool(
-        description="Summarize a travel plan",
-        tags={"travel", "demo"},
-        output_schema={
-            "type": "object",
-            "properties": {"summary": {"type": "string"}, "suggestion": {"type": "string"}},
-            "required": ["summary"],
+    summary = f"Plan: {days} days in {destination} with budget ${budget:.2f}."
+    result = {"summary": summary, "suggestion": "Remember to book tickets early!"}
+    await ctx.debug("plan complete", data=result)
+    return result
+
+
+@resource(uri="travel://tips/barcelona", name="Barcelona Tips", mime_type="text/plain")
+def barcelona_tips() -> str:
+    return "Visit Sagrada Família, explore the Gothic Quarter, and enjoy tapas on La Rambla."
+
+
+@prompt(name="plan-vacation", description="Guide the model through planning a trip")
+def plan_vacation_prompt(args: dict[str, str]) -> list[dict[str, str]]:
+    destination = args.get("destination", "unknown destination")
+    return [
+        {
+            "role": "assistant",
+            "content": "You are a helpful travel planner. Summarize the itinerary and call tools if needed.",
         },
-    )
-    async def plan_trip(destination: str, days: int, budget: float) -> dict[str, Any]:
-        ctx = get_context()
-        await ctx.info("planning trip", data={"destination": destination, "days": days, "budget": budget})
+        {"role": "user", "content": f"Plan a vacation to {destination}."},
+    ]
 
-        async with ctx.progress(total=3) as tracker:
-            await tracker.advance(1, message="Gathering highlights")
-            await asyncio.sleep(0)
-            await tracker.advance(1, message="Estimating costs")
-            await asyncio.sleep(0)
-            await tracker.advance(1, message="Summarising itinerary")
 
-        summary = f"Plan: {days} days in {destination} with budget ${budget:.2f}."
-        result = {"summary": summary, "suggestion": "Remember to book tickets early!"}
-        await ctx.debug("plan complete", data=result)
-        return result
-
-    @resource(uri="travel://tips/barcelona", name="Barcelona Tips", mime_type="text/plain")
-    def barcelona_tips() -> str:
-        return "Visit Sagrada Família, explore the Gothic Quarter, and enjoy tapas on La Rambla."
-
-    @prompt(name="plan-vacation", description="Guide the model through planning a trip")
-    def plan_vacation_prompt(args: dict[str, str]) -> list[dict[str, str]]:
-        destination = args.get("destination", "unknown destination")
-        return [
-            {
-                "role": "assistant",
-                "content": "You are a helpful travel planner. Summarize the itinerary and call tools if needed.",
-            },
-            {"role": "user", "content": f"Plan a vacation to {destination}."},
-        ]
+server = MCPServer("hello-trip")
+server.collect(plan_trip, barcelona_tips, plan_vacation_prompt)
 
 
 async def main(transport: str = "streamable-http") -> None:

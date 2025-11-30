@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Ensure JSON Schema values satisfy MCP's object-shaped contract.
 
@@ -97,12 +94,12 @@ class SchemaEnvelope:
         if not self.is_wrapped:
             return structured_content
 
-        if not isinstance(structured_content, Mapping):  # pragma: no cover - defensive
+        if not isinstance(structured_content, Mapping):
             raise SchemaError("Structured content must be a mapping when using an auto-wrapped schema.")
 
         try:
             return structured_content[self.wrap_field]  # type: ignore[index]
-        except KeyError as exc:  # pragma: no cover - defensive
+        except KeyError as exc:
             raise SchemaError(f"Expected wrapped result to contain '{self.wrap_field}'") from exc
 
     def wrap(self, value: Any) -> Mapping[str, Any]:
@@ -506,12 +503,12 @@ def _coerce_envelope(
 
     try:
         type_adapter = TypeAdapter(schema_like)
-    except Exception as exc:  # pragma: no cover - surface original failure
+    except Exception as exc:
         raise SchemaError(f"Unable to create TypeAdapter for {schema_like!r}") from exc
 
     try:
         base_schema = type_adapter.json_schema(mode=mode)
-    except Exception as exc:  # pragma: no cover - surface original failure
+    except Exception as exc:
         raise SchemaError(f"Unable to derive JSON schema for {schema_like!r}") from exc
 
     if compress:

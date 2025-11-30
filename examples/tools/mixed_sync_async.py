@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Sync vs async tool functions work identically.
 
@@ -11,8 +8,8 @@ functions are awaited. No special decoration needed—type inspection at
 runtime handles both cases. Use sync for CPU-bound work, async for I/O.
 
 Pattern:
-- Sync tools: def tool_name(...) → direct execution
-- Async tools: async def tool_name(...) → awaited by framework
+- Sync tools: def tool_name(...) -> direct execution
+- Async tools: async def tool_name(...) -> awaited by framework
 - Framework uses utils.maybe_await_with_args internally
 - No await overhead for sync functions
 
@@ -82,12 +79,7 @@ with server.binding():
         - Need to yield control during waits
         """
         await asyncio.sleep(0.5)  # Simulate API latency
-        return {
-            "city": city,
-            "temperature": 72.5,
-            "condition": "sunny",
-            "source": "mock-api"
-        }
+        return {"city": city, "temperature": 72.5, "condition": "sunny", "source": "mock-api"}
 
     @tool(description="Asynchronous database query simulation")
     async def query_user(user_id: int) -> dict[str, str | int]:

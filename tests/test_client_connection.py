@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 from __future__ import annotations
 
@@ -12,9 +9,11 @@ import anyio
 import httpx
 import pytest
 
-from openmcp import MCPServer, tool, types
+from openmcp import MCPServer, tool
+from openmcp.types.messages import ClientRequest
+from openmcp.types.server.tools import CallToolRequest, CallToolRequestParams, CallToolResult
 from openmcp.client import open_connection
-from openmcp.versioning import SUPPORTED_PROTOCOL_VERSIONS
+from openmcp.versioning import V_2024_11_05
 
 
 HTTP_OK = 200
@@ -55,12 +54,10 @@ async def test_open_connection_streamable_http(unused_tcp_port: int) -> None:
         try:
             async with open_connection(f"http://{host}:{port}/mcp") as client:
                 result = await client.send_request(
-                    types.ClientRequest(
-                        types.CallToolRequest(
-                            params=types.CallToolRequestParams(name="add", arguments={"a": 3, "b": 4})
-                        )
+                    ClientRequest(
+                        CallToolRequest(params=CallToolRequestParams(name="add", arguments={"a": 3, "b": 4}))
                     ),
-                    types.CallToolResult,
+                    CallToolResult,
                 )
 
                 assert not result.isError
@@ -95,7 +92,7 @@ async def test_streamable_http_allows_preinitialize_get(unused_tcp_port: int) ->
         await _wait_for_port(host, port)
 
         try:
-            version = SUPPORTED_PROTOCOL_VERSIONS[0]
+            version = str(V_2024_11_05)
             base_url = f"http://{host}:{port}/mcp"
 
             async with httpx.AsyncClient(timeout=2.0) as client:
@@ -150,11 +147,12 @@ async def test_streamable_http_stateless_allows_preinitialize_get(unused_tcp_por
         await _wait_for_port(host, port)
 
         try:
-            headers = {"MCP-Protocol-Version": SUPPORTED_PROTOCOL_VERSIONS[0], "Accept": "text/event-stream"}
+            headers = {"MCP-Protocol-Version": str(V_2024_11_05), "Accept": "text/event-stream"}
 
-            async with httpx.AsyncClient(timeout=2.0) as client, client.stream(
-                "GET", f"http://{host}:{port}/mcp", headers=headers
-            ) as response:
+            async with (
+                httpx.AsyncClient(timeout=2.0) as client,
+                client.stream("GET", f"http://{host}:{port}/mcp", headers=headers) as response,
+            ):
                 assert response.status_code == HTTP_OK
         finally:
             await server.shutdown()
@@ -175,7 +173,7 @@ async def test_streamable_http_preinitialize_get_requires_session(unused_tcp_por
         await _wait_for_port(host, port)
 
         try:
-            headers = {"MCP-Protocol-Version": SUPPORTED_PROTOCOL_VERSIONS[0], "Accept": "text/event-stream"}
+            headers = {"MCP-Protocol-Version": str(V_2024_11_05), "Accept": "text/event-stream"}
 
             async with httpx.AsyncClient(timeout=2.0) as client:
                 response = await client.get(f"http://{host}:{port}/mcp", headers=headers)

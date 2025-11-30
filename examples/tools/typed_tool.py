@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Advanced type hints for rich parameter schemas.
 
@@ -11,10 +8,10 @@ types become enums, dataclasses nest as objects, Optional creates nullable
 fields. No manual schema writing required—type hints drive everything.
 
 Pattern:
-- Literal[...] → JSON Schema enum constraints
-- Optional[T] and defaults → optional parameters
-- @dataclass → nested object schema
-- Union types → oneOf/anyOf schemas
+- Literal[...] -> JSON Schema enum constraints
+- Optional[T] and defaults -> optional parameters
+- @dataclass -> nested object schema
+- Union types -> oneOf/anyOf schemas
 
 When to use:
 - Tools with constrained inputs (enums, formats)
@@ -53,10 +50,7 @@ class SearchFilter:
 with server.binding():
 
     @tool(description="Format text with style")
-    def format_text(
-        text: str,
-        style: Literal["uppercase", "lowercase", "title"] = "title",
-    ) -> str:
+    def format_text(text: str, style: Literal["uppercase", "lowercase", "title"] = "title") -> str:
         """Literal types generate enum constraints in JSON Schema."""
         if style == "uppercase":
             return text.upper()

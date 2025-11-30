@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Roots capability support for MCP servers.
 
@@ -36,17 +33,19 @@ import weakref
 import json
 
 
-if os.name == "nt":  # pragma: no cover - Windows specific
+if os.name == "nt":
     from urllib.request import url2pathname
 
-from mcp import types
 from mcp.shared.exceptions import McpError
+
+from ...types.client.roots import Root
+from ...types.shared.base import ErrorData, INTERNAL_ERROR, INVALID_PARAMS
 
 
 if TYPE_CHECKING:
     from mcp.server.session import ServerSession
 
-Snapshot = tuple[types.Root, ...]
+Snapshot = tuple[Root, ...]
 
 
 @dataclass(frozen=True)
@@ -79,7 +78,7 @@ class RootGuard:
                 netloc = parsed.netloc
                 raw_path = unquote(parsed.path or "/")
 
-                if os.name == "nt":  # pragma: no cover - Windows specific
+                if os.name == "nt":
                     target = raw_path
                     if netloc and netloc.lower() != "localhost":
                         target = f"//{netloc}{raw_path}"
@@ -95,9 +94,9 @@ class RootGuard:
         resolved = path.expanduser()
         try:
             resolved = resolved.resolve(strict=False)
-        except RuntimeError:  # pragma: no cover - defensive (Windows path resolution quirks)
+        except RuntimeError:
             pass
-        if os.name == "nt":  # pragma: no cover - Windows specific normalization
+        if os.name == "nt":
             resolved = Path(os.path.normcase(str(resolved)))
         return resolved
 
@@ -111,11 +110,11 @@ def _finalize_session(
     session = session_ref()
     if service is None or session is None:
         return
-    if loop.is_closed():  # pragma: no cover - shutdown race
+    if loop.is_closed():
         return
     try:
         loop.call_soon_threadsafe(service.remove, session)
-    except RuntimeError:  # pragma: no cover - loop already shutting down
+    except RuntimeError:
         pass
 
 
@@ -164,7 +163,7 @@ class RootsService:
             try:
                 await anyio.sleep(self._debounce_delay)
                 await self.refresh(session)
-            except asyncio.CancelledError:  # pragma: no cover - debounce cancellation expected
+            except asyncio.CancelledError:
                 pass
 
         self._debouncers[session] = asyncio.create_task(_run())
@@ -189,11 +188,11 @@ class RootsService:
             task.cancel()
             try:
                 del self._debouncers[session]
-            except KeyError:  # pragma: no cover - defensive cleanup
+            except KeyError:
                 pass
         try:
             del self._entries[session]
-        except KeyError:  # pragma: no cover - defensive cleanup
+        except KeyError:
             pass
 
     def encode_cursor(self, session: ServerSession, offset: int) -> str:
@@ -213,29 +212,27 @@ class RootsService:
             parsed = json.loads(raw.decode())
             version = int(parsed["v"])
             offset = int(parsed["o"])
-        except Exception as exc:  # pragma: no cover - defensive
+        except Exception as exc:
             raise McpError(
-                types.ErrorData(code=types.INVALID_PARAMS, message="Invalid cursor for roots/list", data=str(exc))
+                ErrorData(code=INVALID_PARAMS, message="Invalid cursor for roots/list", data=str(exc))
             ) from exc
 
         if version != expected_version:
             raise McpError(
-                types.ErrorData(
-                    code=types.INVALID_PARAMS,
+                ErrorData(
+                    code=INVALID_PARAMS,
                     message="Stale cursor for roots/list; please restart pagination",
                     data={"expected": expected_version, "received": version},
                 )
             )
 
         if offset < 0:
-            raise McpError(
-                types.ErrorData(code=types.INVALID_PARAMS, message="Cursor offset must be non-negative", data=offset)
-            )
+            raise McpError(ErrorData(code=INVALID_PARAMS, message="Cursor offset must be non-negative", data=offset))
 
         return version, offset
 
     async def _fetch_snapshot(self, session: ServerSession) -> Snapshot:
-        roots: list[types.Root] = []
+        roots: list[Root] = []
         cursor: str | None = None
 
         while True:
@@ -244,18 +241,18 @@ class RootsService:
 
             payload = result.get("roots")
             if payload is None:
-                raise McpError(types.ErrorData(code=types.INTERNAL_ERROR, message="Client response missing 'roots'"))
+                raise McpError(ErrorData(code=INTERNAL_ERROR, message="Client response missing 'roots'"))
 
-            roots.extend(types.Root.model_validate(root) for root in payload)
+            roots.extend(Root.model_validate(root) for root in payload)
             cursor = result.get("nextCursor")
             if not cursor:
                 break
 
-        dedup: dict[str, types.Root] = {}
+        dedup: dict[str, Root] = {}
         for root in roots:
             dedup[root.uri] = root
 
         return tuple(sorted(dedup.values(), key=lambda r: r.uri))
 
 
-__all__ = ["RootsService", "RootGuard"]
+__all__ = ["RootGuard", "RootsService"]

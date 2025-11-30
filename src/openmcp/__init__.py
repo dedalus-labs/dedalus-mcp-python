@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """OpenMCP framework primitives.
 
@@ -20,37 +17,77 @@ See the module docstrings for detailed usage patterns.
 
 from __future__ import annotations
 
-from ._sdk_loader import ensure_sdk_importable
-
-
-ensure_sdk_importable()
+from importlib.metadata import version
+from typing import TYPE_CHECKING, Any
 
 from . import types
 from .client import MCPClient
-from .completion import CompletionResult, completion
+from .completion import CompletionResult, CompletionSpec, completion, extract_completion_spec
 from .context import Context, get_context
 from .progress import progress
-from .prompt import prompt
-from .resource import resource
-from .resource_template import resource_template
+from .prompt import PromptSpec, extract_prompt_spec, prompt
+from .resource import ResourceSpec, extract_resource_spec, resource
+from .resource_template import ResourceTemplateSpec, extract_resource_template_spec, resource_template
 from .server import MCPServer
 from .server.dependencies import register_injectable_type
-from .tool import tool
+from .tool import ToolSpec, extract_tool_spec, tool
 
-# Register Context for auto-injection in dependencies
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+__version__ = version("openmcp")
+
+# Register Context for auto-injection in dependencies, TODO: sus
 register_injectable_type(Context)
+
+# Type alias for any OpenMCP capability spec
+CapabilitySpec = ToolSpec | ResourceSpec | PromptSpec | CompletionSpec | ResourceTemplateSpec
+
+
+def extract_spec(fn: Callable[..., Any]) -> CapabilitySpec | None:
+    """Extract OpenMCP metadata from a decorated function.
+
+    Returns the spec if the function was decorated with @tool, @resource,
+    @prompt, @completion, or @resource_template. Returns None otherwise.
+
+    Usage:
+        @tool(description="Add numbers")
+        def add(a: int, b: int) -> int:
+            return a + b
+
+        spec = extract_spec(add)  # ToolSpec instance
+    """
+    for extractor in (
+        extract_tool_spec,
+        extract_resource_spec,
+        extract_prompt_spec,
+        extract_completion_spec,
+        extract_resource_template_spec,
+    ):
+        spec = extractor(fn)
+        if spec is not None:
+            return spec
+    return None
 
 
 __all__ = [
+    "CapabilitySpec",
+    "CompletionResult",
+    "CompletionSpec",
     "MCPClient",
     "MCPServer",
-    "tool",
-    "resource",
+    "PromptSpec",
+    "ResourceSpec",
+    "ResourceTemplateSpec",
+    "ToolSpec",
+    "__version__",
     "completion",
-    "CompletionResult",
-    "prompt",
-    "resource_template",
+    "extract_spec",
     "get_context",
     "progress",
+    "prompt",
+    "resource",
+    "resource_template",
+    "tool",
     "types",
 ]

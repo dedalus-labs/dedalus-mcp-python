@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Prompt capability service.
 
@@ -158,7 +155,7 @@ class PromptsService:
                 return types.TextContent(**content)
             if content_type == "image":
                 return types.ImageContent(**content)
-            if content_type == "audio":  # pragma: no cover - seldom used
+            if content_type == "audio":
                 return types.AudioContent(**content)
             if content_type == "resource":
                 resource_payload = content.get("resource")

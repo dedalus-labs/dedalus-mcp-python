@@ -1,8 +1,7 @@
 # Hello Trip Example
 
 This example stitches together the concepts from
-``docs/mcp/core/understanding-mcp-servers`` and
-``docs/mcp/core/understanding-mcp-clients``. It showcases how to build and use a
+the MCP specification. It showcases how to build and use a
 minimal MCP server with OpenMCP.
 
 ## Files

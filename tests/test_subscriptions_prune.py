@@ -1,14 +1,11 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Unit tests for SubscriptionManager.prune_session outside request context.
 
 Verifies that prune_session() can be called safely from cleanup/background tasks
 without requiring an active request context (per spec section
-``docs/mcp/spec/schema-reference/resources-subscribe.md``).
+https://modelcontextprotocol.io/specification/2024-11-05/server/resources)
 """
 
 from __future__ import annotations

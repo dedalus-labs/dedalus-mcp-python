@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Resource template registration utilities for OpenMCP.
 
@@ -21,13 +18,13 @@ from dataclasses import dataclass
 from . import types
 
 
-if types:  # pragma: no cover
+if types:
     types.ResourceTemplate  # noqa: B018
 
 from typing import TYPE_CHECKING
 
 
-if TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:
     from .server import MCPServer
 
 

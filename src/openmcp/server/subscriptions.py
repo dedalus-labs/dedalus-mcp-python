@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Subscription management for resource updates."""
 
@@ -80,6 +77,6 @@ class SubscriptionManager:
 def _require_context():
     try:
         return request_ctx.get()
-    except LookupError as exc:  # pragma: no cover - invalid usage
+    except LookupError as exc:
         err_msg = "Subscription operations require an active request context."
         raise RuntimeError(err_msg) from exc

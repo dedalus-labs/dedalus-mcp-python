@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Public dependency helpers for OpenMCP."""
 
@@ -70,7 +67,7 @@ class Depends:
         *subdependencies: Callable[..., Any],
         use_cache: bool = True,
     ) -> None:
-        if not callable(dependency):  # pragma: no cover - defensive guard
+        if not callable(dependency):
             raise TypeError("Depends() arguments must be callable")
 
         self.call: Callable[..., Any] = dependency

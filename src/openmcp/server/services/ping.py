@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Ping helpers for MCP servers.
 
@@ -27,7 +24,7 @@ import anyio
 import anyio.abc
 
 
-if TYPE_CHECKING:  # pragma: no cover - typing only
+if TYPE_CHECKING:
     from logging import Logger
 
     from mcp.server.session import ServerSession
@@ -122,7 +119,7 @@ class PingService:
             else:
                 async with anyio.fail_after(timeout):
                     await session.send_ping()
-        except (anyio.get_cancelled_exc_class(), KeyboardInterrupt):  # pragma: no cover - cancellation
+        except (anyio.get_cancelled_exc_class(), KeyboardInterrupt):
             raise
         except Exception as exc:
             state.record_failure(time.monotonic_ns())
@@ -280,7 +277,7 @@ class _SessionState:
         lambda_ = 1.0 / mean
         try:
             cdf = 1.0 - math.exp(-lambda_ * delta)
-        except OverflowError:  # pragma: no cover - large delta safety
+        except OverflowError:
             return float("inf")
         cdf = min(max(cdf, 1e-12), 1 - 1e-12)
         return -math.log10(1.0 - cdf)

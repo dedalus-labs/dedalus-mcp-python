@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Logging capability service.
 
@@ -29,12 +26,12 @@ from mcp.shared.exceptions import McpError
 from ..notifications import NotificationSink
 from ... import types
 
-try:  # pragma: no cover - optional dependency for trio backends
+try:
     import trio
-except ImportError:  # pragma: no cover - trio not installed
+except ImportError:
     trio = None
 
-if TYPE_CHECKING:  # pragma: no cover - typing only
+if TYPE_CHECKING:
     from mcp.server.session import ServerSession
 
 
@@ -68,7 +65,7 @@ class LoggingService:
 
         try:
             context = request_ctx.get()
-        except LookupError:  # pragma: no cover - called outside request context
+        except LookupError:
             return
 
         async with self._acquire_lock():
@@ -89,7 +86,7 @@ class LoggingService:
     def _resolve(self, level: str) -> int:
         try:
             return _LOGGING_LEVEL_MAP[level]
-        except KeyError as exc:  # pragma: no cover - defensive
+        except KeyError as exc:
             raise McpError(
                 types.ErrorData(code=types.INVALID_PARAMS, message=f"Unsupported logging level '{level}'")
             ) from exc
@@ -136,7 +133,7 @@ class LoggingService:
                 continue
             try:
                 await self._sink.send_notification(session, notification)
-            except Exception as exc:  # pragma: no cover - defensive cleanup
+            except Exception as exc:
                 # Log but don't raise; the application should continue running
                 self._logger.debug("Failed to send log notification to session: %s", exc)
                 stale.append(session)
@@ -183,7 +180,7 @@ class _NotificationHandler(logging.Handler):
         super().__init__(level=logging.NOTSET)
         self.service = service
 
-    def emit(self, record: logging.LogRecord) -> None:  # pragma: no cover - indirectly tested
+    def emit(self, record: logging.LogRecord) -> None:
         if trio is not None:
             try:
                 token = trio.lowlevel.current_trio_token()

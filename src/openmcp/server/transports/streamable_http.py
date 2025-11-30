@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Streamable HTTP transport adapter."""
 
@@ -17,11 +14,6 @@ from starlette.responses import JSONResponse
 from starlette.routing import Route
 
 from .asgi import ASGITransportBase, ASGITransportConfig, SessionManagerHandler
-from ..._sdk_loader import ensure_sdk_importable
-
-
-
-ensure_sdk_importable()
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -58,7 +50,6 @@ class StreamableHTTPTransport(ASGITransportBase):
 
         routes.append(Route("/.well-known/mcp-server.json", metadata_endpoint, methods=["GET"]))
         return routes
-
 
 
 __all__ = ["StreamableHTTPTransport"]

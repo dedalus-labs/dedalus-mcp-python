@@ -1,16 +1,35 @@
-# Ambient Registration Pattern
+# Registration Pattern
 
-**Status**: DRAFT (implementation complete, DX may evolve before publication)
+**Problem**: The MCP spec doesn't mandate *how* servers register tools, resources, and prompts—only what JSON-RPC messages they must answer. Most frameworks force you to call instance methods (`server.add_tool(fn)`) or use decorators that bind at decoration time (`@server.tool`). Both approaches leak server references into module globals or entangle registration with object lifetime. Multi-server scenarios become messy, and testability suffers when decorators hard-bind to a singleton.
 
-**Problem**: The MCP spec doesn't mandate *how* servers register tools, resources, and prompts—only what JSON-RPC messages they must answer. Most frameworks force you to call instance methods (`server.add_tool(fn)`), leaking server references into module globals or entangling registration with object lifetime. Multi-server scenarios become messy, and testability suffers when decorators hard-bind to a singleton.
+**Solution**: Decorators (`@tool`, `@resource`, `@prompt`) attach metadata to functions *without* binding them to a server instance. Registration happens explicitly via `server.collect()`. This approach separates *declaration* (what the function is) from *registration* (which server it serves).
 
-**Solution**: Ambient registration via `ContextVar` scoping. Decorators (`@tool`, `@resource`, `@prompt`) attach metadata to functions *without* binding them to a server instance. When you enter `with server.binding():`, that server becomes the active context, and any decorated function defined in that scope automatically registers itself. Outside the context, the same function can be re-registered to a different server or remain unattached. This approach separates *declaration* (what the function is) from *registration* (which server it serves).
+```python
+from openmcp import MCPServer, tool
 
-**OpenMCP**: The `@tool`, `@resource`, `@prompt`, `@resource_template`, and `@completion` decorators use per-capability `ContextVar` tokens to track the active server. Inside `server.binding()`, decorators immediately call the server's registration methods. Outside that scope, decorators only attach metadata attributes (`__openmcp_tool__`, `__openmcp_resource__`, etc.). You control registration timing and scope explicitly via the binding context manager.
+@tool(description="Add two numbers")
+def add(a: int, b: int) -> int:
+    return a + b
+
+server = MCPServer("my-server")
+server.collect(add)  # Registration happens here
+```
+
+Same function, multiple servers:
+
+```python
+server_a = MCPServer("service-a")
+server_b = MCPServer("service-b")
+
+server_a.collect(add)
+server_b.collect(add)
+```
+
+**OpenMCP**: The `@tool`, `@resource`, `@prompt`, `@resource_template`, and `@completion` decorators attach metadata attributes (`__openmcp_tool__`, `__openmcp_resource__`, etc.). The `server.collect()` method extracts these specs and routes them to the appropriate registration method.
 
 ## Design Rationale
 
-### Why Ambient Over Instance Decorators?
+### Why Deferred Registration?
 
 Instance decorators (`@server.tool`) couple the function to the server at decoration time, which happens at module import. This creates several problems:
 
@@ -19,128 +38,148 @@ Instance decorators (`@server.tool`) couple the function to the server at decora
 3. **Global state leakage**: Frameworks typically use a singleton pattern to make `server` available everywhere. This makes testing harder and violates separation of concerns.
 4. **Unclear ownership**: When `@server.tool` executes at import time, the server's lifecycle is unclear. Did someone start it already? Is it safe to mutate?
 
-Ambient registration inverts this: decorators attach metadata, and the server *pulls* that metadata when you explicitly enter its binding scope. Benefits:
+OpenMCP inverts this: decorators attach metadata, and the server pulls that metadata when you call `collect()`. Benefits:
 
-- **Explicit registration timing**: `with server.binding():` is a visible, testable boundary.
-- **Multi-server support**: The same decorated function can be registered to multiple servers by using multiple binding blocks.
+- **Explicit registration timing**: `server.collect(fn)` is a visible, testable boundary.
+- **Multi-server support**: The same decorated function can be registered to multiple servers.
 - **No import-time dependencies**: Decorators don't need the server to exist yet. Registration happens later, when you control it.
-- **Thread/task isolation**: Each async task can bind to a different server without global state conflicts.
+- **Script-friendly**: Define functions at module scope with decorators, wire them to a server imperatively. Familiar pattern.
 
-## ContextVar Mechanics
+## API Reference
 
-Python's `contextvars.ContextVar` provides task-local storage that works with both threading and `asyncio`. Each capability (tools, resources, prompts, completions, resource templates) maintains its own `ContextVar` token to track the currently active server:
+### `server.collect(*fns)`
+
+Register decorated functions with this server. Extracts metadata from each function and calls the appropriate registration method.
+
+```python
+server.collect(add, multiply, settings)
+```
+
+Accepts any callable decorated with `@tool`, `@resource`, `@resource_template`, `@prompt`, or `@completion`. Raises `ValueError` if a function lacks metadata.
+
+### `server.collect_from(*modules)`
+
+Register all decorated callables from one or more modules.
+
+```python
+from tools import math, text
+
+server.collect_from(math, text)
+```
+
+Inspects each module for public callables with OpenMCP metadata. Functions without metadata are silently skipped.
+
+### `extract_spec(fn)`
+
+Extract OpenMCP metadata from a decorated function. Returns `None` if no metadata found.
+
+```python
+from openmcp import extract_spec
+
+spec = extract_spec(add)  # ToolSpec instance
+```
+
+## Alternative: Binding Context
+
+For dynamic scenarios where functions are defined at runtime, use `server.binding()`:
+
+```python
+with server.binding():
+    @tool(description="Dynamic tool")
+    def dynamic_fn() -> str:
+        return "created at runtime"
+```
+
+Inside the binding context, decorators immediately register with the active server. This is useful for conditional registration based on config or environment.
+
+### ContextVar Mechanics (Internal)
+
+`server.binding()` uses Python's `contextvars.ContextVar` for task-local storage. Each capability maintains its own ContextVar to track the active server:
 
 ```python
 # From src/openmcp/tool.py
-from contextvars import ContextVar
-
 _ACTIVE_SERVER: ContextVar[MCPServer | None] = ContextVar(
     "_openmcp_active_server", default=None
 )
-
-def get_active_server() -> MCPServer | None:
-    return _ACTIVE_SERVER.get()
-
-def set_active_server(server: MCPServer) -> Any:
-    return _ACTIVE_SERVER.set(server)
-
-def reset_active_server(token: Any) -> None:
-    _ACTIVE_SERVER.reset(token)
 ```
 
-When a decorator executes:
+When a decorator executes inside a binding context:
 
-1. It checks `get_active_server()` to see if any server is currently binding.
-2. If found, it immediately calls the server's registration method (e.g., `server.register_tool(spec)`).
-3. If not found, it only attaches the metadata to the function and returns.
+1. It checks `get_active_server()` for an active server.
+2. If found, it immediately calls `server.register_tool(spec)`.
+3. If not found, it only attaches metadata to the function.
 
-This deferred registration pattern keeps decoration and binding separate.
+Most users should use `collect()`. The binding context is for power users and dynamic scenarios.
 
-## Binding Scope Semantics
+## When to Use `collect()` vs `binding()`
 
-The `MCPServer.binding()` method is a context manager that activates the server for all capability types:
+### Use `collect()` (Recommended)
 
-```python
-# From src/openmcp/server/app.py
-@contextmanager
-def binding(self):
-    tool_token = set_tool_server(self)
-    resource_token = set_resource_server(self)
-    completion_token = set_completion_server(self)
-    prompt_token = set_prompt_server(self)
-    template_token = set_resource_template_server(self)
-    try:
-        yield self
-    finally:
-        reset_tool_server(tool_token)
-        reset_resource_server(resource_token)
-        reset_completion_server(completion_token)
-        reset_prompt_server(prompt_token)
-        reset_resource_template_server(template_token)
-```
-
-**Key properties**:
-
-1. **Explicit scope**: Only code inside `with server.binding():` registers automatically.
-2. **Nested-safe**: If you nest binding blocks (don't), the innermost wins. Each reset correctly restores the previous token.
-3. **Exception-safe**: The `finally` block guarantees cleanup even if registration code raises.
-4. **Multi-server safe**: Different tasks/threads can bind different servers without interference because `ContextVar` is task-local.
-
-## When Binding Matters
-
-### During Server Initialization
-
-Binding is relevant **only** when you're defining the server's capabilities, typically at startup:
+For most cases, define functions at module scope and collect them:
 
 ```python
 from openmcp import MCPServer, tool
 
-server = MCPServer("example")
+@tool(description="Add two numbers")
+def add(a: int, b: int) -> int:
+    return a + b
 
-# Outside binding: decorator attaches metadata but doesn't register
-@tool()
-def orphan() -> str:
-    return "not registered yet"
+@tool(description="Multiply two numbers")
+def multiply(a: int, b: int) -> int:
+    return a * b
 
-# Inside binding: decorator registers immediately
-with server.binding():
-    @tool()
-    def attached() -> str:
-        return "registered to server"
-
-print(server.tool_names)  # ["attached"]
+server = MCPServer("calculator")
+server.collect(add, multiply)
 ```
 
-### Not During Request Handling
+Clean, script-friendly, matches Python conventions.
 
-Once the server is running and handling requests, binding is irrelevant. The registration phase is over. Request handlers execute in the context of an active session (via the SDK's `request_ctx`), not a binding context.
+### Use `binding()` for Dynamic Registration
+
+When functions are defined at runtime (e.g., from config or webhooks), use `binding()`:
 
 ```python
-# INCORRECT: Don't re-bind during request handling
+async def add_tool_from_config(config: dict):
+    with server.binding():
+        @tool(description=config["description"])
+        def dynamic_tool(**kwargs) -> str:
+            return config["response"]
+    
+    await server.notify_tools_list_changed()
+```
+
+Inside `binding()`, decorators register immediately. Outside, they only attach metadata.
+
+### Don't Use `binding()` During Request Handling
+
+The binding context is for registration, not request handling:
+
+```python
+# WRONG: Don't bind during request handling
 @server.list_tools()
 async def list_handler(request):
-    with server.binding():  # Wrong! This is not a request context
+    with server.binding():  # Wrong place
         @tool()
         def dynamic() -> str:
             return "confused"
-    # ...
 ```
 
-Dynamic tool registration (adding tools after startup) is possible but requires explicit calls outside the binding context:
+Dynamic registration should happen outside request handlers, then notify clients:
 
 ```python
-# Correct: Manual registration after binding phase
-def add_tool_at_runtime():
-    @tool()
+# Correct: Register first, then notify
+async def add_tool_at_runtime():
+    @tool(description="Added later")
     def late_arrival() -> str:
         return "added later"
 
-    spec = extract_tool_spec(late_arrival)
-    server.register_tool(spec)
-    await server.notify_tools_list_changed()  # if notifications enabled
+    server.collect(late_arrival)
+    await server.notify_tools_list_changed()
 ```
 
-## Comparison to Global Registration
+## Comparison to Other Patterns
+
+### Global Registries
 
 Some frameworks use global registries where decorators append to a module-level list:
 
@@ -152,98 +191,61 @@ def tool(fn):
     _TOOLS.append(fn)
     return fn
 
-# Later, server imports and consumes _TOOLS
 server.load_tools(_TOOLS)
 ```
 
-**Problems**:
+**Problems**: Hidden state persists across test runs. Single registry. Import order matters.
 
-- **Hidden state**: The list persists across test runs unless manually cleared.
-- **Single registry**: You can't isolate tools for different servers without complex registry multiplexing.
-- **Import order matters**: If the server imports the module before tools are decorated, the list is empty.
+### Instance Decorators
 
-Ambient registration fixes this by making the server the source of truth. No global state accumulates; registration only happens when you explicitly bind.
+FastMCP uses `@mcp.tool` which binds at decoration time:
+
+```python
+mcp = FastMCP()
+
+@mcp.tool  # Bound to mcp at import time
+def add(a: int, b: int) -> int:
+    return a + b
+```
+
+**Problems**: Function is coupled to that server instance. Multi-server scenarios require workarounds.
+
+### OpenMCP's Approach
+
+Decorators only attach metadata. You explicitly collect:
+
+```python
+@tool(description="Add")
+def add(a: int, b: int) -> int:
+    return a + b
+
+server.collect(add)  # Registration happens here
+```
+
+**Benefits**: No global state. No import-time coupling. Same function, multiple servers.
 
 ## Same Function on Multiple Servers
 
-Because decorators attach metadata to functions without binding them, you can register the same function to multiple servers by binding each one in sequence:
+Because decorators only attach metadata, the same function can be registered to multiple servers:
 
 ```python
 from openmcp import MCPServer, tool
 
-# Define the function once
 @tool(description="Shared multiplication")
 def multiply(a: int, b: int) -> int:
     return a * b
 
-# Register to multiple servers
 server_a = MCPServer("service-a")
 server_b = MCPServer("service-b")
 
-with server_a.binding():
-    # Manually register to server_a
-    server_a.register_tool(multiply)
-
-with server_b.binding():
-    # Manually register to server_b
-    server_b.register_tool(multiply)
+server_a.collect(multiply)
+server_b.collect(multiply)
 
 print(server_a.tool_names)  # ["multiply"]
 print(server_b.tool_names)  # ["multiply"]
 ```
 
-Alternatively, define the function inside each binding block to auto-register:
-
-```python
-with server_a.binding():
-    @tool(description="Shared multiplication")
-    def multiply(a: int, b: int) -> int:
-        return a * b
-
-with server_b.binding():
-    # Re-use the same name; each server gets its own registration
-    @tool(description="Shared multiplication")
-    def multiply(a: int, b: int) -> int:
-        return a * b
-```
-
-Both approaches work. Choose based on whether you want a single function object (explicit `register_tool`) or duplicate definitions (implicit auto-registration).
-
-## Thread and Task Safety
-
-`ContextVar` provides task-local (and thread-local) storage, meaning each async task or thread has its own view of the active server. This guarantees:
-
-1. **No cross-task interference**: If task A binds `server_a` and task B binds `server_b`, they see different active servers.
-2. **No race conditions**: Setting the active server doesn't mutate global state; it only affects the current task's context.
-3. **Async-safe**: `asyncio` automatically propagates `ContextVar` values to child tasks created via `asyncio.create_task`, so nested async operations inherit the binding.
-
-Example with concurrent tasks:
-
-```python
-import asyncio
-from openmcp import MCPServer, tool
-
-async def setup_server(name: str):
-    server = MCPServer(name)
-    with server.binding():
-        @tool()
-        def echo(text: str) -> str:
-            return f"[{name}] {text}"
-    print(f"{name} has tools: {server.tool_names}")
-
-async def main():
-    await asyncio.gather(
-        setup_server("alice"),
-        setup_server("bob"),
-    )
-
-asyncio.run(main())
-# Output:
-# alice has tools: ['echo']
-# bob has tools: ['echo']
-```
-
-Each task's `with server.binding():` operates independently. No shared state leaks between them.
+Each server gets its own registration. The function object is shared. No state conflict.
 
 ## Examples
 
@@ -259,24 +261,21 @@ def timestamp() -> int:
     from time import time
     return int(time())
 
-# Service 1: Internal utilities
+@tool(description="Restart a service")
+def restart_service(name: str) -> str:
+    return f"Restarting {name}..."
+
+@tool(description="Get API version")
+def version() -> str:
+    return "v1.2.3"
+
+# Service 1: Internal utilities (timestamp + restart)
 internal_server = MCPServer("internal-tools")
-with internal_server.binding():
-    internal_server.register_tool(timestamp)
+internal_server.collect(timestamp, restart_service)
 
-    @tool(description="Restart a service")
-    def restart_service(name: str) -> str:
-        # Only on internal server
-        return f"Restarting {name}..."
-
-# Service 2: Public API
+# Service 2: Public API (timestamp + version)
 public_server = MCPServer("public-api")
-with public_server.binding():
-    public_server.register_tool(timestamp)  # Reuse timestamp
-
-    @tool(description="Get API version")
-    def version() -> str:
-        return "v1.2.3"
+public_server.collect(timestamp, version)
 
 print(internal_server.tool_names)  # ["timestamp", "restart_service"]
 print(public_server.tool_names)    # ["timestamp", "version"]
@@ -287,27 +286,22 @@ print(public_server.tool_names)    # ["timestamp", "version"]
 Add tools after the server starts:
 
 ```python
-from openmcp import MCPServer, tool, extract_tool_spec
+from openmcp import MCPServer, tool
 import asyncio
 
-server = MCPServer("dynamic")
+@tool(description="Always available")
+def base_tool() -> str:
+    return "base"
 
-with server.binding():
-    @tool(description="Always available")
-    def base_tool() -> str:
-        return "base"
+server = MCPServer("dynamic", allow_dynamic_tools=True)
+server.collect(base_tool)
 
 async def add_tool_at_runtime():
-    # Define outside binding
     @tool(description="Added later")
     def dynamic_tool() -> str:
         return "dynamic"
 
-    # Manually register
-    spec = extract_tool_spec(dynamic_tool)
-    server.register_tool(spec)
-
-    # Notify clients if notifications enabled
+    server.collect(dynamic_tool)
     await server.notify_tools_list_changed()
 
 async def main():
@@ -328,19 +322,19 @@ Register tools based on environment or config:
 from openmcp import MCPServer, tool
 import os
 
+@tool(description="Production-safe operation")
+def safe_op() -> str:
+    return "safe"
+
+@tool(description="Dangerous debug operation")
+def debug_op() -> str:
+    return "debugging"
+
 server = MCPServer("conditional")
+server.collect(safe_op)
 
-with server.binding():
-    @tool(description="Production-safe operation")
-    def safe_op() -> str:
-        return "safe"
-
-    if os.getenv("ENABLE_DEBUG") == "1":
-        @tool(description="Dangerous debug operation")
-        def debug_op() -> str:
-            return "debugging"
-
-# Only registers debug_op if ENABLE_DEBUG=1
+if os.getenv("ENABLE_DEBUG") == "1":
+    server.collect(debug_op)
 ```
 
 ### Testing with Isolated Servers
@@ -358,8 +352,7 @@ def test_tool() -> str:
 @pytest.mark.asyncio
 async def test_tool_registration():
     server = MCPServer("test-server")
-    with server.binding():
-        server.register_tool(test_tool)
+    server.collect(test_tool)
 
     assert "test_tool" in server.tool_names
 
@@ -370,8 +363,7 @@ async def test_tool_registration():
 async def test_another_server():
     # Completely isolated from the previous test
     another_server = MCPServer("another-test")
-    with another_server.binding():
-        server.register_tool(test_tool)
+    another_server.collect(test_tool)
 
     assert "test_tool" in another_server.tool_names
 ```
@@ -400,25 +392,11 @@ def uppercase(text: str) -> str:
     return text.upper()
 
 # server.py
-from openmcp import MCPServer, extract_tool_spec
+from openmcp import MCPServer
 from tools import math, text
 
 server = MCPServer("multi-module")
-
-with server.binding():
-    # Register all tools from math module
-    for name in ["add", "multiply"]:
-        fn = getattr(math, name)
-        spec = extract_tool_spec(fn)
-        if spec:
-            server.register_tool(spec)
-
-    # Register all tools from text module
-    for name in ["uppercase"]:
-        fn = getattr(text, name)
-        spec = extract_tool_spec(fn)
-        if spec:
-            server.register_tool(spec)
+server.collect_from(math, text)
 
 print(server.tool_names)  # ["add", "multiply", "uppercase"]
 ```
@@ -427,7 +405,7 @@ print(server.tool_names)  # ["add", "multiply", "uppercase"]
 
 ### Decorator Execution Flow
 
-When you write `@tool()`, the decorator factory returns a closure that wraps your function:
+When you write `@tool()`, the decorator attaches metadata without registering:
 
 ```python
 # Simplified from src/openmcp/tool.py
@@ -436,9 +414,10 @@ def tool(name=None, *, description=None, ...):
         spec = ToolSpec(name=name or fn.__name__, fn=fn, description=description, ...)
         setattr(fn, "__openmcp_tool__", spec)  # Attach metadata
 
-        server = get_active_server()  # Check ContextVar
+        # Check for binding context (optional auto-registration)
+        server = get_active_server()
         if server is not None:
-            server.register_tool(spec)  # Auto-register if binding
+            server.register_tool(spec)
 
         return fn
     return decorator
@@ -447,60 +426,54 @@ def tool(name=None, *, description=None, ...):
 Key steps:
 
 1. Create a `ToolSpec` dataclass with the function and metadata.
-2. Attach the spec to the function as `__openmcp_tool__` (similar attributes for other capabilities).
-3. Query the `ContextVar` to see if a server is binding.
-4. If yes, immediately call the server's registration method.
-5. Return the original function unchanged (no wrapping).
+2. Attach the spec to the function as `__openmcp_tool__`.
+3. Return the original function unchanged (no wrapping).
 
-### Binding Context Manager
+### `collect()` Implementation
 
-The `server.binding()` method sets all five capability `ContextVar` tokens at once:
+The `collect()` method extracts metadata and routes to the appropriate registration:
 
 ```python
-# From src/openmcp/server/app.py (simplified)
+# From src/openmcp/server/core.py (simplified)
+def collect(self, *fns):
+    for fn in fns:
+        spec = self._extract_spec(fn)
+        if spec is None:
+            raise ValueError(f"'{fn.__name__}' has no OpenMCP metadata")
+        self._register_spec(spec)
+
+def _extract_spec(self, fn):
+    for extractor in (extract_tool_spec, extract_resource_spec, ...):
+        spec = extractor(fn)
+        if spec is not None:
+            return spec
+    return None
+
+def _register_spec(self, spec):
+    if isinstance(spec, ToolSpec):
+        self.register_tool(spec)
+    elif isinstance(spec, ResourceSpec):
+        self.register_resource(spec)
+    # ... etc
+```
+
+### Binding Context (Alternative)
+
+The `server.binding()` context manager enables auto-registration for dynamic scenarios:
+
+```python
 @contextmanager
 def binding(self):
-    # Set each capability's active server
-    tool_token = tool.set_active_server(self)
-    resource_token = resource.set_active_server(self)
-    prompt_token = prompt.set_active_server(self)
-    completion_token = completion.set_active_server(self)
-    template_token = resource_template.set_active_server(self)
-
+    tool_token = set_tool_server(self)
+    # ... set tokens for all capabilities
     try:
         yield self
     finally:
-        # Restore previous values (usually None)
-        tool.reset_active_server(tool_token)
-        resource.reset_active_server(resource_token)
-        prompt.reset_active_server(prompt_token)
-        completion.reset_active_server(completion_token)
-        resource_template.reset_active_server(template_token)
+        reset_tool_server(tool_token)
+        # ... reset all tokens
 ```
 
-Each `set_active_server` call returns a token representing the previous value. The `reset_active_server` calls in the `finally` block restore those previous values, ensuring nested contexts work correctly.
-
-### Manual Registration Without Binding
-
-If you want full control, skip the binding context and call registration methods directly:
-
-```python
-from openmcp import MCPServer, tool, extract_tool_spec
-
-@tool(description="Manually registered")
-def manual() -> str:
-    return "manual"
-
-server = MCPServer("manual-reg")
-
-# No binding context; decorator only attached metadata
-spec = extract_tool_spec(manual)
-server.register_tool(spec)
-
-print(server.tool_names)  # ["manual"]
-```
-
-This is useful when registration logic is complex (e.g., conditional, lazy, or driven by configuration files).
+Inside `binding()`, decorators immediately register. Outside, they only attach metadata.
 
 ## See Also
 

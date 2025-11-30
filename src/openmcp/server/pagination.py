@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Pagination helpers for MCP list responses."""
 
@@ -29,7 +26,7 @@ def paginate_sequence(items: Sequence[T], cursor: str | None, *, limit: int) -> 
     if cursor:
         try:
             start = max(0, int(cursor))
-        except ValueError as exc:  # pragma: no cover - defensive
+        except ValueError as exc:
             raise McpError(types.ErrorData(code=types.INVALID_PARAMS, message="Invalid cursor provided")) from exc
 
     end = start + limit

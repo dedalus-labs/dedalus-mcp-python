@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Session-scoped authorization with dynamic tool visibility.
 
@@ -82,10 +79,7 @@ with server.binding():
 async def demo() -> None:
     task = asyncio.create_task(
         server.serve(
-            transport="streamable-http",
-            verbose=False,
-            log_level="critical",
-            uvicorn_options={"access_log": False},
+            transport="streamable-http", verbose=False, log_level="critical", uvicorn_options={"access_log": False}
         )
     )
     await asyncio.sleep(0.1)
@@ -97,18 +91,18 @@ async def demo() -> None:
                 if session_id:
                     SESSION_USERS[session_id] = user_id
 
-                result = await client.send_request(
-                    ClientRequest(ListToolsRequest()), ListToolsResult
-                )
+                result = await client.send_request(ClientRequest(ListToolsRequest()), ListToolsResult)
             tools = ", ".join(t.name for t in result.tools) or "<none>"
-            print(f"  - {user_id} ({tier}) → tools: {tools}")
+            print(f"  - {user_id} ({tier}) -> tools: {tools}")
     finally:
         task.cancel()
         with suppress(asyncio.CancelledError):
             await task
 
+
 if __name__ == "__main__":
     import sys
+
     try:
         asyncio.run(demo())
     except KeyboardInterrupt:

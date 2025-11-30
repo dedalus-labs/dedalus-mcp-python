@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Prompt registration utilities.
 
@@ -25,10 +22,10 @@ from typing import TYPE_CHECKING, Any, Protocol
 from . import types
 
 
-if types:  # pragma: no cover - import guard for static analysis
+if types:
     types.GetPromptResult  # noqa: B018
 
-if TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:
     from .server import MCPServer
 
 
@@ -118,7 +115,7 @@ def extract_prompt_spec(fn: PromptFunction) -> PromptSpec | None:
 def _coerce_argument(value: PromptArgumentLike) -> types.PromptArgument:
     if isinstance(value, types.PromptArgument):
         return value
-    if not isinstance(value, Mapping):  # pragma: no cover - defensive
+    if not isinstance(value, Mapping):
         raise TypeError("Prompt argument must be mapping or PromptArgument")
     return types.PromptArgument(**value)
 
@@ -126,7 +123,7 @@ def _coerce_argument(value: PromptArgumentLike) -> types.PromptArgument:
 def _coerce_icon(value: IconLike) -> types.Icon:
     if isinstance(value, types.Icon):
         return value
-    if not isinstance(value, Mapping):  # pragma: no cover - defensive
+    if not isinstance(value, Mapping):
         raise TypeError("Icon must be mapping or Icon instance")
     return types.Icon(**value)
 

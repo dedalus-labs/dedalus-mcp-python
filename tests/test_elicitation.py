@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 from __future__ import annotations
 
@@ -11,7 +8,11 @@ from typing import Any
 from mcp.shared.exceptions import McpError
 import pytest
 
-from openmcp import MCPServer, types
+from openmcp import MCPServer
+from openmcp.types.client.elicitation import ElicitRequest, ElicitRequestParams, ElicitResult
+from openmcp.types.messages import ServerRequest
+from openmcp.types.shared.base import ErrorData, METHOD_NOT_FOUND
+from openmcp.types.shared.capabilities import ClientCapabilities
 from tests.helpers import run_with_context
 
 
@@ -19,9 +20,9 @@ class FakeSession:
     def __init__(self, result: Any) -> None:
         self.result = result
         self.capable = True
-        self.calls: list[types.ServerRequest] = []
+        self.calls: list[ServerRequest] = []
 
-    def check_client_capability(self, capability: types.ClientCapabilities) -> bool:  # type: ignore[override]
+    def check_client_capability(self, capability: ClientCapabilities) -> bool:  # type: ignore[override]
         return self.capable
 
     async def send_request(self, request, result_type):
@@ -34,42 +35,42 @@ class FakeSession:
 @pytest.mark.anyio
 async def test_elicitation_requires_capability() -> None:
     server = MCPServer("elicitation")
-    session = FakeSession(types.ElicitResult(action="accept", content={}))
+    session = FakeSession(ElicitResult(action="accept", content={}))
     session.capable = False
 
-    params = types.ElicitRequestParams(
+    params = ElicitRequestParams(
         message="Provide a value",
         requestedSchema={"type": "object", "properties": {"value": {"type": "string"}}, "required": ["value"]},
     )
 
     with pytest.raises(McpError) as exc:
         await run_with_context(session, server.request_elicitation, params)
-    assert exc.value.error.code == types.METHOD_NOT_FOUND
+    assert exc.value.error.code == METHOD_NOT_FOUND
 
 
 @pytest.mark.anyio
 async def test_elicitation_happy_path_records_call() -> None:
-    result = types.ElicitResult(action="accept", content={"value": "yes"})
+    result = ElicitResult(action="accept", content={"value": "yes"})
     server = MCPServer("elicitation")
     session = FakeSession(result)
 
-    params = types.ElicitRequestParams(
+    params = ElicitRequestParams(
         message="Provide a value", requestedSchema={"type": "object", "properties": {"value": {"type": "string"}}}
     )
 
     response = await run_with_context(session, server.request_elicitation, params)
     assert response.action == "accept"
     assert session.calls
-    assert isinstance(session.calls[0].root, types.ElicitRequest)
+    assert isinstance(session.calls[0].root, ElicitRequest)
 
 
 @pytest.mark.anyio
 async def test_elicitation_propagates_client_error() -> None:
-    error = McpError(types.ErrorData(code=-1, message="User declined"))
+    error = McpError(ErrorData(code=-1, message="User declined"))
     server = MCPServer("elicitation")
     session = FakeSession(error)
 
-    params = types.ElicitRequestParams(
+    params = ElicitRequestParams(
         message="Provide a value", requestedSchema={"type": "object", "properties": {"value": {"type": "string"}}}
     )
 
@@ -81,9 +82,9 @@ async def test_elicitation_propagates_client_error() -> None:
 @pytest.mark.anyio
 async def test_elicitation_schema_validation() -> None:
     server = MCPServer("elicitation")
-    session = FakeSession(types.ElicitResult(action="accept", content={}))
+    session = FakeSession(ElicitResult(action="accept", content={}))
 
-    bad_params = types.ElicitRequestParams(message="Provide", requestedSchema={"type": "object", "properties": {}})
+    bad_params = ElicitRequestParams(message="Provide", requestedSchema={"type": "object", "properties": {}})
 
     with pytest.raises(McpError):
         await run_with_context(session, server.request_elicitation, bad_params)

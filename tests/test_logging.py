@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Logging capability tests for logging/setLevel."""
 
@@ -14,7 +11,9 @@ import anyio
 from mcp.shared.exceptions import McpError
 import pytest
 
-from openmcp import MCPServer, types
+from openmcp import MCPServer
+from openmcp.types.messages import ServerResult
+from openmcp.types.server.logging import SetLevelRequest, SetLevelRequestParams
 from tests.helpers import DummySession, run_with_context
 
 
@@ -34,8 +33,8 @@ from tests.helpers import DummySession, run_with_context
 )
 async def test_logging_set_level_handler(level: str, expected: int) -> None:
     server = MCPServer("logging-handler")
-    handler = server.request_handlers[types.SetLevelRequest]
-    request = types.SetLevelRequest(params=types.SetLevelRequestParams(level=level))
+    handler = server.request_handlers[SetLevelRequest]
+    request = SetLevelRequest(params=SetLevelRequestParams(level=level))
 
     root_logger = logging.getLogger()
     original_root = root_logger.level
@@ -43,7 +42,7 @@ async def test_logging_set_level_handler(level: str, expected: int) -> None:
 
     try:
         result = await handler(request)
-        assert isinstance(result, types.ServerResult)
+        assert isinstance(result, ServerResult)
         assert root_logger.level == expected
         assert server._logger.level == expected
     finally:
@@ -54,9 +53,9 @@ async def test_logging_set_level_handler(level: str, expected: int) -> None:
 @pytest.mark.anyio
 async def test_logging_set_level_invalid_value() -> None:
     server = MCPServer("logging-invalid")
-    handler = server.request_handlers[types.SetLevelRequest]
-    params = types.SetLevelRequestParams.model_construct(level="verbose")
-    request = types.SetLevelRequest.model_construct(method="logging/setLevel", params=params)
+    handler = server.request_handlers[SetLevelRequest]
+    params = SetLevelRequestParams.model_construct(level="verbose")
+    request = SetLevelRequest.model_construct(method="logging/setLevel", params=params)
 
     with pytest.raises(McpError):
         await handler(request)
@@ -65,10 +64,10 @@ async def test_logging_set_level_invalid_value() -> None:
 @pytest.mark.anyio
 async def test_logging_notifications_respect_level() -> None:
     server = MCPServer("logging-notify")
-    handler = server.request_handlers[types.SetLevelRequest]
+    handler = server.request_handlers[SetLevelRequest]
     session = DummySession("logger")
 
-    request = types.SetLevelRequest(params=types.SetLevelRequestParams(level="error"))
+    request = SetLevelRequest(params=SetLevelRequestParams(level="error"))
     await run_with_context(session, handler, request)
     assert server.logging_service._session_levels  # type: ignore[attr-defined]
     threshold = list(server.logging_service._session_levels.values())[0]  # type: ignore[attr-defined]
@@ -101,10 +100,10 @@ async def test_logging_notifications_respect_level() -> None:
 @pytest.mark.anyio
 async def test_logging_manual_emit_overrides() -> None:
     server = MCPServer("logging-manual")
-    handler = server.request_handlers[types.SetLevelRequest]
+    handler = server.request_handlers[SetLevelRequest]
     session = DummySession("manual")
 
-    request = types.SetLevelRequest(params=types.SetLevelRequestParams(level="debug"))
+    request = SetLevelRequest(params=SetLevelRequestParams(level="debug"))
     await run_with_context(session, handler, request)
 
     await server.log_message("warning", {"message": "explicit"}, logger="demo")

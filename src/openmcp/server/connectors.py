@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Connection definition framework for OpenMCP.
 
@@ -25,7 +22,7 @@ from typing import TYPE_CHECKING, Any, Literal, TypeVar
 
 from pydantic import BaseModel, create_model
 
-if TYPE_CHECKING:  # pragma: no cover - typing only
+if TYPE_CHECKING:
     from .drivers import Driver
 
 _UNSET = object()

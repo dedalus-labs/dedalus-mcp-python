@@ -1,16 +1,9 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """High-level MCP client wrapper built on the reference SDK.
 
-The implementation mirrors the behavior described in:
-
-* ``docs/mcp/core/understanding-mcp-clients/core-client-features.md``
-* ``docs/mcp/core/cancellation/index.md``
-* ``docs/mcp/core/transports/stdio.md`` and ``docs/mcp/core/transports/streamable-http.md``
+Implements MCP client behavior per the specification.
 
 `MCPClient` manages the initialization handshake, capability negotiation,
 optional client-side features (sampling, elicitation, roots, logging), and
@@ -28,25 +21,30 @@ from typing import Any, TypeVar
 from anyio import Lock
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 
-from .._sdk_loader import ensure_sdk_importable
 from ..utils.coro import maybe_await_with_args
 
-
-ensure_sdk_importable()
-
-from mcp import types
 from mcp.client.session import ClientSession
+
+from ..types.client.elicitation import ElicitRequestParams, ElicitResult
+from ..types.client.roots import ListRootsRequest, ListRootsResult, Root
+from ..types.client.sampling import CreateMessageRequestParams, CreateMessageResult
+from ..types.lifecycle import InitializeResult
+from ..types.messages import ClientNotification, ClientRequest, ClientResult
+from ..types.server.logging import LoggingMessageNotificationParams
+from ..types.shared.base import EmptyResult, ErrorData
+from ..types.shared.capabilities import Implementation
+from ..types.shared.primitives import RequestId
+from ..types.utilities.cancellation import CancelledNotification, CancelledNotificationParams
+from ..types.utilities.ping import PingRequest
 
 
 SamplingHandler = Callable[
-    [Any, types.CreateMessageRequestParams],
-    Awaitable[types.CreateMessageResult | types.ErrorData] | types.CreateMessageResult | types.ErrorData,
+    [Any, CreateMessageRequestParams], Awaitable[CreateMessageResult | ErrorData] | CreateMessageResult | ErrorData
 ]
 ElicitationHandler = Callable[
-    [Any, types.ElicitRequestParams],
-    Awaitable[types.ElicitResult | types.ErrorData] | types.ElicitResult | types.ErrorData,
+    [Any, ElicitRequestParams], Awaitable[ElicitResult | ErrorData] | ElicitResult | ErrorData
 ]
-LoggingHandler = Callable[[types.LoggingMessageNotificationParams], Awaitable[None] | None]
+LoggingHandler = Callable[[LoggingMessageNotificationParams], Awaitable[None] | None]
 
 T_RequestResult = TypeVar("T_RequestResult")
 
@@ -58,7 +56,7 @@ class ClientCapabilitiesConfig:
     sampling: SamplingHandler | None = None
     elicitation: ElicitationHandler | None = None
     logging: LoggingHandler | None = None
-    initial_roots: Iterable[types.Root | dict[str, Any]] | None = None
+    initial_roots: Iterable[Root | dict[str, Any]] | None = None
     enable_roots: bool = False
 
 
@@ -66,7 +64,7 @@ class MCPClient:
     """Lifecycle-aware wrapper around :class:`mcp.client.session.ClientSession`.
 
     Parameters correspond to the optional client features described in
-    ``docs/mcp/core/understanding-mcp-clients/core-client-features.md``.  Hosts
+    the MCP specification. Hosts
     can provide handlers for sampling, elicitation, logging, and root discovery
     to negotiate those capabilities during initialization.
 
@@ -78,7 +76,7 @@ class MCPClient:
         write_stream: MemoryObjectSendStream[Any],
         *,
         capabilities: ClientCapabilitiesConfig | None = None,
-        client_info: types.Implementation | None = None,
+        client_info: Implementation | None = None,
         get_session_id: Callable[[], str | None] | None = None,
     ) -> None:
         self._read_stream = read_stream
@@ -92,10 +90,10 @@ class MCPClient:
         initial_roots = list(self._config.initial_roots or []) if self._supports_roots else []
         self._root_lock = Lock()
         self._roots_version = 0
-        self._roots: list[types.Root] = [self._normalize_root(root) for root in initial_roots]
+        self._roots: list[Root] = [self._normalize_root(root) for root in initial_roots]
 
         self._session: ClientSession | None = None
-        self.initialize_result: types.InitializeResult | None = None
+        self.initialize_result: InitializeResult | None = None
 
     # ---------------------------------------------------------------------
     # Async context manager
@@ -151,13 +149,16 @@ class MCPClient:
         """Whether the client advertises the roots capability."""
         return self._supports_roots
 
-    async def ping(self) -> types.EmptyResult:
-        """Send ``ping`` to verify liveness (``docs/mcp/spec/schema-reference/ping.md``)."""
-        return await self.send_request(types.ClientRequest(types.PingRequest()), types.EmptyResult)
+    async def ping(self) -> EmptyResult:
+        """Send ping to verify liveness.
+
+        See: https://modelcontextprotocol.io/specification/2024-11-05/basic/utilities/ping
+        """
+        return await self.send_request(ClientRequest(PingRequest()), EmptyResult)
 
     async def send_request(
         self,
-        request: types.ClientRequest,
+        request: ClientRequest,
         result_type: type[T_RequestResult],
         *,
         progress_callback: Callable[[float, float | None, str | None], Awaitable[None] | None] | None = None,
@@ -165,17 +166,19 @@ class MCPClient:
         """Forward a request to the server and await the result."""
         return await self.session.send_request(request, result_type, progress_callback=progress_callback)
 
-    async def cancel_request(self, request_id: types.RequestId, *, reason: str | None = None) -> None:
-        """Emit ``notifications/cancelled`` per ``docs/mcp/core/cancellation/index.md``."""
-        params = types.CancelledNotificationParams(requestId=request_id, reason=reason)
-        notification = types.ClientNotification(types.CancelledNotification(params=params))
+    async def cancel_request(self, request_id: RequestId, *, reason: str | None = None) -> None:
+        """Emit notifications/cancelled.
+
+        See: https://modelcontextprotocol.io/specification/2024-11-05/basic/utilities/cancellation
+        """
+        params = CancelledNotificationParams(requestId=request_id, reason=reason)
+        notification = ClientNotification(CancelledNotification(params=params))
         await self.session.send_notification(notification)
 
-    async def update_roots(self, roots: Iterable[types.Root | dict[str, Any]], *, notify: bool = True) -> None:
-        """Replace the advertised roots and optionally send ``roots/list_changed``.
+    async def update_roots(self, roots: Iterable[Root | dict[str, Any]], *, notify: bool = True) -> None:
+        """Replace the advertised roots and optionally send roots/list_changed.
 
-        This fulfils the behavior described in
-        ``docs/mcp/core/understanding-mcp-clients/core-client-features.md``.
+        See: https://modelcontextprotocol.io/specification/2024-11-05/client/roots
 
         """
         if not self._supports_roots:
@@ -189,7 +192,7 @@ class MCPClient:
         if notify and self._session is not None:
             await self._session.send_roots_list_changed()
 
-    async def list_roots(self) -> list[types.Root]:
+    async def list_roots(self) -> list[Root]:
         """Return the current set of roots advertised to servers."""
         async with self._root_lock:
             return [root.model_copy(deep=True) for root in self._roots]
@@ -201,52 +204,52 @@ class MCPClient:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _build_sampling_handler(self) -> Callable[[Any, types.CreateMessageRequestParams], Awaitable[Any]] | None:
+    def _build_sampling_handler(self) -> Callable[[Any, CreateMessageRequestParams], Awaitable[Any]] | None:
         handler = self._config.sampling
         if handler is None:
             return None
 
-        async def wrapper(context: Any, params: types.CreateMessageRequestParams) -> Any:
+        async def wrapper(context: Any, params: CreateMessageRequestParams) -> Any:
             return await maybe_await_with_args(handler, context, params)
 
         return wrapper
 
-    def _build_elicitation_handler(self) -> Callable[[Any, types.ElicitRequestParams], Awaitable[Any]] | None:
+    def _build_elicitation_handler(self) -> Callable[[Any, ElicitRequestParams], Awaitable[Any]] | None:
         handler = self._config.elicitation
         if handler is None:
             return None
 
-        async def wrapper(context: Any, params: types.ElicitRequestParams) -> Any:
+        async def wrapper(context: Any, params: ElicitRequestParams) -> Any:
             return await maybe_await_with_args(handler, context, params)
 
         return wrapper
 
-    def _build_logging_handler(self) -> Callable[[types.LoggingMessageNotificationParams], Awaitable[None]] | None:
+    def _build_logging_handler(self) -> Callable[[LoggingMessageNotificationParams], Awaitable[None]] | None:
         handler = self._config.logging
         if handler is None:
             return None
 
-        async def wrapper(params: types.LoggingMessageNotificationParams) -> None:
+        async def wrapper(params: LoggingMessageNotificationParams) -> None:
             await maybe_await_with_args(handler, params)
 
         return wrapper
 
-    def _build_roots_handler(self) -> Callable[[Any], Awaitable[types.ClientResult]] | None:
+    def _build_roots_handler(self) -> Callable[[Any], Awaitable[ClientResult]] | None:
         if not self._supports_roots:
             return None
 
-        async def list_roots_handler(_: Any) -> types.ListRootsResult:
+        async def list_roots_handler(_: Any) -> ListRootsResult:
             async with self._root_lock:
                 roots_snapshot = [root.model_copy(deep=True) for root in self._roots]
-            return types.ListRootsResult(roots=roots_snapshot)
+            return ListRootsResult(roots=roots_snapshot)
 
         return list_roots_handler
 
     @staticmethod
-    def _normalize_root(value: types.Root | dict[str, Any]) -> types.Root:
-        if isinstance(value, types.Root):
+    def _normalize_root(value: Root | dict[str, Any]) -> Root:
+        if isinstance(value, Root):
             return value
-        return types.Root.model_validate(value)
+        return Root.model_validate(value)
 
 
 __all__ = ["MCPClient", "ClientCapabilitiesConfig"]

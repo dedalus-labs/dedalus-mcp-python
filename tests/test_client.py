@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 from __future__ import annotations
 
@@ -12,7 +9,15 @@ from typing import Any
 import anyio
 import pytest
 
-from openmcp import types
+from openmcp.types.client.elicitation import ElicitRequestParams, ElicitResult
+from openmcp.types.client.roots import Root
+from openmcp.types.client.sampling import CreateMessageRequestParams, CreateMessageResult
+from openmcp.types.lifecycle import InitializeResult
+from openmcp.types.messages import ClientNotification, ClientRequest
+from openmcp.types.shared.base import EmptyResult
+from openmcp.types.shared.capabilities import Implementation, ServerCapabilities
+from openmcp.types.shared.content import TextContent
+from openmcp.types.shared.primitives import LATEST_PROTOCOL_VERSION
 from openmcp.client import ClientCapabilitiesConfig, MCPClient
 
 
@@ -24,7 +29,7 @@ class FakeClientSession:
         elicitation_callback: Callable[..., Any] | None = None,
         list_roots_callback: Callable[..., Any] | None = None,
         logging_callback: Callable[..., Any] | None = None,
-        client_info: types.Implementation | None = None,
+        client_info: Implementation | None = None,
         **_: Any,
     ) -> None:
         self.sampling_callback = sampling_callback
@@ -32,10 +37,10 @@ class FakeClientSession:
         self.list_roots_callback = list_roots_callback
         self.logging_callback = logging_callback
         self.client_info = client_info
-        self.send_request_calls: list[tuple[types.ClientRequest, type[Any], dict[str, Any]]] = []
-        self.notifications: list[types.ClientNotification] = []
+        self.send_request_calls: list[tuple[ClientRequest, type[Any], dict[str, Any]]] = []
+        self.notifications: list[ClientNotification] = []
         self.roots_notifications = 0
-        self.next_result: Any = types.EmptyResult()
+        self.next_result: Any = EmptyResult()
 
     async def __aenter__(self) -> FakeClientSession:
         return self
@@ -43,16 +48,16 @@ class FakeClientSession:
     async def __aexit__(self, exc_type, exc, tb) -> None:
         return None
 
-    async def initialize(self) -> types.InitializeResult:
-        return types.InitializeResult(
-            protocolVersion=types.LATEST_PROTOCOL_VERSION,
-            capabilities=types.ServerCapabilities(),
-            serverInfo=types.Implementation(name="fake", version="0.0.0"),
+    async def initialize(self) -> InitializeResult:
+        return InitializeResult(
+            protocolVersion=LATEST_PROTOCOL_VERSION,
+            capabilities=ServerCapabilities(),
+            serverInfo=Implementation(name="fake", version="0.0.0"),
         )
 
     async def send_request(
         self,
-        request: types.ClientRequest,
+        request: ClientRequest,
         result_type: type[Any],
         *,
         progress_callback: Callable[[float, float | None, str | None], Any] | None = None,
@@ -60,7 +65,7 @@ class FakeClientSession:
         self.send_request_calls.append((request, result_type, {"progress_callback": progress_callback}))
         return self.next_result
 
-    async def send_notification(self, notification: types.ClientNotification) -> None:
+    async def send_notification(self, notification: ClientNotification) -> None:
         self.notifications.append(notification)
 
     async def send_roots_list_changed(self) -> None:
@@ -102,7 +107,7 @@ async def test_client_enables_roots_and_sends_notification(monkeypatch: pytest.M
     async with MCPClient(recv, send, capabilities=capabilities) as client:
         session = factory.instances[0]
         assert session.list_roots_callback is not None
-        await client.update_roots([types.Root(uri="file:///new")])
+        await client.update_roots([Root(uri="file:///new")])
         assert session.roots_notifications == 1
         roots = await client.list_roots()
         assert [str(root.uri) for root in roots] == ["file:///new"]
@@ -133,14 +138,14 @@ async def test_send_request_and_ping_delegate_to_session(monkeypatch: pytest.Mon
     recv, send = anyio.create_memory_object_stream(0)
     async with MCPClient(recv, send) as client:
         session = factory.instances[0]
-        expected = types.EmptyResult()
+        expected = EmptyResult()
         session.next_result = expected
         result = await client.ping()
         assert result is expected
         assert session.send_request_calls
         request, result_type, extras = session.send_request_calls[0]
         assert request.root.method == "ping"
-        assert result_type is types.EmptyResult
+        assert result_type is EmptyResult
         assert extras["progress_callback"] is None
 
 
@@ -149,12 +154,12 @@ async def test_sampling_and_elicitation_handlers_wrapped(monkeypatch: pytest.Mon
     factory = SessionFactory()
     monkeypatch.setattr("openmcp.client.core.ClientSession", factory)
 
-    async def sampling_handler(ctx: Any, params: types.CreateMessageRequestParams) -> types.CreateMessageResult:
-        content = types.TextContent(type="text", text="ok")
-        return types.CreateMessageResult(role="assistant", content=content, model="stub")
+    async def sampling_handler(ctx: Any, params: CreateMessageRequestParams) -> CreateMessageResult:
+        content = TextContent(type="text", text="ok")
+        return CreateMessageResult(role="assistant", content=content, model="stub")
 
-    async def elicitation_handler(ctx: Any, params: types.ElicitRequestParams) -> types.ElicitResult:
-        return types.ElicitResult(action="accept", content={})
+    async def elicitation_handler(ctx: Any, params: ElicitRequestParams) -> ElicitResult:
+        return ElicitResult(action="accept", content={})
 
     recv, send = anyio.create_memory_object_stream(0)
     config = ClientCapabilitiesConfig(sampling=sampling_handler, elicitation=elicitation_handler)
@@ -164,12 +169,12 @@ async def test_sampling_and_elicitation_handlers_wrapped(monkeypatch: pytest.Mon
         assert session.elicitation_callback is not None
         # Call wrappers directly to ensure they forward to user handlers
         ctx = object()
-        params = types.CreateMessageRequestParams(model="m", messages=[], maxTokens=1)
+        params = CreateMessageRequestParams(model="m", messages=[], maxTokens=1)
         result = await session.sampling_callback(ctx, params)
-        assert isinstance(result, types.CreateMessageResult)
+        assert isinstance(result, CreateMessageResult)
 
-        elicit_params = types.ElicitRequestParams(
+        elicit_params = ElicitRequestParams(
             message="Provide", requestedSchema={"type": "object", "properties": {"value": {"type": "string"}}}
         )
         elicit_result = await session.elicitation_callback(ctx, elicit_params)
-        assert isinstance(elicit_result, types.ElicitResult)
+        assert isinstance(elicit_result, ElicitResult)

@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Shared transport primitives for :mod:`openmcp.server`.
 
@@ -79,7 +76,7 @@ class BaseTransport(ABC):
 class TransportFactory(Protocol):
     """Callable that produces a configured transport for an ``MCPServer``."""
 
-    def __call__(self, server: MCPServer) -> BaseTransport:  # pragma: no cover - protocol
+    def __call__(self, server: MCPServer) -> BaseTransport:
         ...
 
 

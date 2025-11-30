@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 from __future__ import annotations
 
@@ -19,15 +16,13 @@ accidental regression.
 from contextlib import asynccontextmanager
 from typing import Any
 
+from exceptiongroup import BaseExceptionGroup
+
 import anyio
 import anyio.abc
 import pytest
 
-from openmcp._sdk_loader import ensure_sdk_importable
 from openmcp.client.transports import lambda_http_client
-
-
-ensure_sdk_importable()
 
 from mcp.client.streamable_http import streamablehttp_client
 
@@ -71,7 +66,7 @@ class FakeTransport:
         self.start_get_stream = start_get_stream
         try:
             await anyio.sleep_forever()
-        except BaseException:  # pragma: no cover - cancellation path
+        except BaseException:
             pass
 
 
@@ -133,7 +128,7 @@ async def test_streamablehttp_client_raises_when_get_stream_starts(monkeypatch: 
                 start_get_stream()
             try:
                 await anyio.sleep_forever()
-            except BaseException:  # pragma: no cover - cancelled by sentinel
+            except BaseException:
                 pass
 
     def transport_factory(

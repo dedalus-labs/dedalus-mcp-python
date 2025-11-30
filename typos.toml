@@ -1,0 +1,32 @@
+# =============================================================================
+# Typos configuration - https://github.com/crate-ci/typos
+# =============================================================================
+
+[default]
+extend-ignore-re = [
+    # Ignore hex strings and hashes
+    "[a-f0-9]{32,}",
+    # Ignore base64 encoded strings
+    "[A-Za-z0-9+/]{40,}={0,2}",
+]
+
+[default.extend-identifiers]
+# Common false positives in code
+ot = "ot"
+nd = "nd"
+
+[default.extend-words]
+# Technical terms that aren't typos
+crate = "crate"
+iff = "iff"
+
+[files]
+extend-exclude = [
+    "*.lock",
+    "*.svg",
+    "htmlcov/",
+    "coverage.xml",
+    ".git/",
+    "internals/",
+    "docs/mcp/",
+]

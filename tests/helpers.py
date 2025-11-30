@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Shared test helpers for MCP server tests."""
 
@@ -15,7 +12,8 @@ import anyio
 from mcp.server.lowlevel.server import request_ctx
 from mcp.shared.context import RequestContext
 
-from openmcp import types
+from openmcp.types.messages import ServerNotification
+from openmcp.types.shared.primitives import RequestId
 
 
 _REQUEST_COUNTER = count(1)
@@ -26,10 +24,10 @@ class DummySession:
 
     def __init__(self, name: str = "session") -> None:
         self.name = name
-        self.notifications: list[types.ServerNotification] = []
+        self.notifications: list[ServerNotification] = []
 
     async def send_notification(
-        self, notification: types.ServerNotification, related_request_id: types.RequestId | None = None
+        self, notification: ServerNotification, related_request_id: RequestId | None = None
     ) -> None:
         await anyio.lowlevel.checkpoint()
         self.notifications.append(notification)
@@ -43,7 +41,7 @@ class FailingSession(DummySession):
         self.failures = 0
 
     async def send_notification(
-        self, notification: types.ServerNotification, related_request_id: types.RequestId | None = None
+        self, notification: ServerNotification, related_request_id: RequestId | None = None
     ) -> None:
         self.failures += 1
         raise RuntimeError("notification failure")

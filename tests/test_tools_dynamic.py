@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 from __future__ import annotations
 
@@ -32,7 +29,7 @@ async def test_static_server_rejects_runtime_mutation() -> None:
         with server.binding():
 
             @tool()
-            def extra() -> str:  # pragma: no cover - executed in raising branch
+            def extra() -> str:
                 return "extra"
 
 

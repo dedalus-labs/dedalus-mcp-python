@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 # Copyright (c) Dedalus Labs, Inc. and affiliates.
 
@@ -30,7 +27,7 @@ if TYPE_CHECKING:
     from . import types
     from .server import MCPServer
 
-    if types:  # pragma: no cover - import guard for static analysers
+    if types:
         types.Completion  # noqa: B018
 
 
@@ -102,7 +99,7 @@ def completion(
     the ``PromptReference`` and ``ResourceTemplateReference`` types in the
     completion spec.
     """
-    if (prompt is None) == (resource is None):  # pragma: no cover - defensive
+    if (prompt is None) == (resource is None):
         raise ValueError("Provide exactly one of 'prompt' or 'resource'.")
 
     ref_type = "prompt" if prompt is not None else "resource"

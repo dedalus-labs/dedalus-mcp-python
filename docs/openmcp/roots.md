@@ -102,10 +102,10 @@ guard.within("file:///home/alice/project/data.json")   # True (file URI)
 
 **Algorithm (`_canonicalize` method, lines 69-100)**:
 1. **Parse input**: If string starts with `file://`, extract scheme, netloc, path.
-   - Windows UNC: `file://server/share` → `//server/share` via `url2pathname`.
-   - POSIX: `file:///path` → `/path`.
+   - Windows UNC: `file://server/share` -> `//server/share` via `url2pathname`.
+   - POSIX: `file:///path` -> `/path`.
    - Otherwise: treat as local path string or `Path` object.
-2. **Expand user**: `~/project` → `/home/alice/project`.
+2. **Expand user**: `~/project` -> `/home/alice/project`.
 3. **Resolve symlinks**: `Path.resolve(strict=False)` follows symlinks without requiring existence.
 4. **Normalize case** (Windows only): `Path(os.path.normcase(...))` ensures `C:\` and `c:\` match.
 5. **Check ancestry**: For each root, verify `candidate == root` or `root in candidate.parents`.
@@ -124,19 +124,19 @@ File URIs differ across platforms. OpenMCP handles both per RFC 8089.
 **Windows examples**:
 ```python
 # Local drive
-"file:///c:/Users/alice/project"  →  Path("C:/Users/alice/project")
+"file:///c:/Users/alice/project"  ->  Path("C:/Users/alice/project")
 
 # UNC path
-"file://server/share/folder"     →  Path("//server/share/folder")
+"file://server/share/folder"     ->  Path("//server/share/folder")
 ```
 
 **POSIX examples**:
 ```python
 # Absolute path
-"file:///home/alice/project"     →  Path("/home/alice/project")
+"file:///home/alice/project"     ->  Path("/home/alice/project")
 
 # Localhost explicit
-"file://localhost/tmp/scratch"   →  Path("/tmp/scratch")
+"file://localhost/tmp/scratch"   ->  Path("/tmp/scratch")
 ```
 
 **Implementation** (lines 76-90):

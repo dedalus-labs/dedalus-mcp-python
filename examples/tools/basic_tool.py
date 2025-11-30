@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Minimal tool registration with automatic schema inference.
 
@@ -12,7 +9,7 @@ explicit decoration. This is the foundation for all tool-based MCP servers.
 
 Pattern:
 - @tool decorator registers functions as MCP tools
-- Type hints → JSON Schema (parameters + return type)
+- Type hints -> JSON Schema (parameters + return type)
 - Sync and async functions work identically
 - No schema boilerplate required
 
@@ -48,7 +45,7 @@ with server.binding():
 
     @tool(description="Greet a user by name")
     async def greet(name: str) -> str:
-        """Async tools work identically. Schema: name (required str) → str."""
+        """Async tools work identically. Schema: name (required str) -> str."""
         return f"Hello, {name}!"
 
     @tool(description="Return structured data")

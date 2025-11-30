@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Tool capability service.
 
@@ -22,7 +19,9 @@ from __future__ import annotations
 
 import inspect
 import types as pytypes
-from typing import TYPE_CHECKING, Any, NotRequired, TypedDict, get_args, get_origin, get_type_hints
+from typing import TYPE_CHECKING, Any, get_args, get_origin, get_type_hints
+
+from typing_extensions import NotRequired, TypedDict
 
 from pydantic import TypeAdapter
 
@@ -228,7 +227,7 @@ class ToolsService:
 
             if isinstance(param.default, Depends):
                 dependency = param.default
-            elif isinstance(param.annotation, Depends):  # pragma: no cover - defensive
+            elif isinstance(param.annotation, Depends):
                 dependency = param.annotation  # type: ignore[assignment]
 
             if dependency is not None:
@@ -239,9 +238,7 @@ class ToolsService:
                 try:
                     kwargs[name] = get_context()
                 except LookupError:
-                    raise TypeError(
-                        f"Cannot inject context for parameter '{name}' outside of an MCP request"
-                    ) from None
+                    raise TypeError(f"Cannot inject context for parameter '{name}' outside of an MCP request") from None
                 continue
 
             if param.default is not inspect.Parameter.empty:
@@ -292,7 +289,7 @@ class ToolsService:
 
         try:
             schema = TypeAdapter(typed_dict).json_schema()
-        except (TypeError, ValueError, NameError) as exc:  # pragma: no cover - pydantic raised unexpected error
+        except (TypeError, ValueError, NameError) as exc:
             self._logger.debug("Failed to derive input schema for %s: %s", fn.__name__, exc)
             return {"type": "object", "additionalProperties": True}
 
@@ -335,7 +332,7 @@ class ToolsService:
 
             resolved = get_type_hints(fn, include_extras=True, localns=closure_ns)
             annotation = resolved.get("return", annotation)
-        except (NameError, TypeError) as exc:  # pragma: no cover - deferred evaluation failed
+        except (NameError, TypeError) as exc:
             self._logger.debug("Failed to resolve return annotation for %s: %s", fn.__name__, exc)
 
         if annotation in (Any, None, types.CallToolResult, types.ServerResult):

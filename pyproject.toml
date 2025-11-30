@@ -12,17 +12,12 @@ build-backend = "uv_build"
 
 [project]
 name = "openmcp"
-version = "0.1.0a0"
+version = "0.0.1"
 description = "A simple and performant Model Context Protocol framework for Python."
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 license = { file = "LICENSE" }
-authors = [
-    { name = "Windsor Nguyen", email = "win@dedaluslabs.ai" },
-]
-maintainers = [
-    { name = "Windsor Nguyen", email = "win@dedaluslabs.ai" },
-]
-keywords = ["openmcp", "mcp", "agents", "fastapi", "service"]
+authors = [{ name = "Dedalus Labs", email = "oss@dedaluslabs.ai" }]
+keywords = ["openmcp", "mcp", "model context protocol", "framework"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Web Environment",
@@ -31,6 +26,8 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
@@ -43,6 +40,7 @@ dependencies = [
     "pydantic>=2.12.0",
     "mcp>=1.20.0",
     "pyjwt[crypto]>=2.10.1",
+    "typing_extensions>=4.0.0",
 ]
 
 # =============================================================================
@@ -52,7 +50,7 @@ dependencies = [
 [project.optional-dependencies]
 # Performance optimizations (install with: uv add "openmcp[opt]")
 opt = [
-    "uvloop>=0.22.1; platform_system != 'Windows'",  # 2-4x faster event loop (Unix only)
+    "uvloop>=0.22.1; platform_system != 'Windows'", # 2-4x faster event loop (Unix only)
 ]
 
 # =============================================================================
@@ -87,6 +85,7 @@ test = [
     "pytest-cov>=7.0.0",
     "pytest-xdist>=3.8.0",
     "pytest-benchmark>=5.1.0",
+    "jsonschema>=4.23.0",
     "httpx>=0.28.1",
     "pytest-httpx>=0.35.0",
     "respx>=0.22.0",
@@ -96,6 +95,7 @@ test = [
     "anyio>=4.11.0",
     "trio>=0.32.0",
     "inline-snapshot>=0.29.2",
+    "exceptiongroup>=1.0.0",
 ]
 
 # Linting and static analysis tools
@@ -108,9 +108,10 @@ test = [
 lint = [
     "ruff>=0.13.3",
     "pre-commit>=4.3.0",
-    "mypy>=1.18.2", # Latest mypy - will migrate to ty when stable
-    "ty>=0.0.1a21", # Alpha - evaluating for future migration
+    "mypy>=1.18.2",      # Latest mypy - will migrate to ty when stable
+    "ty>=0.0.1a21",      # Alpha - evaluating for future migration
     "vulture>=2.14",
+    "deptry>=0.21.0",
 ]
 
 # Debugging tools
@@ -198,8 +199,8 @@ exclude = [
 # =============================================================================
 
 [tool.ruff]
-line-length = 120 # Modern Python standard (Django, FastAPI)
-target-version = "py312" # Target Python 3.12
+line-length = 120
+target-version = "py310"
 extend-exclude = [
     "build/",
     "dist/",
@@ -404,15 +405,11 @@ omit = ["tests/*", "*/tests/*", "test_*.py", "*_test.py"]
 [tool.coverage.report]
 exclude_lines = [
     "pragma: no cover",
-    "def __repr__",
-    "if self.debug:",
-    "if settings.DEBUG",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if 0:",
     "if __name__ == .__main__.:",
     "class .*\\(.*Protocol.*\\):",
     "@(abc\\.)?abstractmethod",
+    "if TYPE_CHECKING:",
+    "except ImportError:",
 ]
 
 # =============================================================================
@@ -420,7 +417,7 @@ exclude_lines = [
 # =============================================================================
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.10"
 mypy_path = "src"
 warn_return_any = true
 warn_unused_configs = true
@@ -461,7 +458,7 @@ unused-ignore-comment = "ignore"
 [tool.ty.environment]
 root = ["src"]
 python-platform = "darwin" # macOS optimized
-python-version = "3.12"    # Target Python version
+python-version = "3.10"    # Target minimum Python version
 
 # =============================================================================
 # TY TERMINAL CONFIGURATION

@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 from __future__ import annotations
 
@@ -12,7 +9,8 @@ from typing import Any, Literal
 from mcp.shared.exceptions import McpError
 import pytest
 
-from openmcp import types
+from openmcp.types.server.tools import ListToolsRequest
+from openmcp.types.shared.base import INVALID_PARAMS, PaginatedRequestParams
 from openmcp.server import MCPServer, NotificationFlags
 from openmcp.tool import tool
 from openmcp.utils.schema import resolve_output_schema
@@ -133,22 +131,12 @@ async def test_serve_dispatch(monkeypatch):
 
     await stdio_server.serve()
     assert called_stdio == {
-        "kwargs": {
-            "raise_exceptions": False,
-            "stateless": False,
-            "validate": False,
-            "announce": True,
-        }
+        "kwargs": {"raise_exceptions": False, "stateless": False, "validate": False, "announce": True}
     }
 
     await stdio_server.serve(transport="stdio", stateless=True)
     assert called_stdio == {
-        "kwargs": {
-            "raise_exceptions": False,
-            "stateless": True,
-            "validate": False,
-            "announce": True,
-        }
+        "kwargs": {"raise_exceptions": False, "stateless": True, "validate": False, "announce": True}
     }
 
     with pytest.raises(ValueError):
@@ -191,20 +179,20 @@ async def test_tools_list_pagination():
 
         server.register_tool(make_tool(idx))
 
-    handler = server.request_handlers[types.ListToolsRequest]
+    handler = server.request_handlers[ListToolsRequest]
 
-    first = await run_with_context(DummySession("tools-1"), handler, types.ListToolsRequest())
+    first = await run_with_context(DummySession("tools-1"), handler, ListToolsRequest())
     first_result = first.root
     assert len(first_result.tools) == 50
     assert first_result.nextCursor == "50"
 
-    second_request = types.ListToolsRequest(params=types.PaginatedRequestParams(cursor="50"))
+    second_request = ListToolsRequest(params=PaginatedRequestParams(cursor="50"))
     second = await run_with_context(DummySession("tools-2"), handler, second_request)
     second_result = second.root
     assert len(second_result.tools) == 50
     assert second_result.nextCursor == "100"
 
-    third_request = types.ListToolsRequest(params=types.PaginatedRequestParams(cursor="100"))
+    third_request = ListToolsRequest(params=PaginatedRequestParams(cursor="100"))
     third = await run_with_context(DummySession("tools-3"), handler, third_request)
     third_result = third.root
     assert len(third_result.tools) == 20
@@ -216,14 +204,14 @@ async def test_tools_list_invalid_cursor():
     server = MCPServer("tools-invalid-cursor")
 
     server.register_tool(tool()(lambda: None))
-    handler = server.request_handlers[types.ListToolsRequest]
+    handler = server.request_handlers[ListToolsRequest]
 
-    request = types.ListToolsRequest(params=types.PaginatedRequestParams(cursor="oops"))
+    request = ListToolsRequest(params=PaginatedRequestParams(cursor="oops"))
 
     with pytest.raises(McpError) as excinfo:
         await run_with_context(DummySession("tools-invalid"), handler, request)
 
-    assert excinfo.value.error.code == types.INVALID_PARAMS
+    assert excinfo.value.error.code == INVALID_PARAMS
 
 
 @pytest.mark.anyio
@@ -241,8 +229,8 @@ async def test_tools_list_cursor_past_end():
 
         server.register_tool(make_tool(idx))
 
-    handler = server.request_handlers[types.ListToolsRequest]
-    request = types.ListToolsRequest(params=types.PaginatedRequestParams(cursor="9999"))
+    handler = server.request_handlers[ListToolsRequest]
+    request = ListToolsRequest(params=PaginatedRequestParams(cursor="9999"))
     response = await run_with_context(DummySession("tools-past"), handler, request)
 
     assert response.root.tools == []
@@ -265,8 +253,8 @@ async def test_tools_metadata_fields_present():
         def add(a: int, b: int) -> dict[str, int]:
             return {"sum": a + b}
 
-    handler = server.request_handlers[types.ListToolsRequest]
-    response = await run_with_context(DummySession("tools-metadata"), handler, types.ListToolsRequest())
+    handler = server.request_handlers[ListToolsRequest]
+    response = await run_with_context(DummySession("tools-metadata"), handler, ListToolsRequest())
 
     tool_entry = response.root.tools[0]
     assert tool_entry.description == "Adds two numbers"
@@ -347,10 +335,7 @@ async def test_tool_output_schema_supports_union_types():
     assert schema == expected
 
     result = await server.tools.call_tool("choose_action", {"chat": False})
-    assert result.structuredContent == {
-        "kind": "navigate",
-        "payload": {"url": "https://example.com"},
-    }
+    assert result.structuredContent == {"kind": "navigate", "payload": {"url": "https://example.com"}}
 
 
 @pytest.mark.anyio
@@ -359,10 +344,7 @@ async def test_tool_output_schema_explicit_pass_through():
 
     explicit_schema = {
         "type": "object",
-        "properties": {
-            "value": {"type": "number"},
-            "unit": {"type": "string"},
-        },
+        "properties": {"value": {"type": "number"}, "unit": {"type": "string"}},
         "required": ["value", "unit"],
         "additionalProperties": False,
     }
@@ -405,10 +387,10 @@ async def test_tool_output_schema_boxes_scalars():
 @pytest.mark.anyio
 async def test_tools_list_changed_notification_enabled():
     server = MCPServer("tools-list-changed", notification_flags=NotificationFlags(tools_changed=True))
-    handler = server.request_handlers[types.ListToolsRequest]
+    handler = server.request_handlers[ListToolsRequest]
     session = DummySession("tool-observer")
 
-    await run_with_context(session, handler, types.ListToolsRequest())
+    await run_with_context(session, handler, ListToolsRequest())
     await server.notify_tools_list_changed()
 
     assert session.notifications
@@ -418,13 +400,15 @@ async def test_tools_list_changed_notification_enabled():
 @pytest.mark.anyio
 async def test_tools_list_changed_notification_disabled():
     server = MCPServer("tools-list-changed-off")
-    handler = server.request_handlers[types.ListToolsRequest]
+    handler = server.request_handlers[ListToolsRequest]
     session = DummySession("tool-observer-off")
 
-    await run_with_context(session, handler, types.ListToolsRequest())
+    await run_with_context(session, handler, ListToolsRequest())
     await server.notify_tools_list_changed()
 
     assert all(note.root.method != "notifications/tools/list_changed" for note in session.notifications)
+
+
 @dataclass
 class NestedAddress:
     street: str

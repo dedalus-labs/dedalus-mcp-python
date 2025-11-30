@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """High-level client entrypoint.
 
@@ -24,20 +21,15 @@ from datetime import timedelta
 
 import httpx
 
-from .._sdk_loader import ensure_sdk_importable
-
-
-ensure_sdk_importable()
-
-from mcp.client.streamable_http import (  # type: ignore  # noqa: E402
+from mcp.client.streamable_http import (
     MCP_PROTOCOL_VERSION,
     streamablehttp_client,
 )
-from mcp.shared._httpx_utils import (  # type: ignore  # noqa: E402
+from mcp.shared._httpx_utils import (
     McpHttpClientFactory,
     create_mcp_http_client,
 )
-from mcp.types import LATEST_PROTOCOL_VERSION, Implementation  # type: ignore  # noqa: E402
+from mcp.types import LATEST_PROTOCOL_VERSION, Implementation
 
 from .core import ClientCapabilitiesConfig, MCPClient
 from .transports import lambda_http_client
@@ -48,7 +40,7 @@ LambdaHTTPNames = {"lambda-http", "lambda_http"}
 
 
 @asynccontextmanager
-async def open_connection(  # noqa: D401 - docstring inherited by module docs
+async def open_connection(
     url: str,
     *,
     transport: str = "streamable-http",

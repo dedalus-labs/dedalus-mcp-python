@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Dynamic prompts with required and optional parameter substitution.
 
@@ -12,7 +9,7 @@ flags, and the framework validates them before function execution.
 
 Pattern:
 - Declare arguments in @prompt decorator with name, description, required flag
-- Framework validates required arguments (missing → INVALID_PARAMS error)
+- Framework validates required arguments (missing -> INVALID_PARAMS error)
 - Optional arguments support default values via dict.get()
 - Functions receive validated arguments dict and return message templates
 
@@ -76,10 +73,7 @@ with server.binding():
 
 async def main() -> None:
     await server.serve(
-        transport="streamable-http",
-        verbose=False,
-        log_level="critical",
-        uvicorn_options={"access_log": False},
+        transport="streamable-http", verbose=False, log_level="critical", uvicorn_options={"access_log": False}
     )
 
 

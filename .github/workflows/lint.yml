@@ -1,0 +1,50 @@
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
+---
+name: Lint
+
+on:
+    workflow_call:
+        inputs:
+            python-version:
+                description: Python version to use
+                type: string
+                default: "3.12"
+
+jobs:
+    lint:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Install uv
+              uses: astral-sh/setup-uv@v6
+              with:
+                  enable-cache: true
+                  cache-dependency-glob: "uv.lock"
+
+            - name: Set up Python ${{ inputs.python-version }}
+              run: uv python install ${{ inputs.python-version }}
+
+            - name: Install dependencies
+              run: uv sync --group lint
+
+            - name: Run ruff linter
+              run: uv run ruff check --output-format=github .
+
+            - name: Run ruff formatter check
+              run: uv run ruff format --check .
+
+            - name: Run mypy
+              run: uv run mypy src/openmcp --ignore-missing-imports
+
+            - name: Dead code check (vulture)
+              run: uv run vulture src/openmcp/ --min-confidence 80
+              continue-on-error: true
+
+            - name: Dependency check (deptry)
+              run: uv run deptry src/
+              continue-on-error: true
+
+            - name: Actionlint
+              uses: rhysd/actionlint@v1

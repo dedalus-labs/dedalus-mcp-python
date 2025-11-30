@@ -1,15 +1,11 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """End-to-end transport tests for subscription flows.
 
 Exercises ``serve_stdio`` and ``serve_streamable_http`` using in-memory transports
 so we can verify resource notifications traverse the wire exactly as the spec
-requires (``docs/mcp/spec/schema-reference/resources-subscribe.md`` and
-``docs/mcp/capabilities/resources``).
+See: https://modelcontextprotocol.io/specification/2024-11-05/server/resources
 """
 
 from __future__ import annotations
@@ -29,7 +25,19 @@ from mcp.client.session import ClientSession
 from mcp.shared.session import RequestResponder
 import pytest
 
-from openmcp import MCPServer, resource, types
+from openmcp import MCPServer, resource
+from openmcp.types.lifecycle import InitializeResult
+from openmcp.types.messages import ClientRequest, ClientResult, ServerNotification, ServerRequest
+from openmcp.types.server.resources import (
+    ListResourcesRequest,
+    ListResourcesResult,
+    SubscribeRequest,
+    SubscribeRequestParams,
+    UnsubscribeRequest,
+    UnsubscribeRequestParams,
+)
+from openmcp.types.shared.base import EmptyResult, ErrorData
+from openmcp.types.shared.capabilities import Implementation
 from openmcp.server import NotificationFlags
 
 
@@ -39,7 +47,7 @@ async def _exercise_transport(
         [pytest.MonkeyPatch, anyio.abc.ObjectReceiveStream[Any], anyio.abc.ObjectSendStream[Any]], None
     ],
     start_server: Callable[[MCPServer], anyio.abc.TaskStatus[Any] | anyio.abc.AsyncResource],
-) -> tuple[types.InitializeResult, list[types.ServerNotification], tuple[int, int]]:
+) -> tuple[InitializeResult, list[ServerNotification], tuple[int, int]]:
     """Spin up a server under the given transport and collect notifications."""
     server = MCPServer("integration", notification_flags=NotificationFlags(resources_changed=True))
 
@@ -56,17 +64,15 @@ async def _exercise_transport(
 
     apply_transport_patch(monkeypatch, client_to_server_recv, server_to_client_send)
 
-    notifications: list[types.ServerNotification] = []
+    notifications: list[ServerNotification] = []
 
     async def message_handler(
-        message: RequestResponder[types.ServerRequest, types.ClientResult] | types.ServerNotification | Exception,
+        message: RequestResponder[ServerRequest, ClientResult] | ServerNotification | Exception,
     ) -> None:
         if isinstance(message, RequestResponder):
-            await message.error(
-                types.ErrorData(code=types.INVALID_REQUEST, message="Test client does not handle server requests")
-            )
+            await message.error(ErrorData(code=INVALID_REQUEST, message="Test client does not handle server requests"))
             return
-        if isinstance(message, Exception):  # pragma: no cover - defensive
+        if isinstance(message, Exception):
             raise message
         notifications.append(message)
 
@@ -77,21 +83,18 @@ async def _exercise_transport(
             server_to_client_recv,
             client_to_server_send,
             message_handler=message_handler,
-            client_info=types.Implementation(name="integration-client", version="0.0.1"),
+            client_info=Implementation(name="integration-client", version="0.0.1"),
         )
 
         async with session as client_session:
             init_result = await client_session.initialize()
 
-            list_result = await client_session.send_request(
-                types.ClientRequest(types.ListResourcesRequest()), types.ListResourcesResult
-            )
+            list_result = await client_session.send_request(ClientRequest(ListResourcesRequest()), ListResourcesResult)
             assert list_result.resources
             assert str(list_result.resources[0].uri) == uri
 
             await client_session.send_request(
-                types.ClientRequest(types.SubscribeRequest(params=types.SubscribeRequestParams(uri=uri))),
-                types.EmptyResult,
+                ClientRequest(SubscribeRequest(params=SubscribeRequestParams(uri=uri))), EmptyResult
             )
 
             await server.notify_resource_updated(uri)
@@ -100,8 +103,7 @@ async def _exercise_transport(
             initial_updates = sum(1 for note in notifications if note.root.method == "notifications/resources/updated")
 
             await client_session.send_request(
-                types.ClientRequest(types.UnsubscribeRequest(params=types.UnsubscribeRequestParams(uri=uri))),
-                types.EmptyResult,
+                ClientRequest(UnsubscribeRequest(params=UnsubscribeRequestParams(uri=uri))), EmptyResult
             )
 
             await server.notify_resource_updated(uri)
@@ -167,15 +169,14 @@ async def test_streamable_http_subscription_end_to_end(monkeypatch: pytest.Monke
         send: Callable[[object], Awaitable[None]],
     ) -> None:
         async def fake_run(
-            self: StreamableHTTPTransport,
-            *,
-            config: object | None = None,
-            **legacy_kwargs: object,
+            self: StreamableHTTPTransport, *, config: object | None = None, **legacy_kwargs: object
         ) -> None:
             if config is not None:
                 uvicorn_options = dict(getattr(config, "uvicorn_options", {}))
             else:
-                uvicorn_options = {key: legacy_kwargs[key] for key in legacy_kwargs if key not in {"host", "port", "path", "log_level"}}
+                uvicorn_options = {
+                    key: legacy_kwargs[key] for key in legacy_kwargs if key not in {"host", "port", "path", "log_level"}
+                }
 
             init_options = self._server.create_initialization_options()
             await self._server.run(
@@ -186,7 +187,9 @@ async def test_streamable_http_subscription_end_to_end(monkeypatch: pytest.Monke
                 stateless=False,
             )
 
-        monkeypatch.setattr("openmcp.server.transports.streamable_http.StreamableHTTPTransport.run", fake_run, raising=False)
+        monkeypatch.setattr(
+            "openmcp.server.transports.streamable_http.StreamableHTTPTransport.run", fake_run, raising=False
+        )
 
     init_result, notifications, (before_updates, after_updates) = await _exercise_transport(
         monkeypatch, patch_streamable_http, start

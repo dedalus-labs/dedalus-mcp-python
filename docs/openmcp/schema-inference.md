@@ -53,7 +53,7 @@ The output schema is derived from the function's return type annotation. Unlike 
 3. **Check blocklist**: Skip schema generation if the return type is an MCP content type (e.g., `CallToolResult`, `TextContent`, `ImageContent`) or a Union containing such types.
 4. **Generate schema**: Pass the annotation to `resolve_output_schema()` from `openmcp.utils.schema`, which:
    - Derives the base schema via `TypeAdapter.json_schema(mode="serialization")`.
-   - Wraps scalar schemas into objects (e.g., `int` → `{"type": "object", "properties": {"result": {"type": "integer"}}}`) to satisfy MCP's object requirement.
+   - Wraps scalar schemas into objects (e.g., `int` -> `{"type": "object", "properties": {"result": {"type": "integer"}}}`) to satisfy MCP's object requirement.
    - Adds vendor extension `x-dedalus-box` to record boxing metadata.
 5. **Clean schema**: Remove `$defs`, prune `title` fields.
 

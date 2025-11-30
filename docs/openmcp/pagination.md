@@ -12,11 +12,11 @@
 
 - **Spec Citation**: https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/pagination
 - **Applicable Endpoints**:
-  - `tools/list` → `ListToolsResult.nextCursor`
-  - `resources/list` → `ListResourcesResult.nextCursor`
-  - `prompts/list` → `ListPromptsResult.nextCursor`
-  - `roots/list` → `ListRootsResult.nextCursor`
-  - `resources/templates/list` → `ListResourceTemplatesResult.nextCursor`
+  - `tools/list` -> `ListToolsResult.nextCursor`
+  - `resources/list` -> `ListResourcesResult.nextCursor`
+  - `prompts/list` -> `ListPromptsResult.nextCursor`
+  - `roots/list` -> `ListRootsResult.nextCursor`
+  - `resources/templates/list` -> `ListResourceTemplatesResult.nextCursor`
 - **Request Parameters**: `cursor` (string, optional) — opaque token from previous response
 - **Response Fields**:
   - `nextCursor` (string, optional) — token to fetch next page; absent if no more results
@@ -27,9 +27,9 @@
 Cursors are **opaque strings** from the client's perspective. Clients treat them as black boxes; servers encode pagination state (OpenMCP uses integer offsets as strings).
 
 **Lifecycle**:
-1. Client sends `cursor=null` → server returns first page + `nextCursor` (if more data).
-2. Client sends `cursor=<token>` → server returns next page + new `nextCursor` (if applicable).
-3. `nextCursor` absent → end of collection.
+1. Client sends `cursor=null` -> server returns first page + `nextCursor` (if more data).
+2. Client sends `cursor=<token>` -> server returns next page + new `nextCursor` (if applicable).
+3. `nextCursor` absent -> end of collection.
 
 **Validation**: Invalid cursors raise `INVALID_PARAMS` (-32602) with message `"Invalid cursor provided"`.
 

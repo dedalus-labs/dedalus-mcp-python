@@ -1,0 +1,94 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Renovate configuration for OpenMCP Python framework",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":dependencyDashboard",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "timezone": "America/Los_Angeles",
+  "schedule": ["before 9am on the first day of the month"],
+  "prCreation": "not-pending",
+  "prConcurrentLimit": 5,
+  "branchConcurrentLimit": 10,
+  "labels": ["dependencies", "automated"],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 9am on the first day of the month"],
+    "commitMessageAction": "update lockfile"
+  },
+  "python": {
+    "registryUrls": ["https://pypi.org/simple/"]
+  },
+  "packageRules": [
+    {
+      "description": "Group MCP SDK updates",
+      "matchPackageNames": ["mcp"],
+      "groupName": "MCP SDK",
+      "automerge": false
+    },
+    {
+      "description": "Group Pydantic updates",
+      "matchPackagePatterns": ["^pydantic"],
+      "groupName": "Pydantic",
+      "automerge": false
+    },
+    {
+      "description": "Group testing dependencies",
+      "matchPackagePatterns": [
+        "^pytest",
+        "^hypothesis",
+        "^faker",
+        "^coverage",
+        "^inline-snapshot"
+      ],
+      "groupName": "Testing",
+      "automerge": true,
+      "automergeType": "pr",
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      "description": "Group linting and type checking tools",
+      "matchPackagePatterns": ["^ruff", "^mypy", "^ty", "^vulture", "^deptry"],
+      "groupName": "Linting",
+      "automerge": true,
+      "automergeType": "pr",
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      "description": "Group HTTP/networking libraries",
+      "matchPackagePatterns": ["^httpx", "^anyio", "^trio"],
+      "groupName": "HTTP & Async",
+      "automerge": true,
+      "automergeType": "pr",
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      "description": "Group GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions",
+      "automerge": true,
+      "automergeType": "pr",
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      "description": "Require manual review for major updates",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "breaking-change"]
+    },
+    {
+      "description": "Require manual review for 0.x packages (unstable)",
+      "matchCurrentVersion": "/^0\\./",
+      "matchUpdateTypes": ["minor"],
+      "automerge": false
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security", "dependencies"]
+  },
+  "configMigration": true
+}
+

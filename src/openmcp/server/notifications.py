@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Utilities for tracking observers and broadcasting notifications."""
 
@@ -15,7 +12,7 @@ import anyio
 from mcp.server.lowlevel.server import request_ctx
 
 
-if TYPE_CHECKING:  # pragma: no cover - typing helpers
+if TYPE_CHECKING:
     from .. import types
 
 
@@ -42,7 +39,7 @@ class ObserverRegistry:
     def remember_current_session(self) -> None:
         try:
             context = request_ctx.get()
-        except LookupError:  # pragma: no cover - no active request
+        except LookupError:
             return
         self._observers.add(context.session)
 
@@ -54,7 +51,7 @@ class ObserverRegistry:
         for session in list(self._observers):
             try:
                 await self._sink.send_notification(session, notification)
-            except Exception as exc:  # pragma: no cover - defensive
+            except Exception as exc:
                 logger.warning("Failed to notify observer %s: %s", getattr(session, "name", repr(session)), exc)
                 stale.append(session)
                 await anyio.lowlevel.checkpoint()

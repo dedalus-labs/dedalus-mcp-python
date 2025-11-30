@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Shared ASGI transport primitives.
 
@@ -98,7 +95,7 @@ class SessionManagerHandler:
         @asynccontextmanager
         async def _lifespan(
             _app: Starlette,
-        ) -> AsyncIterator[None]:  # pragma: no cover - exercised via integration tests
+        ) -> AsyncIterator[None]:
             async with self.session_manager.run():
                 yield
 

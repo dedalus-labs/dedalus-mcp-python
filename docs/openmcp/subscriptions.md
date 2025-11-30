@@ -54,10 +54,10 @@ The spec requires:
 The `SubscriptionManager` maintains two complementary indexes:
 
 ```python
-# Resource → Sessions (who is subscribed to this resource?)
+# Resource -> Sessions (who is subscribed to this resource?)
 _by_uri: dict[str, weakref.WeakSet[Any]]
 
-# Session → Resources (what is this session subscribed to?)
+# Session -> Resources (what is this session subscribed to?)
 _by_session: weakref.WeakKeyDictionary[Any, set[str]]
 ```
 
@@ -372,15 +372,15 @@ async def demo_lifecycle():
         tg.start_soon(server.serve_stdio)
 
         # 2. Client subscribes (handled by transport layer)
-        #    → SubscriptionManager.subscribe_current("resource://demo/counter")
+        #    -> SubscriptionManager.subscribe_current("resource://demo/counter")
 
         # 3. Resource changes
         await server.notify_resource_updated("resource://demo/counter")
-        #    → ResourcesService.notify_updated() calls SubscriptionManager.subscribers()
-        #    → Broadcasts notifications/resources/updated to all subscribers
+        #    -> ResourcesService.notify_updated() calls SubscriptionManager.subscribers()
+        #    -> Broadcasts notifications/resources/updated to all subscribers
 
         # 4. Client unsubscribes
-        #    → SubscriptionManager.unsubscribe_current("resource://demo/counter")
+        #    -> SubscriptionManager.unsubscribe_current("resource://demo/counter")
 
         # 5. Resource changes again (no notifications sent)
         await server.notify_resource_updated("resource://demo/counter")
@@ -404,10 +404,10 @@ async def demo_stale_detection():
 
     # Notification fails (network error, client crashed, etc.)
     await server.notify_resource_updated("resource://demo/data")
-    # → ResourcesService catches exception during send_notification()
-    # → Adds session to stale list
-    # → Calls subscription_manager.prune_session(stale_session)
-    # → Session removed from all URI subscriptions
+    # -> ResourcesService catches exception during send_notification()
+    # -> Adds session to stale list
+    # -> Calls subscription_manager.prune_session(stale_session)
+    # -> Session removed from all URI subscriptions
 ```
 
 ### Example 3: Testing Subscriptions

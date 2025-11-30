@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Resource capability service (resources, templates, subscriptions).
 
@@ -98,7 +95,7 @@ class ResourcesService:
 
             try:
                 data = await maybe_await_with_args(spec.fn)
-            except Exception as exc:  # pragma: no cover - defensive
+            except Exception as exc:
                 text = f"Resource error: {exc}"
                 fallback = types.TextResourceContents(uri=uri, mimeType="text/plain", text=text)
                 return types.ReadResourceResult(contents=[fallback])
@@ -129,7 +126,7 @@ class ResourcesService:
         for session in subscribers:
             try:
                 await self._sink.send_notification(session, notification)
-            except Exception as exc:  # pragma: no cover - defensive
+            except Exception as exc:
                 self._logger.warning("Failed to notify subscriber %s: %s", getattr(session, "name", repr(session)), exc)
                 stale.append(session)
 

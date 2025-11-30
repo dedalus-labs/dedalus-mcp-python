@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Composable MCP server built on the reference SDK."""
 
@@ -14,24 +11,22 @@ from dataclasses import dataclass
 from functools import wraps
 import inspect
 import time
+from types import ModuleType
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator, Literal, Mapping
 
 import anyio
 
 from .transports.base import BaseTransport, TransportFactory
-from .._sdk_loader import ensure_sdk_importable
 
-
-ensure_sdk_importable()
 
 try:
     import uvloop
+
     uvloop.install()
     _USING_UVLOOP = True
 except ImportError:
     _USING_UVLOOP = False
 
-from mcp import types
 from mcp.server.lowlevel.helper_types import ReadResourceContents
 from mcp.server.lowlevel.server import NotificationOptions, Server, request_ctx
 from mcp.server.lowlevel.server import lifespan as default_lifespan
@@ -40,6 +35,25 @@ from mcp.shared.exceptions import McpError
 from mcp.shared.context import RequestContext
 from mcp.shared.message import ServerMessageMetadata
 from mcp.shared.session import RequestResponder
+
+from ..types.client.roots import ListRootsRequest, ListRootsResult, RootsListChangedNotification
+from ..types.client.sampling import CreateMessageRequestParams, CreateMessageResult
+from ..types.client.elicitation import ElicitRequestParams, ElicitResult
+from ..types.lifecycle import InitializedNotification
+from ..types.messages import ClientNotification, ClientRequest, ServerRequest, ServerResult
+from ..types.server.completions import Completion, CompletionArgument, CompletionContext, ResourceTemplateReference
+from ..types.server.prompts import GetPromptResult, ListPromptsRequest, ListPromptsResult, PromptReference
+from ..types.server.resources import (
+    ListResourcesRequest,
+    ListResourcesResult,
+    ListResourceTemplatesRequest,
+    ListResourceTemplatesResult,
+)
+from ..types.server.tools import ListToolsRequest, ListToolsResult
+from ..types.shared.base import ErrorData, INTERNAL_ERROR, INVALID_PARAMS, METHOD_NOT_FOUND, RequestParams
+from ..types.shared.capabilities import Icon, ServerCapabilities
+from ..types.shared.content import BlobResourceContents, ContentBlock, TextContent, TextResourceContents
+from ..types.shared.primitives import LATEST_PROTOCOL_VERSION, LoggingLevel
 
 from .authorization import AuthorizationConfig, AuthorizationManager, AuthorizationProvider
 from .notifications import DefaultNotificationSink, NotificationSink
@@ -68,25 +82,30 @@ from .services.protocols import (
 from .subscriptions import SubscriptionManager
 from .transports import ASGIRunConfig, StdioTransport, StreamableHTTPTransport
 from ..completion import CompletionSpec
+from ..completion import extract_completion_spec
 from ..completion import reset_active_server as reset_completion_server
 from ..completion import set_active_server as set_completion_server
 from ..prompt import PromptSpec
+from ..prompt import extract_prompt_spec
 from ..prompt import reset_active_server as reset_prompt_server
 from ..prompt import set_active_server as set_prompt_server
 from ..resource import ResourceSpec
+from ..resource import extract_resource_spec
 from ..resource import reset_active_server as reset_resource_server
 from ..resource import set_active_server as set_resource_server
 from ..resource_template import ResourceTemplateSpec
+from ..resource_template import extract_resource_template_spec
 from ..resource_template import reset_active_server as reset_resource_template_server
 from ..resource_template import set_active_server as set_resource_template_server
 from ..tool import ToolSpec
+from ..tool import extract_tool_spec
 from ..tool import reset_active_server as reset_tool_server
 from ..tool import set_active_server as set_tool_server
 from ..utils import get_logger
 from ..context import RUNTIME_CONTEXT_KEY, context_scope, get_context
 
 
-if TYPE_CHECKING:  # pragma: no cover - typing only
+if TYPE_CHECKING:
     from anyio.abc import TaskGroup
     from mcp.server.models import InitializationOptions
     from mcp.server.session import ServerSession
@@ -135,7 +154,7 @@ class MCPServer(Server[Any, Any]):
         version: str | None = None,
         instructions: str | None = None,
         website_url: str | None = None,
-        icons: list[types.Icon] | None = None,
+        icons: list[Icon] | None = None,
         notification_flags: NotificationFlags | None = None,
         experimental_capabilities: Mapping[str, Mapping[str, Any]] | None = None,
         lifespan: Callable[[Server[Any, Any]], Any] = default_lifespan,
@@ -219,65 +238,66 @@ class MCPServer(Server[Any, Any]):
         )
         self.register_transport("streamable-http", stream_http_factory, aliases=("streamable_http", "shttp", "http"))
 
-        self.notification_handlers[types.InitializedNotification] = self._handle_initialized
-        self.notification_handlers[types.RootsListChangedNotification] = self._handle_roots_list_changed
+        self.notification_handlers[InitializedNotification] = self._handle_initialized
+        self.notification_handlers[RootsListChangedNotification] = self._handle_roots_list_changed
 
         # //////////////////////////////////////////////////////////////////
         # Register default handlers
         # //////////////////////////////////////////////////////////////////
 
         @self.list_resources()
-        async def _list_resources(request: types.ListResourcesRequest) -> types.ListResourcesResult:
-            result: types.ListResourcesResult = await self.resources.list_resources(request)
+        async def _list_resources(request: ListResourcesRequest) -> ListResourcesResult:
+            result: ListResourcesResult = await self.resources.list_resources(request)
             return result
 
         @self.read_resource()
-        async def _read_resource(uri: types.AnyUrl) -> list[ReadResourceContents]:
+        async def _read_resource(uri: str) -> list[ReadResourceContents]:
             result = await self.resources.read(str(uri))
             converted: list[ReadResourceContents] = []
             for item in result.contents:
-                if isinstance(item, types.TextResourceContents):
+                if isinstance(item, TextResourceContents):
                     converted.append(ReadResourceContents(content=item.text, mime_type=item.mimeType))
-                elif isinstance(item, types.BlobResourceContents):
+                elif isinstance(item, BlobResourceContents):
                     data = base64.b64decode(item.blob)
                     converted.append(ReadResourceContents(content=data, mime_type=item.mimeType))
-                else:  # pragma: no cover - defensive
-                    raise TypeError(f"Unsupported resource content type: {type(item)!r}")
+                else:
+                    msg = f"Unsupported resource content type: {type(item)!r}"
+                    raise TypeError(msg)
             return converted
 
         @self.list_resource_templates()
-        async def _list_templates(request: types.ListResourceTemplatesRequest) -> types.ListResourceTemplatesResult:
+        async def _list_templates(request: ListResourceTemplatesRequest) -> ListResourceTemplatesResult:
             cursor = request.params.cursor if request.params is not None else None
-            result: types.ListResourceTemplatesResult = await self.resources.list_templates(cursor)
+            result: ListResourceTemplatesResult = await self.resources.list_templates(cursor)
             return result
 
         @self.list_tools()
-        async def _list_tools(request: types.ListToolsRequest) -> types.ListToolsResult:
-            result: types.ListToolsResult = await self.tools.list_tools(request)
+        async def _list_tools(request: ListToolsRequest) -> ListToolsResult:
+            result: ListToolsResult = await self.tools.list_tools(request)
             return result
 
         @self.call_tool(validate_input=False)
         async def _call_tool(
             name: str, arguments: dict[str, Any] | None
-        ) -> tuple[list[types.ContentBlock], dict[str, Any] | None]:
+        ) -> tuple[list[ContentBlock], dict[str, Any] | None]:
             result = await self.tools.call_tool(name, arguments or {})
             if result.isError:
                 message = "Tool execution failed"
                 if result.content:
                     first = result.content[0]
-                    if isinstance(first, types.TextContent) and first.text:
+                    if isinstance(first, TextContent) and first.text:
                         message = first.text
-                raise McpError(types.ErrorData(code=types.INTERNAL_ERROR, message=message))
+                raise McpError(ErrorData(code=INTERNAL_ERROR, message=message))
 
             structured = result.structuredContent if result.structuredContent is not None else None
             return list(result.content), structured
 
         @self.completion()
         async def _completion_handler(
-            ref: types.PromptReference | types.ResourceTemplateReference,
-            argument: types.CompletionArgument,
-            context: types.CompletionContext | None,
-        ) -> types.Completion | None:
+            ref: PromptReference | ResourceTemplateReference,
+            argument: CompletionArgument,
+            context: CompletionContext | None,
+        ) -> Completion | None:
             return await self.completions.execute(ref, argument, context)
 
         @self.subscribe_resource()
@@ -289,17 +309,17 @@ class MCPServer(Server[Any, Any]):
             await self.resources.unsubscribe_current(str(uri))
 
         @self.list_prompts()
-        async def _list_prompts(request: types.ListPromptsRequest) -> types.ListPromptsResult:
-            result: types.ListPromptsResult = await self.prompts.list_prompts(request)
+        async def _list_prompts(request: ListPromptsRequest) -> ListPromptsResult:
+            result: ListPromptsResult = await self.prompts.list_prompts(request)
             return result
 
         @self.get_prompt()
-        async def _get_prompt(name: str, arguments: dict[str, str] | None) -> types.GetPromptResult:
-            result: types.GetPromptResult = await self.prompts.get_prompt(name, arguments)
+        async def _get_prompt(name: str, arguments: dict[str, str] | None) -> GetPromptResult:
+            result: GetPromptResult = await self.prompts.get_prompt(name, arguments)
             return result
 
         @self.set_logging_level()
-        async def _set_logging_level(level: types.LoggingLevel) -> None:
+        async def _set_logging_level(level: LoggingLevel) -> None:
             await self.logging_service.set_level(level)
 
     # //////////////////////////////////////////////////////////////////
@@ -337,9 +357,7 @@ class MCPServer(Server[Any, Any]):
         and required authentication scopes according to the MCP connection schema
         specification.
         """
-        metadata: dict[str, Any] = {
-            "mcp_server_version": "2025-06-18",
-        }
+        metadata: dict[str, Any] = {"mcp_server_version": "2025-06-18"}
 
         if self._resource_uri:
             metadata["resource_uri"] = self._resource_uri
@@ -395,15 +413,16 @@ class MCPServer(Server[Any, Any]):
         """Convenience wrapper that pings the client associated with the active request."""
         try:
             context = request_ctx.get()
-        except LookupError as exc:  # pragma: no cover - defensive
-            raise RuntimeError("ping_current_session requires an active request context") from exc
+        except LookupError as exc:
+            msg = "ping_current_session requires an active request context"
+            raise RuntimeError(msg) from exc
 
         return await self.ping_client(context.session, timeout=timeout)
 
     async def _handle_message(
         self, message: Any, session: Any, lifespan_context: Any, raise_exceptions: bool = False
     ) -> None:
-        if isinstance(message, (RequestResponder, types.ClientNotification)):
+        if isinstance(message, (RequestResponder, ClientNotification)):
             self.ping.register(session)
             self.ping.touch(session)
         await super()._handle_message(message, session, lifespan_context, raise_exceptions)
@@ -428,6 +447,93 @@ class MCPServer(Server[Any, Any]):
             max_concurrency=max_concurrency,
         )
 
+    # //////////////////////////////////////////////////////////////////
+    # Collection API - primary registration interface
+    # //////////////////////////////////////////////////////////////////
+
+    def collect(self, *fns: Callable[..., Any]) -> None:
+        """Register decorated functions with this server.
+
+        Extracts metadata from functions decorated with @tool, @resource,
+        @prompt, @completion, or @resource_template and registers them.
+
+        Usage:
+            @tool(description="Add numbers")
+            def add(a: int, b: int) -> int:
+                return a + b
+
+            server = MCPServer("my-server")
+            server.collect(add)
+
+        Raises:
+            ValueError: If a function lacks OpenMCP metadata.
+        """
+        for fn in fns:
+            spec = self._extract_spec(fn)
+            if spec is None:
+                raise ValueError(
+                    f"'{getattr(fn, '__name__', repr(fn))}' has no OpenMCP metadata. "
+                    "Decorate with @tool, @resource, @prompt, @completion, or @resource_template."
+                )
+            self._register_spec(spec)
+
+    def collect_from(self, *modules: ModuleType) -> None:
+        """Register all decorated callables from modules.
+
+        Inspects each module for public callables with OpenMCP metadata.
+        Functions without metadata are silently skipped.
+
+        Usage:
+            from tools import math, text
+
+            server = MCPServer("my-server")
+            server.collect_from(math, text)
+        """
+        for module in modules:
+            for name in dir(module):
+                if name.startswith("_"):
+                    continue
+                obj = getattr(module, name)
+                if callable(obj):
+                    spec = self._extract_spec(obj)
+                    if spec is not None:
+                        self._register_spec(spec)
+
+    def _extract_spec(
+        self, fn: Callable[..., Any]
+    ) -> ToolSpec | ResourceSpec | PromptSpec | CompletionSpec | ResourceTemplateSpec | None:
+        """Extract any OpenMCP spec from a decorated function."""
+        for extractor in (
+            extract_tool_spec,
+            extract_resource_spec,
+            extract_prompt_spec,
+            extract_completion_spec,
+            extract_resource_template_spec,
+        ):
+            spec = extractor(fn)
+            if spec is not None:
+                return spec
+        return None
+
+    def _register_spec(
+        self, spec: ToolSpec | ResourceSpec | PromptSpec | CompletionSpec | ResourceTemplateSpec
+    ) -> None:
+        """Route a spec to the appropriate registration method."""
+        if isinstance(spec, ToolSpec):
+            self.register_tool(spec)
+        elif isinstance(spec, ResourceSpec):
+            self.register_resource(spec)
+        elif isinstance(spec, PromptSpec):
+            self.register_prompt(spec)
+        elif isinstance(spec, CompletionSpec):
+            self.register_completion(spec)
+        elif isinstance(spec, ResourceTemplateSpec):
+            self.register_resource_template(spec)
+
+    # //////////////////////////////////////////////////////////////////
+    # Individual registration methods
+    # //////////////////////////////////////////////////////////////////
+
     def register_tool(self, target: ToolSpec | Callable[..., Any]) -> ToolSpec:
         return self.tools.register(target)
 
@@ -446,38 +552,38 @@ class MCPServer(Server[Any, Any]):
     def register_completion(self, target: CompletionSpec | Callable[..., Any]) -> CompletionSpec:
         return self.completions.register(target)
 
-    async def invoke_tool(self, name: str, **arguments: Any) -> types.CallToolResult:
+    async def invoke_tool(self, name: str, **arguments: Any):
         return await self.tools.call_tool(name, arguments)
 
-    async def invoke_resource(self, uri: str) -> types.ReadResourceResult:
+    async def invoke_resource(self, uri: str):
         return await self.resources.read(uri)
 
-    async def invoke_prompt(self, name: str, *, arguments: dict[str, str] | None = None) -> types.GetPromptResult:
+    async def invoke_prompt(self, name: str, *, arguments: dict[str, str] | None = None) -> GetPromptResult:
         return await self.prompts.get_prompt(name, arguments)
 
     async def invoke_completion(
         self,
-        ref: types.PromptReference | types.ResourceTemplateReference,
-        argument: types.CompletionArgument,
-        context: types.CompletionContext | None = None,
-    ) -> types.Completion | None:
+        ref: PromptReference | ResourceTemplateReference,
+        argument: CompletionArgument,
+        context: CompletionContext | None = None,
+    ) -> Completion | None:
         return await self.completions.execute(ref, argument, context)
 
-    async def request_sampling(self, params: types.CreateMessageRequestParams) -> types.CreateMessageResult:
+    async def request_sampling(self, params: CreateMessageRequestParams) -> CreateMessageResult:
         """Proxy ``sampling/createMessage`` request to client.
 
         See: https://modelcontextprotocol.io/specification/2025-06-18/client/sampling
         """
         return await self.sampling.create_message(params)
 
-    async def request_elicitation(self, params: types.ElicitRequestParams) -> types.ElicitResult:
+    async def request_elicitation(self, params: ElicitRequestParams) -> ElicitResult:
         """Proxy ``elicitation/create`` request to client.
 
         See: https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation
         """
         return await self.elicitation.create(params)
 
-    async def list_resource_templates_paginated(self, cursor: str | None = None) -> types.ListResourceTemplatesResult:
+    async def list_resource_templates_paginated(self, cursor: str | None = None) -> ListResourceTemplatesResult:
         return await self.resources.list_templates(cursor)
 
     async def notify_resource_updated(self, uri: str) -> None:
@@ -502,7 +608,7 @@ class MCPServer(Server[Any, Any]):
         if self._notification_flags.prompts_changed:
             await self.prompts.notify_list_changed()
 
-    async def log_message(self, level: types.LoggingLevel, data: Any, *, logger: str | None = None) -> None:
+    async def log_message(self, level: LoggingLevel, data: Any, *, logger: str | None = None) -> None:
         await self.logging_service.emit(level, data, logger)
 
     # //////////////////////////////////////////////////////////////////
@@ -524,7 +630,6 @@ class MCPServer(Server[Any, Any]):
         if self._runtime_started and self._allow_dynamic_tools:
             self._tool_mutation_pending_notification = True
 
-
     def require_within_roots(self, *, argument: str = "path") -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """Decorator enforcing that a handler argument resolves within allowed roots."""
 
@@ -536,8 +641,8 @@ class MCPServer(Server[Any, Any]):
             async def wrapper(*args: Any, **kwargs: Any) -> Any:
                 if argument not in kwargs:
                     raise McpError(
-                        types.ErrorData(
-                            code=types.INVALID_PARAMS, message=f"Argument '{argument}' is required for roots validation"
+                        ErrorData(
+                            code=INVALID_PARAMS, message=f"Argument '{argument}' is required for roots validation"
                         )
                     )
 
@@ -550,9 +655,8 @@ class MCPServer(Server[Any, Any]):
                 candidate = kwargs[argument]
                 if not guard.within(candidate):
                     raise McpError(
-                        types.ErrorData(
-                            code=types.INVALID_PARAMS,
-                            message=f"Path '{candidate}' is outside the client's declared roots",
+                        ErrorData(
+                            code=INVALID_PARAMS, message=f"Path '{candidate}' is outside the client's declared roots"
                         )
                     )
 
@@ -562,32 +666,30 @@ class MCPServer(Server[Any, Any]):
 
         return decorator
 
-    async def _call_roots_list(
-        self, session: "ServerSession", params: Mapping[str, Any] | None
-    ) -> Mapping[str, Any]:
-        list_params: types.RequestParams | None = None
+    async def _call_roots_list(self, session: "ServerSession", params: Mapping[str, Any] | None) -> Mapping[str, Any]:
+        list_params: RequestParams | None = None
         if params is not None:
-            list_params = types.RequestParams.model_validate(params)
-        request = types.ListRootsRequest(params=list_params)
-        result = await session.send_request(types.ServerRequest(request), types.ListRootsResult)
+            list_params = RequestParams.model_validate(params)
+        request = ListRootsRequest(params=list_params)
+        result = await session.send_request(ServerRequest(request), ListRootsResult)
         payload: dict[str, Any] = {"roots": [root.model_dump(by_alias=True) for root in result.roots]}
         next_cursor = getattr(result, "nextCursor", None)
         if next_cursor is not None:
             payload["nextCursor"] = next_cursor
         return payload
 
-    async def _handle_initialized(self, _notification: types.InitializedNotification) -> None:
+    async def _handle_initialized(self, _notification: InitializedNotification) -> None:
         try:
             context = request_ctx.get()
-        except LookupError:  # pragma: no cover - defensive
+        except LookupError:
             return
         self.ping.register(context.session)
         await self.roots.on_session_open(context.session)
 
-    async def _handle_roots_list_changed(self, _notification: types.RootsListChangedNotification) -> None:
+    async def _handle_roots_list_changed(self, _notification: RootsListChangedNotification) -> None:
         try:
             context = request_ctx.get()
-        except LookupError:  # pragma: no cover - defensive
+        except LookupError:
             return
         await self.roots.on_list_changed(context.session)
 
@@ -615,18 +717,20 @@ class MCPServer(Server[Any, Any]):
 
     def get_capabilities(
         self, notification_options: NotificationOptions, experimental_capabilities: Mapping[str, Mapping[str, Any]]
-    ) -> types.ServerCapabilities:
-        experimental_dict = {key: dict(value) for key, value in experimental_capabilities.items()}
-        caps = super().get_capabilities(notification_options, experimental_dict)
+    ) -> ServerCapabilities:
+        # Build capabilities from SDK, then apply OpenMCP overrides
+        caps = Server.get_capabilities(self, notification_options, experimental_capabilities)
 
-        if caps.resources is not None:
-            caps.resources.subscribe = True
-            if self._notification_flags.resources_changed:
-                caps.resources.listChanged = True
-        if caps.prompts is not None and self._notification_flags.prompts_changed:
-            caps.prompts.listChanged = True
-        if caps.tools is not None and self._notification_flags.tools_changed:
-            caps.tools.listChanged = True
+        flags = getattr(self, "_notification_flags", None)
+        if flags:
+            if caps.resources is not None:
+                caps.resources.subscribe = True
+                if flags.resources_changed:
+                    caps.resources.listChanged = True
+            if caps.prompts is not None and flags.prompts_changed:
+                caps.prompts.listChanged = True
+            if caps.tools is not None and flags.tools_changed:
+                caps.tools.listChanged = True
 
         return caps
 
@@ -682,10 +786,7 @@ class MCPServer(Server[Any, Any]):
                     "Call notify_tools_list_changed() so clients can refresh their state."
                 )
 
-    def _wrap_lifespan(
-        self,
-        base_lifespan: Callable[[Server[Any, Any]], Any],
-    ) -> Callable[[Server[Any, Any]], Any]:
+    def _wrap_lifespan(self, base_lifespan: Callable[[Server[Any, Any]], Any]) -> Callable[[Server[Any, Any]], Any]:
         @asynccontextmanager
         async def runtime_lifespan(server_ref: Server[Any, Any]) -> Any:
             async with AsyncExitStack() as stack:
@@ -713,21 +814,18 @@ class MCPServer(Server[Any, Any]):
         return payload
 
     def _build_runtime_payload(self) -> dict[str, Any]:
-        return {
-            "server": self,
-            "resolver": self._connection_resolver,
-        }
+        return {"server": self, "resolver": self._connection_resolver}
 
+    # TODO: Quality check on this impl.
     async def _handle_request(
         self,
-        message: RequestResponder[types.ClientRequest, types.ServerResult],
+        message: RequestResponder[ClientRequest, ServerResult],
         req: Any,
         session: "ServerSession",
         lifespan_context: Any,
         raise_exceptions: bool,
     ) -> None:
         """Instrument requests to record wall-clock duration and structured metadata."""
-
         start_ns = time.perf_counter_ns()
         request_type = type(req).__name__
         request_id = getattr(message, "request_id", None)
@@ -741,18 +839,13 @@ class MCPServer(Server[Any, Any]):
         try:
             if handler is None:
                 outcome = "method_not_found"
-                await message.respond(
-                    types.ErrorData(
-                        code=types.METHOD_NOT_FOUND,
-                        message="Method not found",
-                    )
-                )
+                await message.respond(ErrorData(code=METHOD_NOT_FOUND, message="Method not found"))
                 return
 
             self._logger.debug("dispatching request", extra=dispatch_extra)
 
             token = None
-            response: types.ServerResult | types.ErrorData | None = None
+            response: ServerResult | ErrorData | None = None
             try:
                 request_data = None
                 metadata = message.message_metadata
@@ -761,10 +854,10 @@ class MCPServer(Server[Any, Any]):
 
                 token = request_ctx.set(
                     RequestContext(
-                        message.request_id,
-                        message.request_meta,
-                        session,
-                        lifespan_context,
+                        request_id=message.request_id,
+                        meta=message.request_meta,
+                        session=session,
+                        lifespan_context=lifespan_context,
                         request=request_data,
                     )
                 )
@@ -773,17 +866,14 @@ class MCPServer(Server[Any, Any]):
                 outcome = "error"
                 response = err.error
             except anyio.get_cancelled_exc_class():
-                self._logger.info(
-                    "Request %s cancelled - duplicate response suppressed",
-                    message.request_id,
-                )
+                self._logger.info("Request %s cancelled - duplicate response suppressed", message.request_id)
                 outcome = "cancelled"
                 return
             except Exception as exc:
                 outcome = "exception"
                 if raise_exceptions:
                     raise
-                response = types.ErrorData(code=0, message=str(exc), data=None)
+                response = ErrorData(code=0, message=str(exc), data=None)
             finally:
                 if token is not None:
                     request_ctx.reset(token)
@@ -826,7 +916,7 @@ class MCPServer(Server[Any, Any]):
         if factory is None:
             raise ValueError(f"Unsupported transport '{name}'.")
         transport = factory(self)
-        if not isinstance(transport, BaseTransport):  # pragma: no cover - defensive
+        if not isinstance(transport, BaseTransport):
             raise TypeError("Transport factory must return a BaseTransport instance")
         return transport
 
@@ -839,12 +929,7 @@ class MCPServer(Server[Any, Any]):
     # //////////////////////////////////////////////////////////////////
 
     async def serve_stdio(
-        self,
-        *,
-        raise_exceptions: bool = False,
-        stateless: bool = False,
-        validate: bool = True,
-        announce: bool = True,
+        self, *, raise_exceptions: bool = False, stateless: bool = False, validate: bool = True, announce: bool = True
     ) -> None:
         self._runtime_started = True
         if validate:
@@ -876,23 +961,14 @@ class MCPServer(Server[Any, Any]):
         if validate:
             self.validate()
 
-        if selected in {
-            "stdio",
-            "streamable-http",
-            "streamable_http",
-            "http",
-            "shttp",
-        }:
-
+        if selected in {"stdio", "streamable-http", "streamable_http", "http", "shttp"}:
             if selected == "stdio":
                 if transport_kwargs:
                     unexpected = ", ".join(sorted(transport_kwargs))
-                    raise TypeError(f"Unsupported STDIO serve() parameters: {unexpected}")
+                    msg = f"Unsupported STDIO serve() parameters: {unexpected}"
+                    raise TypeError(msg)
                 await self.serve_stdio(
-                    raise_exceptions=raise_exceptions,
-                    stateless=stateless,
-                    validate=False,
-                    announce=verbose,
+                    raise_exceptions=raise_exceptions, stateless=stateless, validate=False, announce=verbose
                 )
                 return
 
@@ -902,24 +978,14 @@ class MCPServer(Server[Any, Any]):
 
             extra_http = dict(uvicorn_options or {})
             await self.serve_streamable_http(
-                host=host,
-                port=port,
-                path=path,
-                log_level=log_level,
-                validate=False,
-                announce=verbose,
-                **extra_http,
+                host=host, port=port, path=path, log_level=log_level, validate=False, announce=verbose, **extra_http
             )
             return
 
         transport_instance = self._transport_for_name(selected)
 
         if verbose:
-            self._logger.info(
-                "Serving %s via %s transport",
-                self.name,
-                transport_instance.transport_display_name,
-            )
+            self._logger.info("Serving %s via %s transport", self.name, transport_instance.transport_display_name)
 
         await self._run_transport(transport_instance, **transport_kwargs)
 
@@ -938,20 +1004,12 @@ class MCPServer(Server[Any, Any]):
             self.validate()
         transport = self._transport_for_name("streamable-http")
         run_config = ASGIRunConfig(
-            host=host,
-            port=port,
-            path=path,
-            log_level=log_level,
-            uvicorn_options=dict(uvicorn_options),
+            host=host, port=port, path=path, log_level=log_level, uvicorn_options=dict(uvicorn_options)
         )
         if announce:
             base_url = f"http://{host}:{port}{path}"
             if self._streamable_http_stateless:
-                self._logger.info(
-                    "Serving %s via Streamable HTTP (stateless) at %s",
-                    self.name,
-                    base_url,
-                )
+                self._logger.info("Serving %s via Streamable HTTP (stateless) at %s", self.name, base_url)
             else:
                 self._logger.info("Serving %s via Streamable HTTP at %s", self.name, base_url)
         await self._run_transport(transport, config=run_config)
@@ -986,69 +1044,45 @@ class MCPServer(Server[Any, Any]):
         tools_service: Any = self.tools
         if not isinstance(tools_service, ToolsServiceProtocol):
             errors.append(
-                "Tools capability requires a service implementing list/listChanged operations "
-                f"({_SPEC_URLS['tools']})."
+                f"Tools capability requires a service implementing list/listChanged operations ({_SPEC_URLS['tools']})."
             )
 
         resources_service: Any = self.resources
         if not isinstance(resources_service, ResourcesServiceProtocol):
-            errors.append(
-                "Resources capability requires list/read/notify support "
-                f"({_SPEC_URLS['resources']})."
-            )
+            errors.append(f"Resources capability requires list/read/notify support ({_SPEC_URLS['resources']}).")
 
         prompts_service: Any = self.prompts
         if not isinstance(prompts_service, PromptsServiceProtocol):
-            errors.append(
-                "Prompts capability requires list/get/notify support "
-                f"({_SPEC_URLS['prompts']})."
-            )
+            errors.append(f"Prompts capability requires list/get/notify support ({_SPEC_URLS['prompts']}).")
 
         roots_service: Any = self.roots
         if not isinstance(roots_service, RootsServiceProtocol):
-            errors.append(
-                "Roots capability requires guard and session lifecycle handlers "
-                f"({_SPEC_URLS['roots']})."
-            )
+            errors.append(f"Roots capability requires guard and session lifecycle handlers ({_SPEC_URLS['roots']}).")
 
         completions_service: Any = self.completions
         if not isinstance(completions_service, CompletionServiceProtocol):
-            errors.append(
-                "Completions capability requires register/execute support "
-                f"({_SPEC_URLS['completions']})."
-            )
+            errors.append(f"Completions capability requires register/execute support ({_SPEC_URLS['completions']}).")
 
         sampling_service: Any = self.sampling
         if not isinstance(sampling_service, SamplingServiceProtocol):
-            errors.append(
-                "Sampling capability requires create_message handling "
-                f"({_SPEC_URLS['sampling']})."
-            )
+            errors.append(f"Sampling capability requires create_message handling ({_SPEC_URLS['sampling']}).")
 
         elicitation_service: Any = self.elicitation
         if not isinstance(elicitation_service, ElicitationServiceProtocol):
-            errors.append(
-                "Elicitation capability requires create handling "
-                f"({_SPEC_URLS['elicitation']})."
-            )
+            errors.append(f"Elicitation capability requires create handling ({_SPEC_URLS['elicitation']}).")
 
         logging_service: Any = self.logging_service
         if not isinstance(logging_service, LoggingServiceProtocol):
-            errors.append(
-                "Logging capability requires set_level and emit support "
-                f"({_SPEC_URLS['logging']})."
-            )
+            errors.append(f"Logging capability requires set_level and emit support ({_SPEC_URLS['logging']}).")
 
         ping_service: Any = self.ping
         if not isinstance(ping_service, PingServiceProtocol):
-            errors.append(
-                "Ping capability requires ping/ping_many/heartbeat support "
-                f"({_SPEC_URLS['ping']})."
-            )
+            errors.append(f"Ping capability requires ping/ping_many/heartbeat support ({_SPEC_URLS['ping']}).")
 
         if errors:
             bullet_list = "\n - ".join(errors)
-            raise ServerValidationError(f"MCPServer configuration is invalid:\n - {bullet_list}")
+            msg = f"MCPServer configuration is invalid:\n - {bullet_list}"
+            raise ServerValidationError(msg)
 
     # //////////////////////////////////////////////////////////////////
     # Internal helpers
@@ -1061,5 +1095,5 @@ class MCPServer(Server[Any, Any]):
         if hasattr(self, name):
             try:
                 delattr(self, name)
-            except AttributeError:  # pragma: no cover - defensive
+            except AttributeError:
                 pass

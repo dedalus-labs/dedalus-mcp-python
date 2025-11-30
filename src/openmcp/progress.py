@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Progress utilities for emitting MCP-compliant telemetry.
 
@@ -45,11 +42,7 @@ from typing import Any
 
 import anyio
 
-from ._sdk_loader import ensure_sdk_importable
 from .utils.logger import get_logger
-
-
-ensure_sdk_importable()
 
 from mcp.server.lowlevel.server import request_ctx
 from mcp.shared.context import RequestContext
@@ -379,9 +372,9 @@ class _ProgressEmitter:
                 await self._session.send_progress_notification(
                     self._token, state.progress, total=state.total, message=state.message
                 )
-            except (anyio.get_cancelled_exc_class(), KeyboardInterrupt):  # pragma: no cover - cancellation path
+            except (anyio.get_cancelled_exc_class(), KeyboardInterrupt):
                 raise
-            except Exception as exc:  # pragma: no cover - network faults are rare in tests
+            except Exception as exc:
                 self._logger.warning(
                     "progress notification send failed; retrying",
                     exc_info=exc,
@@ -480,7 +473,7 @@ class ProgressTracker:
 def _resolve_request_context() -> RequestContext[BaseSession[Any, Any, Any, Any, Any], Any, Any]:
     try:
         ctx = request_ctx.get()
-    except LookupError as exc:  # pragma: no cover - defensive
+    except LookupError as exc:
         raise RuntimeError("progress() requires an active request context") from exc
     if ctx.meta is None or ctx.meta.progressToken is None:
         raise ValueError(

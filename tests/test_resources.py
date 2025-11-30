@@ -1,12 +1,9 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Resource capability tests following the MCP spec receipts.
 
-See ``docs/mcp/spec/schema-reference/resources-read.md`` for the binary encoding
+See https://modelcontextprotocol.io/specification/2024-11-05/server/resources for binary encoding
 rules and ``resources-subscribe.md`` for subscription capability toggles.
 """
 
@@ -20,7 +17,10 @@ import anyio
 from mcp.shared.exceptions import McpError
 import pytest
 
-from openmcp import MCPServer, resource, types
+from openmcp import MCPServer, resource
+from openmcp.types.server.resources import ListResourcesRequest, ReadResourceResult
+from openmcp.types.shared.base import INVALID_PARAMS, PaginatedRequestParams
+from openmcp.types.shared.content import BlobResourceContents
 from openmcp.server import NotificationFlags
 from tests.helpers import DummySession, FailingSession, run_with_context
 
@@ -59,7 +59,7 @@ async def test_resource_service_read_returns_result_instance():
             return "direct-value"
 
     result = await server.resources.read("resource://demo/direct")
-    assert isinstance(result, types.ReadResourceResult)
+    assert isinstance(result, ReadResourceResult)
     assert result.contents and result.contents[0].text == "direct-value"
 
 
@@ -74,7 +74,7 @@ async def test_resource_service_error_returns_result_wrapper():
             raise RuntimeError("boom")
 
     result = await server.resources.read("resource://demo/error")
-    assert isinstance(result, types.ReadResourceResult)
+    assert isinstance(result, ReadResourceResult)
     assert result.contents and "Resource error" in result.contents[0].text
 
 
@@ -138,7 +138,7 @@ async def test_resource_binary_content_encoding():
     result = await server.invoke_resource("resource://demo/binary")
     assert result.contents
     blob = result.contents[0]
-    assert isinstance(blob, types.BlobResourceContents)
+    assert isinstance(blob, BlobResourceContents)
     assert blob.mimeType == "application/octet-stream"
     assert base64.b64decode(blob.blob) == payload
 
@@ -151,11 +151,11 @@ def test_resource_subscribe_capability_flag():
     assert init_opts.capabilities.resources.subscribe is True
 
     @server.subscribe_resource()
-    async def _sub(uri: str) -> None:  # pragma: no cover
+    async def _sub(uri: str) -> None:
         return None
 
     @server.unsubscribe_resource()
-    async def _unsub(uri: str) -> None:  # pragma: no cover
+    async def _unsub(uri: str) -> None:
         return None
 
     updated_opts = server.create_initialization_options()
@@ -277,20 +277,20 @@ async def test_resources_list_pagination():
 
         server.register_resource(make_resource(f"res-{idx}"))
 
-    handler = server.request_handlers[types.ListResourcesRequest]
+    handler = server.request_handlers[ListResourcesRequest]
 
-    first = await run_with_context(DummySession("res-pages-1"), handler, types.ListResourcesRequest())
+    first = await run_with_context(DummySession("res-pages-1"), handler, ListResourcesRequest())
     first_result = first.root
     assert len(first_result.resources) == 50
     assert first_result.nextCursor == "50"
 
-    second_request = types.ListResourcesRequest(params=types.PaginatedRequestParams(cursor="50"))
+    second_request = ListResourcesRequest(params=PaginatedRequestParams(cursor="50"))
     second = await run_with_context(DummySession("res-pages-2"), handler, second_request)
     second_result = second.root
     assert len(second_result.resources) == 50
     assert second_result.nextCursor == "100"
 
-    third_request = types.ListResourcesRequest(params=types.PaginatedRequestParams(cursor="100"))
+    third_request = ListResourcesRequest(params=PaginatedRequestParams(cursor="100"))
     third = await run_with_context(DummySession("res-pages-3"), handler, third_request)
     third_result = third.root
     assert len(third_result.resources) == 20
@@ -306,13 +306,13 @@ async def test_resources_list_invalid_cursor():
         return "a"
 
     server.register_resource(_res)
-    handler = server.request_handlers[types.ListResourcesRequest]
-    request = types.ListResourcesRequest(params=types.PaginatedRequestParams(cursor="bad"))
+    handler = server.request_handlers[ListResourcesRequest]
+    request = ListResourcesRequest(params=PaginatedRequestParams(cursor="bad"))
 
     with pytest.raises(McpError) as excinfo:
         await run_with_context(DummySession("res-invalid"), handler, request)
 
-    assert excinfo.value.error.code == types.INVALID_PARAMS
+    assert excinfo.value.error.code == INVALID_PARAMS
 
 
 @pytest.mark.anyio
@@ -322,13 +322,13 @@ async def test_resources_list_negative_cursor_clamps_to_start():
     for idx in range(3):
 
         @resource(f"resource://demo/{idx}")
-        def _res(value=idx):  # pragma: no cover - invoked via list
+        def _res(value=idx):
             return str(value)
 
         server.register_resource(_res)
 
-    handler = server.request_handlers[types.ListResourcesRequest]
-    request = types.ListResourcesRequest(params=types.PaginatedRequestParams(cursor="-10"))
+    handler = server.request_handlers[ListResourcesRequest]
+    request = ListResourcesRequest(params=PaginatedRequestParams(cursor="-10"))
     response = await run_with_context(DummySession("res-negative"), handler, request)
 
     assert [resource.uri for resource in response.root.resources]  # non-empty
@@ -350,8 +350,8 @@ async def test_resources_list_cursor_past_end():
 
         server.register_resource(make_resource(idx))
 
-    handler = server.request_handlers[types.ListResourcesRequest]
-    request = types.ListResourcesRequest(params=types.PaginatedRequestParams(cursor="500"))
+    handler = server.request_handlers[ListResourcesRequest]
+    request = ListResourcesRequest(params=PaginatedRequestParams(cursor="500"))
     response = await run_with_context(DummySession("res-past"), handler, request)
 
     assert response.root.resources == []
@@ -362,9 +362,9 @@ async def test_resources_list_cursor_past_end():
 async def test_resources_list_changed_notification_enabled():
     server = MCPServer("resources-list-changed", notification_flags=NotificationFlags(resources_changed=True))
     session = DummySession("observer")
-    handler = server.request_handlers[types.ListResourcesRequest]
+    handler = server.request_handlers[ListResourcesRequest]
 
-    await run_with_context(session, handler, types.ListResourcesRequest())
+    await run_with_context(session, handler, ListResourcesRequest())
     await server.notify_resources_list_changed()
 
     assert session.notifications
@@ -375,9 +375,9 @@ async def test_resources_list_changed_notification_enabled():
 async def test_resources_list_changed_notification_disabled():
     server = MCPServer("resources-list-changed-off")
     session = DummySession("observer-off")
-    handler = server.request_handlers[types.ListResourcesRequest]
+    handler = server.request_handlers[ListResourcesRequest]
 
-    await run_with_context(session, handler, types.ListResourcesRequest())
+    await run_with_context(session, handler, ListResourcesRequest())
     await server.notify_resources_list_changed()
 
     assert all(note.root.method != "notifications/resources/list_changed" for note in session.notifications)

@@ -1,14 +1,12 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 from __future__ import annotations
 
 import pytest
 
-from openmcp import MCPServer, get_context, prompt, resource, tool, types
+from openmcp import MCPServer, get_context, prompt, resource, tool
+from openmcp.types.shared.base import RequestParams
 from tests.helpers import RecordingSession, run_with_context
 
 
@@ -34,7 +32,7 @@ async def test_tool_context_emits_logs_and_progress() -> None:
             return "ok"
 
     session = RecordingSession("ctx-tool-session")
-    meta = types.RequestParams.Meta(progressToken="token-123")
+    meta = RequestParams.Meta(progressToken="token-123")
 
     result = await run_with_context(session, server.tools.call_tool, "sample", {}, meta=meta)
 
@@ -59,7 +57,7 @@ async def test_tool_context_no_progress_token_is_noop() -> None:
             return "ok"
 
     session = RecordingSession("ctx-tool-noop")
-    meta = types.RequestParams.Meta()  # progressToken defaults to None
+    meta = RequestParams.Meta()  # progressToken defaults to None
 
     await run_with_context(session, server.tools.call_tool, "sample", {}, meta=meta)
 
@@ -80,7 +78,7 @@ async def test_resource_read_binds_context() -> None:
             return "ok"
 
     session = RecordingSession("ctx-resource-session")
-    meta = types.RequestParams.Meta()
+    meta = RequestParams.Meta()
 
     await run_with_context(session, server.resources.read, "resource://ctx", meta=meta)
 
@@ -103,7 +101,7 @@ async def test_prompt_renderer_binds_context() -> None:
             return [("assistant", "hello")]
 
     session = RecordingSession("ctx-prompt-session")
-    meta = types.RequestParams.Meta()
+    meta = RequestParams.Meta()
 
     await run_with_context(session, server.prompts.get_prompt, "ctx", {}, meta=meta)
 

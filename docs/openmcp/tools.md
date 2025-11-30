@@ -37,7 +37,7 @@ from openmcp.server.dependencies import Depends
 
 server = MCPServer("plans")
 USERS = {"bob": "basic", "alice": "pro"}
-SESSION_USERS: dict[str, str] = {}  # Maps MCP session ID → user ID
+SESSION_USERS: dict[str, str] = {}  # Maps MCP session ID -> user ID
 
 
 def get_tier(ctx: Context) -> str:

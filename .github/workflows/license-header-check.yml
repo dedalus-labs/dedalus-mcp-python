@@ -1,0 +1,73 @@
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
+---
+name: License Header Check
+
+on:
+  pull_request:
+    paths:
+      - "**.py"
+  push:
+    branches: [main]
+    paths:
+      - "**.py"
+
+jobs:
+  check-license-headers:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check license headers
+        id: check_headers
+        run: |
+          python .github/scripts/check_license_headers.py --check
+          echo "check_exit_code=$?" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Fix missing headers (PRs only)
+        if: github.event_name == 'pull_request' && steps.check_headers.outcome == 'failure'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          python .github/scripts/check_license_headers.py --fix
+
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -m "chore: add missing license headers"
+            git push
+            echo "Headers were automatically fixed and committed."
+          fi
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && steps.check_headers.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🤖 **License Header Bot**: I\'ve automatically added missing SPDX license headers to Python files in this PR. Please pull the latest changes.'
+            })
+
+      - name: Fail if headers missing (push to main)
+        if: github.event_name == 'push' && steps.check_headers.outcome == 'failure'
+        run: |
+          echo "License headers are missing from some files!"
+          echo "Run 'python .github/scripts/check_license_headers.py --fix' locally."
+          exit 1

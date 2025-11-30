@@ -1,58 +1,40 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
+
+"""Core versioning tests."""
 
 from __future__ import annotations
 
-import importlib
-
 import pytest
 
-from openmcp import types, versioning
-from openmcp._sdk_loader import ensure_sdk_importable
+from openmcp.versioning import (
+    ALL_VERSIONS,
+    LATEST_VERSION,
+    SUPPORTED_VERSIONS,
+    UnsupportedProtocolVersionError,
+    ProtocolVersion,
+    capabilities_for,
+)
 
 
-def _build_capabilities() -> types.ServerCapabilities:
-    return types.ServerCapabilities(
-        tools=types.ToolsCapability(listChanged=True),
-        resources=types.ResourcesCapability(subscribe=True, listChanged=True),
-        prompts=types.PromptsCapability(listChanged=True),
-        logging=types.LoggingCapability(),
-    )
+class TestCapabilitiesFor:
+    """capabilities_for() tests."""
 
+    def test_all_supported_versions(self) -> None:
+        """capabilities_for returns valid ProtocolCaps for all supported versions."""
+        for v in ALL_VERSIONS:
+            caps = capabilities_for(v)
+            assert caps.version == v
 
-@pytest.mark.anyio
-async def test_supported_protocol_versions_patched() -> None:
-    # Ensure the SDK is importable and patched.
-    ensure_sdk_importable()
-    shared_version = importlib.import_module("mcp.shared.version")
+    def test_cached(self) -> None:
+        """capabilities_for results are cached (same object on repeated calls)."""
+        caps1 = capabilities_for(LATEST_VERSION)
+        caps2 = capabilities_for(LATEST_VERSION)
+        assert caps1 is caps2
 
-    assert shared_version.SUPPORTED_PROTOCOL_VERSIONS == versioning.SUPPORTED_PROTOCOL_VERSIONS
-    assert [shared_version.SUPPORTED_PROTOCOL_VERSIONS[-1]] == shared_version.SUPPORTED_PROTOCOL_VERSIONS
-
-
-@pytest.mark.anyio
-async def test_get_features_returns_flags() -> None:
-    ensure_sdk_importable()
-    features = versioning.get_features()
-
-    assert features.roots_list_changed is True
-    assert features.prompts_list_changed is True
-    assert features.resources_list_changed is True
-    assert features.tools_list_changed is True
-    assert features.sampling is True
-
-
-@pytest.mark.anyio
-async def test_initialize_result_pydantic_accepts_latest_version() -> None:
-    ensure_sdk_importable()
-    capabilities = _build_capabilities()
-    init_result = types.InitializeResult(
-        protocolVersion=types.LATEST_PROTOCOL_VERSION,
-        capabilities=capabilities,
-        serverInfo=types.Implementation(name="openmcp", version="0.1.0"),
-    )
-
-    assert init_result.protocolVersion == types.LATEST_PROTOCOL_VERSION
+    def test_unsupported_version_raises(self) -> None:
+        unknown = ProtocolVersion.parse("2020-01-01")
+        with pytest.raises(UnsupportedProtocolVersionError) as exc_info:
+            capabilities_for(unknown)
+        assert exc_info.value.version == unknown
+        assert exc_info.value.supported == SUPPORTED_VERSIONS

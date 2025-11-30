@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Ping service tests (docs/mcp/spec/schema-reference/ping.md)."""
 
@@ -12,7 +9,11 @@ import anyio
 from mcp.client.session import ClientSession
 import pytest
 
-from openmcp import MCPServer, types
+from openmcp import MCPServer
+from openmcp.types.messages import ClientRequest
+from openmcp.types.shared.base import EmptyResult
+from openmcp.types.shared.capabilities import Implementation
+from openmcp.types.utilities.ping import PingRequest
 from openmcp.server.services.ping import PingService
 
 
@@ -21,7 +22,7 @@ async def test_ping_service_failure_detector() -> None:
     service = PingService()
 
     class DummySession:
-        async def send_ping(self) -> None:  # pragma: no cover - tests override
+        async def send_ping(self) -> None:
             pass
 
     session = DummySession()
@@ -166,7 +167,7 @@ async def test_ping_roundtrip_and_server_initiated_ping() -> None:
         session = ClientSession(
             server_to_client_recv,
             client_to_server_send,
-            client_info=types.Implementation(name="ping-client", version="0.0.1"),
+            client_info=Implementation(name="ping-client", version="0.0.1"),
         )
 
         async with session as client_session:
@@ -184,9 +185,9 @@ async def test_ping_roundtrip_and_server_initiated_ping() -> None:
             assert server.active_sessions(), "server did not record the session after initialize"
 
             client_result = await client_session.send_request(
-                types.ClientRequest(types.PingRequest()), types.EmptyResult
+                ClientRequest(PingRequest()), EmptyResult
             )
-            assert isinstance(client_result, types.EmptyResult)
+            assert isinstance(client_result, EmptyResult)
 
             server_session = server.active_sessions()[0]
 
@@ -199,7 +200,7 @@ async def test_ping_roundtrip_and_server_initiated_ping() -> None:
 
             original_send_ping = server_session.send_ping
 
-            async def failing_ping() -> None:  # pragma: no cover - deterministic in tests
+            async def failing_ping() -> None:
                 raise RuntimeError("boom")
 
             server_session.send_ping = failing_ping

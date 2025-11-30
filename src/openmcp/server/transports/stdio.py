@@ -1,24 +1,11 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
-"""STDIO transport adapter built on the reference MCP SDK.
-
-Implements the framing rules from ``docs/mcp/core/transports/stdio.md`` by
-delegating to the SDK's ``stdio_server`` helper, which handles newline-delimited
-JSON-RPC traffic over ``stdin``/``stdout``.
-"""
+"""STDIO transport adapter."""
 
 from __future__ import annotations
 
 from .base import BaseTransport
-from ..._sdk_loader import ensure_sdk_importable
-
-
-ensure_sdk_importable()
-
 from mcp.server.stdio import stdio_server
 
 

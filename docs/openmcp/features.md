@@ -18,7 +18,7 @@
 - Automatic JSON Schema inference from Python type hints (Pydantic)
 - `tools/list` (paginated), `tools/call`, `notifications/tools/list_changed`
 - Allow-list filtering, output schema validation
-- Result normalization (arbitrary types → `CallToolResult`)
+- Result normalization (arbitrary types -> `CallToolResult`)
 
 **Resources**
 - Static resources (`@resource`) and templates (`@resource_template`)
@@ -30,7 +30,7 @@
 **Prompts**
 - `@prompt` decorator with argument schemas
 - `prompts/list`, `prompts/get`, `notifications/prompts/list_changed`
-- Message coercion (tuples/dicts → `PromptMessage`)
+- Message coercion (tuples/dicts -> `PromptMessage`)
 - Content blocks (text, image, audio, embedded resources)
 
 **Completion**
@@ -41,13 +41,13 @@
 **Logging**
 - `logging/setLevel`, `notifications/message`
 - Per-session level tracking, Python logging bridge
-- All 8 log levels (debug → emergency)
+- All 8 log levels (debug -> emergency)
 
 ## Client Capabilities
 
 **Sampling**
 - `sampling/createMessage` - server requests LLM completions
-- Concurrency control (semaphore), circuit breaker (3 failures → 30s cooldown)
+- Concurrency control (semaphore), circuit breaker (3 failures -> 30s cooldown)
 - 60s timeout (configurable)
 
 **Roots**
@@ -77,7 +77,7 @@
 ## Operational Features
 
 - **Schema inference**: Input/output schemas from Python types, caching
-- **Result normalization**: Dataclasses, Pydantic models, tuples → spec types
+- **Result normalization**: Dataclasses, Pydantic models, tuples -> spec types
 - **Subscription management**: Bidirectional indexes, O(1) lookups, automatic cleanup
 - **Notification broadcasting**: Observer registry, stale session cleanup
 - **Context API**: `get_context()` for progress/logging in handlers

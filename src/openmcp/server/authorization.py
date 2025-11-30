@@ -1,8 +1,5 @@
-# ==============================================================================
-#                  © 2025 Dedalus Labs, Inc. and affiliates
-#                            Licensed under MIT
-#               github.com/dedalus-labs/openmcp-python/LICENSE
-# ==============================================================================
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
 
 """Authorization scaffolding for Streamable HTTP transports.
 
@@ -34,7 +31,7 @@ try:  # starlette is optional – only required for streamable HTTP deployments
     from starlette.requests import Request
     from starlette.responses import JSONResponse, Response
     from starlette.routing import Route
-except ImportError:  # pragma: no cover - imported lazily in transports
+except ImportError:
     BaseHTTPMiddleware = None  # type: ignore
     Request = None  # type: ignore
     JSONResponse = None  # type: ignore
@@ -52,6 +49,10 @@ class AuthorizationConfig:
     required_scopes: list[str] = field(default_factory=list)
     cache_ttl: int = 300
     fail_open: bool = False
+    require_dpop: bool = False
+    """If True, require DPoP-bound tokens (Authorization: DPoP) instead of Bearer."""
+    dpop_leeway: float = 60.0
+    """Clock skew tolerance for DPoP proof validation."""
 
 
 @dataclass(slots=True)
@@ -101,7 +102,7 @@ class AuthorizationManager:
     # ------------------------------------------------------------------
 
     def starlette_route(self) -> Route:
-        if Route is None or JSONResponse is None:  # pragma: no cover - optional dependency
+        if Route is None or JSONResponse is None:
             raise RuntimeError("starlette must be installed to use HTTP authorization")
 
         async def metadata_endpoint(request: Request) -> Response:
@@ -128,12 +129,31 @@ class AuthorizationManager:
                     return await call_next(request)
 
                 auth_header = request.headers.get("authorization")
-                if not auth_header or not auth_header.lower().startswith("bearer "):
-                    return manager._challenge_response("missing bearer token")
+                if not auth_header:
+                    return manager._challenge_response("missing authorization header")
 
-                token = auth_header[7:].strip()
+                # Parse authorization scheme
+                auth_lower = auth_header.lower()
+                if manager.config.require_dpop:
+                    if not auth_lower.startswith("dpop "):
+                        return manager._challenge_response("DPoP-bound token required")
+                    token = auth_header[5:].strip()
+                    dpop_proof = request.headers.get("dpop")
+                    if not dpop_proof:
+                        return manager._challenge_response("missing DPoP proof header")
+                else:
+                    if not auth_lower.startswith("bearer "):
+                        return manager._challenge_response("missing bearer token")
+                    token = auth_header[7:].strip()
+                    dpop_proof = None
+
                 try:
                     context = await manager._provider.validate(token)
+
+                    # If DPoP required, validate the proof
+                    if manager.config.require_dpop and dpop_proof:
+                        await manager._validate_dpop_proof(request, dpop_proof, token, context.claims)
+
                     request.scope["openmcp.auth"] = context
                     return await call_next(request)
                 except AuthorizationError as exc:
@@ -150,15 +170,55 @@ class AuthorizationManager:
 
         return _Middleware(app)
 
+    async def _validate_dpop_proof(
+        self, request: Request, proof: str, access_token: str, claims: dict[str, Any]
+    ) -> None:
+        """Validate DPoP proof against request and token binding."""
+        from .services.dpop import DPoPValidator, DPoPValidatorConfig, DPoPValidationError
+
+        config = DPoPValidatorConfig(leeway=self.config.dpop_leeway)
+        validator = DPoPValidator(config)
+
+        # Get expected thumbprint from token's cnf.jkt claim
+        cnf = claims.get("cnf", {})
+        expected_thumbprint = cnf.get("jkt") if isinstance(cnf, dict) else None
+
+        # Build full URL for htu validation
+        url = str(request.url)
+
+        try:
+            validator.validate_proof(
+                proof=proof,
+                method=request.method,
+                url=url,
+                expected_thumbprint=expected_thumbprint,
+                access_token=access_token,
+            )
+        except DPoPValidationError as exc:
+            raise AuthorizationError(f"DPoP validation failed: {exc}") from exc
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
 
     def _challenge_response(self, reason: str | None = None) -> Response:
-        if JSONResponse is None:  # pragma: no cover
-            raise RuntimeError("starlette must be installed to use HTTP authorization")
+        if JSONResponse is None:
+            msg = "starlette must be installed to use HTTP authorization"
+            raise RuntimeError(msg)
 
-        challenge = f'Bearer error="invalid_token", authorization_uri="{self.config.metadata_path}"'
+        # RFC 9728 Protected Resource Metadata (MCP 2025-06-18+).
+        # For MCP 2025-03-26, clients would use /.well-known/oauth-authorization-server.
+        # We emit resource_metadata unconditionally because:
+        # 1. The 401 happens before MCP protocol negotiation (no version yet)
+        # 2. RFC 6750 says clients SHOULD ignore unknown WWW-Authenticate parameters
+        scheme = "DPoP" if self.config.require_dpop else "Bearer"
+        challenge = f'{scheme} error="invalid_token", resource_metadata="{self.config.metadata_path}"'
+
+        if reason:
+            # Escape quotes in error_description
+            safe_reason = reason.replace('"', '\\"')
+            challenge += f', error_description="{safe_reason}"'
+
         headers = {"WWW-Authenticate": challenge}
         payload = {"error": "unauthorized", "detail": reason}
         return JSONResponse(payload, status_code=401, headers=headers)
