@@ -32,8 +32,8 @@ from pathlib import Path
 
 import anyio
 
-from openmcp.client import ClientCapabilitiesConfig, open_connection
-from openmcp.types import Root
+from dedalus_mcp.client import ClientCapabilitiesConfig, open_connection
+from dedalus_mcp.types import Root
 
 
 SERVER_URL = "http://127.0.0.1:8000/mcp"

@@ -30,8 +30,8 @@ from __future__ import annotations
 
 import anyio
 
-from openmcp.client import ClientCapabilitiesConfig, open_connection
-from openmcp.types import (
+from dedalus_mcp.client import ClientCapabilitiesConfig, open_connection
+from dedalus_mcp.types import (
     CallToolRequest,
     CallToolRequestParams,
     CallToolResult,

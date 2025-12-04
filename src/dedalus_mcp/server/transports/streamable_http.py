@@ -1,0 +1,55 @@
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
+
+"""Streamable HTTP transport adapter."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
+from mcp.server.transport_security import TransportSecuritySettings
+from starlette.requests import Request
+from starlette.responses import JSONResponse
+from starlette.routing import Route
+
+from .asgi import ASGITransportBase, ASGITransportConfig, SessionManagerHandler
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from ..core import MCPServer
+
+
+class StreamableHTTPTransport(ASGITransportBase):
+    """Serve an :class:`dedalus_mcp.server.MCPServer` over Streamable HTTP."""
+
+    TRANSPORT = ("streamable-http", "Streamable HTTP", "shttp", "sHTTP")
+
+    def __init__(
+        self, server: MCPServer, *, security_settings: TransportSecuritySettings | None = None, stateless: bool = False
+    ) -> None:
+        config = ASGITransportConfig(security_settings=security_settings, stateless=stateless)
+        super().__init__(server, config=config)
+
+    def _build_session_manager(self) -> StreamableHTTPSessionManager:
+        security = self.security_settings
+
+        if security is not None and not isinstance(security, TransportSecuritySettings):
+            security = TransportSecuritySettings.model_validate(security)
+
+        return StreamableHTTPSessionManager(self.server, security_settings=security, stateless=self.stateless)
+
+    def _build_routes(self, *, path: str, handler: SessionManagerHandler) -> Iterable[Route]:
+        routes = [Route(path, handler)]
+
+        async def metadata_endpoint(_request: Request) -> JSONResponse:
+            metadata = self.server.get_mcp_metadata()
+            headers = {"Cache-Control": "public, max-age=3600"}
+            return JSONResponse(metadata, headers=headers)
+
+        routes.append(Route("/.well-known/mcp-server.json", metadata_endpoint, methods=["GET"]))
+        return routes
+
+
+__all__ = ["StreamableHTTPTransport"]

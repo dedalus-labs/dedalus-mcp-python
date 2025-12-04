@@ -31,7 +31,7 @@ Found a bug? [Open an issue](https://github.com/dedalus-labs/openmcp-python/issu
 Include:
 
 - Python version (`python --version`)
-- OpenMCP version (`python -c "import openmcp; print(openmcp.__version__)"`)
+- Dedalus MCP version (`python -c "import dedalus_mcp; print(dedalus_mcp.__version__)"`)
 - Steps to reproduce
 - Expected vs actual behavior
 - Relevant logs/tracebacks

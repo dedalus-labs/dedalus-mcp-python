@@ -1,4 +1,4 @@
-# OpenMCP Features
+# Dedalus MCP Features
 
 **Protocol Version**: 2025-06-18
 **Status**: Production
@@ -98,7 +98,7 @@ All mandatory protocol features implemented. All 9 optional capabilities fully s
 
 ## References
 
-- **Cookbook**: `docs/openmcp/cookbook.md` - Copy-paste examples for every feature
+- **Cookbook**: `docs/dedalus_mcp/cookbook.md` - Copy-paste examples for every feature
 - **Full examples**: `examples/` - hello_trip, full_demo, auth_stub, cancellation, progress_logging
-- **Guides**: `docs/openmcp/manual/` - Server, client, security, configuration
+- **Guides**: `docs/dedalus_mcp/manual/` - Server, client, security, configuration
 - **Spec**: `docs/mcp/spec/` - Protocol specification

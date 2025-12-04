@@ -9,11 +9,11 @@ import anyio
 import httpx
 import pytest
 
-from openmcp import MCPServer, tool
-from openmcp.types.messages import ClientRequest
-from openmcp.types.server.tools import CallToolRequest, CallToolRequestParams, CallToolResult
-from openmcp.client import open_connection
-from openmcp.versioning import V_2024_11_05
+from dedalus_mcp import MCPServer, tool
+from dedalus_mcp.types.messages import ClientRequest
+from dedalus_mcp.types.server.tools import CallToolRequest, CallToolRequestParams, CallToolResult
+from dedalus_mcp.client import open_connection, MCPClient
+from dedalus_mcp.versioning import V_2024_11_05
 
 
 HTTP_OK = 200
@@ -186,3 +186,103 @@ async def test_streamable_http_preinitialize_get_requires_session(unused_tcp_por
                 assert "session" in message
         finally:
             await server.shutdown()
+
+
+# ---------------------------------------------------------------------
+# MCPClient.connect() Integration Tests
+# ---------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_mcpclient_connect_streamable_http(unused_tcp_port: int) -> None:
+    """MCPClient.connect() should work with streamable-http transport."""
+    server = MCPServer("connect-test")
+
+    with server.binding():
+
+        @tool()
+        def multiply(a: int, b: int) -> int:
+            return a * b
+
+    host = "127.0.0.1"
+    port = unused_tcp_port
+
+    async def run_server() -> None:
+        await server.serve(transport="streamable-http", host=host, port=port)
+
+    async with anyio.create_task_group() as tg:
+        tg.start_soon(run_server)
+        await _wait_for_port(host, port)
+
+        try:
+            # Use the new connect() API
+            client = await MCPClient.connect(f"http://{host}:{port}/mcp")
+
+            try:
+                # Should be initialized
+                assert client.initialize_result is not None
+                assert client.initialize_result.serverInfo.name == "connect-test"
+
+                # Should be able to call tools
+                result = await client.send_request(
+                    ClientRequest(
+                        CallToolRequest(params=CallToolRequestParams(name="multiply", arguments={"a": 5, "b": 6}))
+                    ),
+                    CallToolResult,
+                )
+
+                assert not result.isError
+                assert result.content
+                assert result.content[0].text == "30"
+            finally:
+                await client.close()
+        finally:
+            await server.shutdown()
+
+
+@pytest.mark.anyio
+async def test_mcpclient_connect_context_manager(unused_tcp_port: int) -> None:
+    """MCPClient.connect() should work with async with."""
+    server = MCPServer("ctx-test")
+
+    with server.binding():
+
+        @tool()
+        def greet(name: str) -> str:
+            return f"Hello, {name}!"
+
+    host = "127.0.0.1"
+    port = unused_tcp_port
+
+    async def run_server() -> None:
+        await server.serve(transport="streamable-http", host=host, port=port)
+
+    async with anyio.create_task_group() as tg:
+        tg.start_soon(run_server)
+        await _wait_for_port(host, port)
+
+        try:
+            # Use connect() with context manager
+            async with await MCPClient.connect(f"http://{host}:{port}/mcp") as client:
+                result = await client.send_request(
+                    ClientRequest(
+                        CallToolRequest(params=CallToolRequestParams(name="greet", arguments={"name": "World"}))
+                    ),
+                    CallToolResult,
+                )
+
+                assert not result.isError
+                assert result.content
+                assert result.content[0].text == "Hello, World!"
+
+            # Client should be closed after exiting context
+            assert client._closed is True
+        finally:
+            await server.shutdown()
+
+
+@pytest.mark.anyio
+async def test_mcpclient_connect_unknown_transport() -> None:
+    """MCPClient.connect() should raise for unknown transport."""
+    with pytest.raises(ValueError, match="Unsupported transport"):
+        await MCPClient.connect("http://localhost:8000/mcp", transport="bogus")

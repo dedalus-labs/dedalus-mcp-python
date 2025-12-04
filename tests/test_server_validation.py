@@ -7,10 +7,10 @@ from typing import Any
 
 import pytest
 
-from openmcp.server import MCPServer
-from openmcp.server.core import ServerValidationError
-from openmcp.server.transports import ASGIRunConfig
-from openmcp.server.transports.base import BaseTransport
+from dedalus_mcp.server import MCPServer
+from dedalus_mcp.server.core import ServerValidationError
+from dedalus_mcp.server.transports import ASGIRunConfig
+from dedalus_mcp.server.transports.base import BaseTransport
 
 
 class _StubTransport(BaseTransport):

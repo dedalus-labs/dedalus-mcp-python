@@ -16,8 +16,8 @@ import asyncio
 
 import pytest
 
-from openmcp import MCPServer
-from openmcp.tool import tool
+from dedalus_mcp import MCPServer
+from dedalus_mcp.tool import tool
 
 
 @pytest.mark.asyncio

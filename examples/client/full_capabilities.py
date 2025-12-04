@@ -21,8 +21,8 @@ from pathlib import Path
 import anyio
 import anthropic
 
-from openmcp.client import ClientCapabilitiesConfig, open_connection
-from openmcp.types import (
+from dedalus_mcp.client import ClientCapabilitiesConfig, open_connection
+from dedalus_mcp.types import (
     ClientRequest,
     CreateMessageRequestParams,
     CreateMessageResult,

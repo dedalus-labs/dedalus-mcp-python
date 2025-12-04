@@ -1,12 +1,12 @@
 # Server Guide
 
-This chapter documents `openmcp.server.MCPServer`, its capability services, and all runtime knobs that
+This chapter documents `dedalus_mcp.server.MCPServer`, its capability services, and all runtime knobs that
 influence wire behavior.
 
 ## Constructing `MCPServer`
 
 ```python
-from openmcp import MCPServer, AuthorizationConfig
+from dedalus_mcp import MCPServer, AuthorizationConfig
 from mcp.server.transport_security import TransportSecuritySettings
 
 server = MCPServer(
@@ -60,7 +60,7 @@ server = MCPServer(
 
 ### Capability stability
 
-OpenMCP defaults to **static** capability lists: declare tools, prompts, and resources inside `with server.binding(): …` during startup and never mutate them at runtime. This yields deterministic contracts that enterprise clients rely on.
+Dedalus MCP defaults to **static** capability lists: declare tools, prompts, and resources inside `with server.binding(): …` during startup and never mutate them at runtime. This yields deterministic contracts that enterprise clients rely on.
 
 Set `allow_dynamic_tools=True` to opt into **dynamic** mode. Dynamic servers may re-enter `server.binding()` after startup and mutate capability registries, but they **must**:
 
@@ -121,7 +121,7 @@ Static mode raises an error if you attempt to mutate capabilities after `serve()
 ### Logging & Progress
 
 - `get_context().info/debug/warning/error` send structured log notifications (see
-  `docs/openmcp/context.md`).
+  `docs/dedalus_mcp/context.md`).
 - `get_context().progress(total)` yields a coalescing progress tracker respecting spec semantics.
 
 ### Authorization (Opt-in)
@@ -141,7 +141,7 @@ Static mode raises an error if you attempt to mutate capabilities after `serve()
 
 All transport helpers log a single startup message through the server logger. Suppress it with
 `server.serve(verbose=False)` or the transport-specific `announce=False` parameter, or adjust
-verbosity via `openmcp.utils.logger.setup_logger()`.
+verbosity via `dedalus_mcp.utils.logger.setup_logger()`.
 
 ## Operational Hooks
 
@@ -163,11 +163,11 @@ verbosity via `openmcp.utils.logger.setup_logger()`.
 
 ### Logging
 
-- Uses the shared `openmcp.utils.get_logger` helper. Configure via environment (`OPENMCP_LOG_LEVEL`) or
+- Uses the shared `dedalus_mcp.utils.get_logger` helper. Configure via environment (`OPENMCP_LOG_LEVEL`) or
   replace the `NotificationSink` to integrate external observability stacks.
 
 ## Putting It Together
 
 A minimal HTTP server exposing tools, resources, prompts, sampling, and authorization scaffolding is
-available in `examples/full_demo/server.py` (see `docs/openmcp/manual/examples.md`). For quick-start
-instructions, check `docs/openmcp/getting-started.md`.
+available in `examples/full_demo/server.py` (see `docs/dedalus_mcp/manual/examples.md`). For quick-start
+instructions, check `docs/dedalus_mcp/getting-started.md`.

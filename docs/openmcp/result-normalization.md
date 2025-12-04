@@ -4,9 +4,9 @@
 
 **Problem**: Tool and resource handlers can return diverse Python types—dataclasses, Pydantic models, dicts, scalars, tuples, bytes—but the MCP specification requires structured responses (`CallToolResult` for tools, `ReadResourceResult` for resources) with specific content encoding. Forcing every handler to manually construct these wrapper types creates boilerplate and inconsistency.
 
-**Solution**: OpenMCP normalizers automatically coerce arbitrary handler return values into spec-compliant result types. Tool handlers can return anything; the normalizer produces `CallToolResult` with both human-readable `content` blocks and machine-parseable `structuredContent`. Resource handlers return text or binary data; the normalizer produces `ReadResourceResult` with appropriate MIME types and encoding.
+**Solution**: Dedalus MCP normalizers automatically coerce arbitrary handler return values into spec-compliant result types. Tool handlers can return anything; the normalizer produces `CallToolResult` with both human-readable `content` blocks and machine-parseable `structuredContent`. Resource handlers return text or binary data; the normalizer produces `ReadResourceResult` with appropriate MIME types and encoding.
 
-**OpenMCP**: Two core functions—`normalize_tool_result()` and `normalize_resource_payload()`—handle all coercion logic. They convert typed objects to JSON-compatible structures, generate content blocks, infer MIME types, and ensure results always conform to the MCP specification.
+**Dedalus MCP**: Two core functions—`normalize_tool_result()` and `normalize_resource_payload()`—handle all coercion logic. They convert typed objects to JSON-compatible structures, generate content blocks, infer MIME types, and ensure results always conform to the MCP specification.
 
 ## Specification
 
@@ -36,8 +36,8 @@ The `normalize_tool_result()` function accepts any Python value and returns a `C
 If your handler already returns `CallToolResult`, the normalizer returns it unchanged. This gives you full control over content blocks, structured data, and error flags.
 
 ```python
-from openmcp import tool
-from openmcp.types import CallToolResult, TextContent
+from dedalus_mcp import tool
+from dedalus_mcp.types import CallToolResult, TextContent
 
 @tool(description="Manual result construction")
 async def custom_response() -> CallToolResult:
@@ -296,8 +296,8 @@ The `normalize_resource_payload()` function accepts a resource URI, optional MIM
 If your handler already returns `ReadResourceResult`, it passes through unchanged.
 
 ```python
-from openmcp import resource
-from openmcp.types import ReadResourceResult, TextResourceContents
+from dedalus_mcp import resource
+from dedalus_mcp.types import ReadResourceResult, TextResourceContents
 
 @resource(uri="custom://response")
 async def custom_resource() -> ReadResourceResult:
@@ -319,7 +319,7 @@ async def custom_resource() -> ReadResourceResult:
 Single content objects are wrapped in a `ReadResourceResult` with a single-item list.
 
 ```python
-from openmcp.types import TextResourceContents
+from dedalus_mcp.types import TextResourceContents
 
 @resource(uri="simple://text")
 async def simple_text() -> TextResourceContents:
@@ -502,7 +502,7 @@ For tool results, MIME types are not applicable—content blocks use the `type` 
 Tool handlers can indicate errors by returning `CallToolResult` with `isError=True`:
 
 ```python
-from openmcp.types import CallToolResult, TextContent
+from dedalus_mcp.types import CallToolResult, TextContent
 
 @tool(description="Operation that may fail")
 async def risky_operation(x: int) -> CallToolResult:
@@ -524,8 +524,8 @@ The normalizer does not modify `isError` flags—your handler controls error sem
 ### Example: Returning Multiple Content Blocks
 
 ```python
-from openmcp import tool
-from openmcp.types import TextContent, ImageContent
+from dedalus_mcp import tool
+from dedalus_mcp.types import TextContent, ImageContent
 
 @tool(description="Return mixed content")
 async def mixed_content() -> list:
@@ -548,7 +548,7 @@ async def mixed_content() -> list:
 ### Example: Resource with Custom MIME Type
 
 ```python
-from openmcp import resource
+from dedalus_mcp import resource
 
 @resource(uri="config://settings", mime_type="application/json")
 async def settings() -> str:

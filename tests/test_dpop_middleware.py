@@ -20,7 +20,7 @@ from starlette.applications import Starlette
 from starlette.routing import Route
 from starlette.testclient import TestClient
 
-from openmcp.server.authorization import (
+from dedalus_mcp.server.authorization import (
     AuthorizationConfig,
     AuthorizationContext,
     AuthorizationManager,
@@ -146,7 +146,7 @@ class TestDPoPMiddleware:
 
         async def handler(request):
             from starlette.responses import JSONResponse
-            auth = request.scope.get("openmcp.auth")
+            auth = request.scope.get("dedalus_mcp.auth")
             return JSONResponse({"subject": auth.subject if auth else None})
 
         app = Starlette(routes=[Route("/messages", handler, methods=["POST"])])
@@ -205,7 +205,7 @@ class TestDPoPMiddleware:
 
         async def handler(request):
             from starlette.responses import JSONResponse
-            auth = request.scope.get("openmcp.auth")
+            auth = request.scope.get("dedalus_mcp.auth")
             return JSONResponse({"subject": auth.subject if auth else None})
 
         app = Starlette(routes=[Route("/messages", handler, methods=["POST"])])

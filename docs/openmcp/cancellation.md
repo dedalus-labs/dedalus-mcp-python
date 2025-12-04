@@ -1,12 +1,12 @@
 # Cancellation
 
-**DRAFT**: This document describes cancellation support in OpenMCP as of the 2025-06-18 spec revision. The client/server APIs are stable, but ergonomic helpers and integration patterns may evolve based on feedback.
+**DRAFT**: This document describes cancellation support in Dedalus MCP as of the 2025-06-18 spec revision. The client/server APIs are stable, but ergonomic helpers and integration patterns may evolve based on feedback.
 
 **Problem**: Long-running MCP operations (file scans, database queries, LLM calls) can block indefinitely. Clients need a standard mechanism to cancel in-flight requests without leaking resources or corrupting server state.
 
 **Solution**: The MCP specification defines `notifications/cancelled` as a standard notification that either party can send to signal cancellation of an in-progress request. The notification carries the request ID and an optional reason string.
 
-**OpenMCP**: Clients call `cancel_request(request_id, reason)` to emit `notifications/cancelled`. Server implementations should check for cancellation during long operations and clean up resources when interrupted. Use anyio cancellation scopes (`move_on_after`, `fail_after`, `CancelScope`) to implement timeouts and integrate with the async cancellation protocol.
+**Dedalus MCP**: Clients call `cancel_request(request_id, reason)` to emit `notifications/cancelled`. Server implementations should check for cancellation during long operations and clean up resources when interrupted. Use anyio cancellation scopes (`move_on_after`, `fail_after`, `CancelScope`) to implement timeouts and integrate with the async cancellation protocol.
 
 ## Overview
 
@@ -35,11 +35,11 @@ Spec receipts:
 
 ## Client-Side Cancellation
 
-OpenMCP clients expose `cancel_request()` to emit cancellation notifications:
+Dedalus MCP clients expose `cancel_request()` to emit cancellation notifications:
 
 ```python
-from openmcp import MCPClient, types
-from openmcp.client import transports
+from dedalus_mcp import MCPClient, types
+from dedalus_mcp.client import transports
 import anyio
 
 async with transports.streamable_http_client("http://127.0.0.1:8000/mcp") as (reader, writer, _):
@@ -76,8 +76,8 @@ Servers receive cancellation notifications via the protocol layer but do not get
 Use `anyio.fail_after()` or `anyio.move_on_after()` to enforce operation deadlines:
 
 ```python
-from openmcp import MCPServer, tool, types
-from openmcp.errors import McpError
+from dedalus_mcp import MCPServer, tool, types
+from dedalus_mcp.errors import McpError
 import anyio
 
 server = MCPServer("file-processor")
@@ -113,7 +113,7 @@ with server.binding():
 Use context managers and `try/finally` to ensure cleanup regardless of cancellation:
 
 ```python
-from openmcp import tool
+from dedalus_mcp import tool
 import anyio
 import tempfile
 import os
@@ -144,7 +144,7 @@ with server.binding():
 Combine progress notifications with cancellation awareness:
 
 ```python
-from openmcp import tool, get_context
+from dedalus_mcp import tool, get_context
 import anyio
 
 with server.binding():
@@ -290,8 +290,8 @@ Complete client that cancels a slow tool invocation:
 
 ```python
 import anyio
-from openmcp import MCPClient, types
-from openmcp.client import transports
+from dedalus_mcp import MCPClient, types
+from dedalus_mcp.client import transports
 
 async def main() -> None:
     async with transports.streamable_http_client("http://127.0.0.1:8000/mcp") as (reader, writer, _):
@@ -329,7 +329,7 @@ if __name__ == "__main__":
 Server implementing a cancellable sleep tool:
 
 ```python
-from openmcp import MCPServer, tool
+from dedalus_mcp import MCPServer, tool
 import anyio
 
 server = MCPServer("demo")
@@ -362,7 +362,7 @@ if __name__ == "__main__":
 
 ## See Also
 
-- `docs/openmcp/tools.md` - Tool registration and execution
-- `docs/openmcp/context.md` - Progress tracking and logging during tool execution
-- `docs/openmcp/manual/client.md` - Client lifecycle and capability configuration
+- `docs/dedalus_mcp/tools.md` - Tool registration and execution
+- `docs/dedalus_mcp/context.md` - Progress tracking and logging during tool execution
+- `docs/dedalus_mcp/manual/client.md` - Client lifecycle and capability configuration
 - `docs/mcp/core/cancellation/` - Official spec documentation on cancellation semantics

@@ -1,4 +1,4 @@
-# Contributing to OpenMCP
+# Contributing to Dedalus MCP
 
 Thanks for your interest in contributing! This guide will help you get started.
 
@@ -8,7 +8,7 @@ Never made a PR before? Welcome! Here's how to contribute step-by-step.
 
 ### 1. Fork the repository
 
-Click the **Fork** button on the [OpenMCP repo](https://github.com/dedalus-labs/openmcp-python). This creates your own copy.
+Click the **Fork** button on the [Dedalus MCP repo](https://github.com/dedalus-labs/openmcp-python). This creates your own copy.
 
 ### 2. Clone your fork
 
@@ -109,7 +109,7 @@ If you use AI tools (Copilot, Claude, Cursor), mention it in your PR. You must u
 
 ## Adding Support for New MCP Versions
 
-When a new MCP protocol version is released, OpenMCP must be updated. Contributors can help by:
+When a new MCP protocol version is released, Dedalus MCP must be updated. Contributors can help by:
 
 1. **Update `FEATURE_REGISTRY`** in `src/openmcp/versioning.py`
 2. **Add version tests** in `tests/protocol_versions/{version}/`

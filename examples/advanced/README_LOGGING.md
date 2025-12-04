@@ -1,6 +1,6 @@
-# OpenMCP Logging Examples
+# Dedalus MCP Logging Examples
 
-This directory contains comprehensive examples for customizing OpenMCP's logging system.
+This directory contains comprehensive examples for customizing Dedalus MCP's logging system.
 
 ## Files
 
@@ -12,7 +12,7 @@ This directory contains comprehensive examples for customizing OpenMCP's logging
 ### Default (Colored Console)
 
 ```python
-from openmcp.utils.logger import get_logger
+from dedalus_mcp.utils.logger import get_logger
 
 logger = get_logger(__name__)
 logger.info("Colored output by default")
@@ -29,7 +29,7 @@ python your_app.py
 Or in code:
 
 ```python
-from openmcp.utils.logger import setup_logger, get_logger
+from dedalus_mcp.utils.logger import setup_logger, get_logger
 
 setup_logger(use_color=False)
 logger = get_logger(__name__)
@@ -38,7 +38,7 @@ logger = get_logger(__name__)
 ### Custom Colors
 
 ```python
-from openmcp.utils.logger import ColoredFormatter, setup_logger, get_logger
+from dedalus_mcp.utils.logger import ColoredFormatter, setup_logger, get_logger
 import logging
 
 class MyColors(ColoredFormatter):
@@ -60,7 +60,7 @@ logger.info("Custom colors!")
 ### JSON Logging
 
 ```python
-from openmcp.utils.logger import setup_logger, get_logger
+from dedalus_mcp.utils.logger import setup_logger, get_logger
 
 setup_logger(use_json=True)
 logger = get_logger(__name__)
@@ -70,10 +70,10 @@ logger.info("Structured", user_id=123)
 ### Custom Handler
 
 ```python
-from openmcp.utils.logger import OpenMCPHandler, ColoredFormatter
+from dedalus_mcp.utils.logger import Dedalus MCPHandler, ColoredFormatter
 import logging
 
-class FilteredHandler(OpenMCPHandler):
+class FilteredHandler(Dedalus MCPHandler):
     """Filter debug logs from noisy modules."""
 
     def emit(self, record):
@@ -89,10 +89,10 @@ handler.setFormatter(ColoredFormatter())
 
 ## Design Philosophy
 
-OpenMCP's logger is **intentionally minimal**:
+Dedalus MCP's logger is **intentionally minimal**:
 
 1. **Zero dependencies** - Only stdlib + ANSI escapes
-2. **Public extension points** - `ColoredFormatter` and `OpenMCPHandler`
+2. **Public extension points** - `ColoredFormatter` and `Dedalus MCPHandler`
 3. **No config sprawl** - Subclass instead of adding flags
 4. **Small core** - ~300 lines, easy to understand
 
@@ -103,7 +103,7 @@ The logger plays nicely with:
 - **colorama** - Subclass `ColoredFormatter`, use colorama's `Fore`/`Style`
 - **rich** - Replace handler entirely with `RichHandler`
 - **orjson** - Pass `json_serializer=orjson.dumps` for fast JSON
-- **structlog** - Use instead of OpenMCP's logger if you need more power
+- **structlog** - Use instead of Dedalus MCP's logger if you need more power
 
 See `logging_customization_guide.md` for detailed examples of each.
 
@@ -120,7 +120,7 @@ See `logging_customization_guide.md` for detailed examples of each.
 | Default setup | `get_logger(__name__)` |
 | No colors | `NO_COLOR=1` or `setup_logger(use_color=False)` |
 | Different colors | Subclass `ColoredFormatter` |
-| Filter logs | Subclass `OpenMCPHandler` |
+| Filter logs | Subclass `Dedalus MCPHandler` |
 | JSON output | `setup_logger(use_json=True)` |
 | Rich/colorama | Replace handler or subclass formatter |
 

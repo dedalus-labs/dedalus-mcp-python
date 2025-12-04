@@ -6,7 +6,7 @@
 
 **Solution**: The sampling capability allows servers to send `sampling/createMessage` requests to clients, asking them to invoke their LLM and return a completion. Clients that advertise the `sampling` capability act as a proxy between the server and the underlying model.
 
-**OpenMCP**: The `SamplingService` implements the server side of this flow, enforcing reliability patterns (circuit breaker, concurrency limits, timeouts) to prevent cascading failures when requesting LLM completions from clients.
+**Dedalus MCP**: The `SamplingService` implements the server side of this flow, enforcing reliability patterns (circuit breaker, concurrency limits, timeouts) to prevent cascading failures when requesting LLM completions from clients.
 
 ## Specification
 
@@ -25,8 +25,8 @@ Key characteristics:
 When your server needs to invoke the client's LLM, construct a `CreateMessageRequestParams` and call `SamplingService.create_message()`. This method handles capability checks, concurrency control, timeout enforcement, and circuit breaker logic automatically.
 
 ```python
-from openmcp import MCPServer, tool
-from openmcp.types import CreateMessageRequestParams, Role, SamplingMessage
+from dedalus_mcp import MCPServer, tool
+from dedalus_mcp.types import CreateMessageRequestParams, Role, SamplingMessage
 
 server = MCPServer("reasoner")
 
@@ -145,7 +145,7 @@ async with stdio_client(server_params) as (read, write):
 The `SamplingService` accepts two configuration parameters:
 
 ```python
-from openmcp.server.services.sampling import SamplingService
+from dedalus_mcp.server.services.sampling import SamplingService
 
 service = SamplingService(
     timeout=60.0,        # Maximum seconds to wait for client response
@@ -162,7 +162,7 @@ Adjust these based on your workload:
 The `MCPServer` constructor passes these through to the service:
 
 ```python
-from openmcp import MCPServer
+from dedalus_mcp import MCPServer
 
 server = MCPServer(
     "my-server",
@@ -213,8 +213,8 @@ You cannot currently configure the threshold (3 failures) or cooldown duration (
 Use the client's LLM to break down a complex problem into steps:
 
 ```python
-from openmcp import MCPServer, tool, get_context
-from openmcp.types import CreateMessageRequestParams, Role, SamplingMessage
+from dedalus_mcp import MCPServer, tool, get_context
+from dedalus_mcp.types import CreateMessageRequestParams, Role, SamplingMessage
 
 server = MCPServer("planner")
 
@@ -269,8 +269,8 @@ $ mcp-client call plan_task '{"task": "Deploy a new web service"}'
 Delegate uncertain decisions back to the LLM:
 
 ```python
-from openmcp import MCPServer, tool
-from openmcp.types import CreateMessageRequestParams, Role, SamplingMessage
+from dedalus_mcp import MCPServer, tool
+from dedalus_mcp.types import CreateMessageRequestParams, Role, SamplingMessage
 
 server = MCPServer("classifier")
 
@@ -310,8 +310,8 @@ async def classify_sentiment(text: str) -> str:
 Chain multiple sampling requests to refine output:
 
 ```python
-from openmcp import MCPServer, tool
-from openmcp.types import CreateMessageRequestParams, Role, SamplingMessage
+from dedalus_mcp import MCPServer, tool
+from dedalus_mcp.types import CreateMessageRequestParams, Role, SamplingMessage
 
 server = MCPServer("writer")
 
@@ -354,7 +354,7 @@ async def write_docs(topic: str) -> str:
 
 ## See Also
 
-- **Elicitation**: Request structured user input instead of LLM completions (`docs/openmcp/elicitation.md`)
-- **Context API**: Access logging and progress from within tools (`docs/openmcp/context.md`)
-- **Tools**: Build tools that can invoke sampling (`docs/openmcp/tools.md`)
+- **Elicitation**: Request structured user input instead of LLM completions (`docs/dedalus_mcp/elicitation.md`)
+- **Context API**: Access logging and progress from within tools (`docs/dedalus_mcp/context.md`)
+- **Tools**: Build tools that can invoke sampling (`docs/dedalus_mcp/tools.md`)
 - **MCP Specification**: Official sampling capability spec (https://modelcontextprotocol.io/specification/2025-06-18/client/sampling)

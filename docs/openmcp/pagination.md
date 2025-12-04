@@ -6,7 +6,7 @@
 
 **Solution**: The spec mandates cursor-based pagination with opaque tokens. Clients request pages via `cursor` parameter, servers return sliced results plus optional `nextCursor` to continue iteration. Missing `nextCursor` signals exhaustion. Invalid cursors raise `INVALID_PARAMS` (-32602).
 
-**OpenMCP**: All list operations default to 50 items per page (configurable via `MCPServer(pagination_limit=N)`). The `paginate_sequence` helper validates cursors and produces `nextCursor` only when more data exists.
+**Dedalus MCP**: All list operations default to 50 items per page (configurable via `MCPServer(pagination_limit=N)`). The `paginate_sequence` helper validates cursors and produces `nextCursor` only when more data exists.
 
 ## Specification
 
@@ -24,7 +24,7 @@
 
 ## Cursor Semantics
 
-Cursors are **opaque strings** from the client's perspective. Clients treat them as black boxes; servers encode pagination state (OpenMCP uses integer offsets as strings).
+Cursors are **opaque strings** from the client's perspective. Clients treat them as black boxes; servers encode pagination state (Dedalus MCP uses integer offsets as strings).
 
 **Lifecycle**:
 1. Client sends `cursor=null` -> server returns first page + `nextCursor` (if more data).
@@ -35,10 +35,10 @@ Cursors are **opaque strings** from the client's perspective. Clients treat them
 
 ## Configuration
 
-OpenMCP defaults to **50 items per page** across all list endpoints (`tools/list`, `resources/list`, `prompts/list`, `roots/list`, `resources/templates/list`). Override at server construction:
+Dedalus MCP defaults to **50 items per page** across all list endpoints (`tools/list`, `resources/list`, `prompts/list`, `roots/list`, `resources/templates/list`). Override at server construction:
 
 ```python
-from openmcp import MCPServer
+from dedalus_mcp import MCPServer
 
 server = MCPServer("my-server", pagination_limit=100)
 ```
@@ -47,7 +47,7 @@ The 50-item default balances latency against round-trip overhead. Tune higher fo
 
 ## Implementation
 
-The `paginate_sequence` helper in `src/openmcp/server/pagination.py`:
+The `paginate_sequence` helper in `src/dedalus_mcp/server/pagination.py`:
 
 ```python
 def paginate_sequence(
@@ -66,7 +66,7 @@ def paginate_sequence(
     return page, next_cursor
 ```
 
-Services call this uniformly during `list_*` operations (see `src/openmcp/server/services/tools.py`, `resources.py`).
+Services call this uniformly during `list_*` operations (see `src/dedalus_mcp/server/services/tools.py`, `resources.py`).
 
 ## Error Handling
 
@@ -83,7 +83,7 @@ Malformed cursors raise `INVALID_PARAMS` (-32602):
 }
 ```
 
-Clients should treat `-32602` as unrecoverable and restart pagination from `cursor=null`. OpenMCP's offset-based cursors are stateless and never expire.
+Clients should treat `-32602` as unrecoverable and restart pagination from `cursor=null`. Dedalus MCP's offset-based cursors are stateless and never expire.
 
 ## Examples
 
@@ -92,7 +92,7 @@ Clients should treat `-32602` as unrecoverable and restart pagination from `curs
 Enumerate all tools using cursor-based iteration:
 
 ```python
-from openmcp import MCPClient
+from dedalus_mcp import MCPClient
 
 async def list_all_tools(client: MCPClient) -> list[str]:
     """Fetch all tool names by paginating through tools/list."""
@@ -119,7 +119,7 @@ async def list_all_tools(client: MCPClient) -> list[str]:
 ### Testing Pagination Boundaries
 
 ```python
-from openmcp import MCPServer, tool, types
+from dedalus_mcp import MCPServer, tool, types
 
 server = MCPServer("page-test", pagination_limit=10)
 
@@ -158,17 +158,17 @@ The pattern applies identically to `resources/list`, `prompts/list`, and `roots/
 
 ## Performance Notes
 
-- **Memory**: OpenMCP loads all items before slicing. For tens of thousands of items, consider lazy generators or database cursors.
+- **Memory**: Dedalus MCP loads all items before slicing. For tens of thousands of items, consider lazy generators or database cursors.
 - **Latency**: Small pages (10-20) minimize per-request latency; large pages (100-200) reduce round-trips. Default (50) balances both.
 - **Cursor Stability**: Integer offsets assume static collections. If items are added/removed during pagination, clients may skip or duplicate entries. Emit `notifications/tools/list_changed` to signal clients should restart.
 
 ## See Also
 
 - **Specification**: https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/pagination
-- **Tools Capability**: `docs/openmcp/tools.md` — tool listing and invocation
-- **Resources Capability**: `docs/openmcp/resources.md` — resource listing and subscriptions
-- **Prompts Capability**: `docs/openmcp/prompts.md` — prompt listing and retrieval
-- **Roots Capability**: `docs/openmcp/roots.md` — client-advertised filesystem roots
-- **Notifications**: `docs/openmcp/notifications.md` — `list_changed` events
-- **Reference Implementation**: `src/openmcp/server/pagination.py` — `paginate_sequence` helper
+- **Tools Capability**: `docs/dedalus_mcp/tools.md` — tool listing and invocation
+- **Resources Capability**: `docs/dedalus_mcp/resources.md` — resource listing and subscriptions
+- **Prompts Capability**: `docs/dedalus_mcp/prompts.md` — prompt listing and retrieval
+- **Roots Capability**: `docs/dedalus_mcp/roots.md` — client-advertised filesystem roots
+- **Notifications**: `docs/dedalus_mcp/notifications.md` — `list_changed` events
+- **Reference Implementation**: `src/dedalus_mcp/server/pagination.py` — `paginate_sequence` helper
 - **Error Codes**: MCP JSON-RPC spec section on standard error codes

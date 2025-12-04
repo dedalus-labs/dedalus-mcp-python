@@ -6,7 +6,7 @@
 
 **Solution**: Clients advertise filesystem roots—explicit boundaries for what paths a server may access. Servers validate every filesystem operation against these roots, rejecting traversal attempts and out-of-bounds accesses before touching disk.
 
-**OpenMCP**: The `RootsService` implements cache-aside architecture with per-session snapshots and immutable `RootGuard` reference monitors. Guards canonicalize paths (resolving symlinks, normalizing separators), parse file URIs across Windows and POSIX, and enforce boundaries via ancestor checks. Servers decorate handlers with `@require_within_roots()` to automatically reject invalid paths. Clients send `notifications/roots/list_changed` when boundaries shift; OpenMCP debounces these updates and maintains version-stable pagination cursors so ongoing `roots/list` requests never see torn reads.
+**Dedalus MCP**: The `RootsService` implements cache-aside architecture with per-session snapshots and immutable `RootGuard` reference monitors. Guards canonicalize paths (resolving symlinks, normalizing separators), parse file URIs across Windows and POSIX, and enforce boundaries via ancestor checks. Servers decorate handlers with `@require_within_roots()` to automatically reject invalid paths. Clients send `notifications/roots/list_changed` when boundaries shift; Dedalus MCP debounces these updates and maintains version-stable pagination cursors so ongoing `roots/list` requests never see torn reads.
 
 ---
 
@@ -18,7 +18,7 @@ The roots capability (`https://modelcontextprotocol.io/specification/2025-06-18/
 - **Defense in depth**: Even if a tool receives a malicious path from an LLM, the guard rejects it before filesystem access.
 - **Symlink resolution**: Guards resolve symlinks to prevent bypass via `ln -s /etc secrets`.
 - **File URI support**: Windows (`file:///c:/Users/alice/project`) and POSIX (`file:///home/alice/project`) URIs parse correctly.
-- **Debounced updates**: When clients change roots mid-session, OpenMCP waits 250ms to batch notifications, avoiding cache thrash.
+- **Debounced updates**: When clients change roots mid-session, Dedalus MCP waits 250ms to batch notifications, avoiding cache thrash.
 - **Version-stable cursors**: Pagination tokens embed snapshot versions. Stale cursors raise `INVALID_PARAMS`, forcing clients to restart pagination with fresh data.
 
 ---
@@ -76,11 +76,11 @@ Roots implement a **reference monitor**: every filesystem access passes through 
 
 ## RootGuard Path Validation
 
-The `RootGuard` class (lines 57-100 in `src/openmcp/server/services/roots.py`) is the core reference monitor.
+The `RootGuard` class (lines 57-100 in `src/dedalus_mcp/server/services/roots.py`) is the core reference monitor.
 
 **Construction**:
 ```python
-from openmcp.server.services.roots import RootGuard
+from dedalus_mcp.server.services.roots import RootGuard
 from mcp import types
 
 roots = (
@@ -119,7 +119,7 @@ guard.within("file:///home/alice/project/data.json")   # True (file URI)
 
 ## File URI Parsing
 
-File URIs differ across platforms. OpenMCP handles both per RFC 8089.
+File URIs differ across platforms. Dedalus MCP handles both per RFC 8089.
 
 **Windows examples**:
 ```python
@@ -194,7 +194,7 @@ def decode_cursor(self, session: ServerSession, cursor: str | None) -> tuple[int
     return version, offset
 ```
 
-When a client sends `notifications/roots/list_changed`, OpenMCP debounces for 250ms (configurable via `debounce_delay`), then fetches fresh roots and increments the version. Any inflight pagination with old cursors will fail on the next call, forcing clients to restart.
+When a client sends `notifications/roots/list_changed`, Dedalus MCP debounces for 250ms (configurable via `debounce_delay`), then fetches fresh roots and increments the version. Any inflight pagination with old cursors will fail on the next call, forcing clients to restart.
 
 **Why debounce?** A client editing `.mcprc` might trigger 10 notifications in rapid succession. Debouncing batches these into one refresh.
 
@@ -205,7 +205,7 @@ When a client sends `notifications/roots/list_changed`, OpenMCP debounces for 25
 ### Basic guard check (manual)
 
 ```python
-from openmcp import MCPServer, tool
+from dedalus_mcp import MCPServer, tool
 from mcp.server.lowlevel.server import request_ctx
 from pathlib import Path
 
@@ -344,7 +344,7 @@ Response 4: { roots: [...50...], nextCursor: null }
 ### Safe file reader tool
 
 ```python
-from openmcp import MCPServer, tool
+from dedalus_mcp import MCPServer, tool
 from pathlib import Path
 
 server = MCPServer("file-tools")
@@ -384,7 +384,7 @@ await client.call_tool("read_file", {"path": "/home/alice/project/../../../etc/p
 ### File listing tool with directory validation
 
 ```python
-from openmcp import tool, get_context
+from dedalus_mcp import tool, get_context
 from pathlib import Path
 
 @tool(description="List files in directory")
@@ -410,7 +410,7 @@ async def list_files(directory: str) -> list[str]:
 Resources don't support decorators, so validate manually:
 
 ```python
-from openmcp import resource, get_context
+from dedalus_mcp import resource, get_context
 from mcp.server.lowlevel.server import request_ctx
 from pathlib import Path
 
@@ -472,7 +472,7 @@ async def handle_roots_list(params: dict) -> dict:
 ### Testing guard behavior
 
 ```python
-from openmcp.server.services.roots import RootGuard
+from dedalus_mcp.server.services.roots import RootGuard
 from mcp import types
 from pathlib import Path
 
@@ -503,7 +503,7 @@ def test_guard_validation():
 
 ```python
 import asyncio
-from openmcp import MCPServer
+from dedalus_mcp import MCPServer
 
 server = MCPServer("test", notification_flags=NotificationFlags(roots_changed=True))
 
@@ -514,7 +514,7 @@ async def client_edits_config():
         await server.roots.on_list_changed(session)
         await asyncio.sleep(0.05)  # 50ms between notifications
 
-    # OpenMCP debounces to single refresh after 250ms quiet period
+    # Dedalus MCP debounces to single refresh after 250ms quiet period
     await asyncio.sleep(0.3)
 
     # Only ONE RPC call to client's roots/list endpoint
@@ -537,12 +537,12 @@ server.roots = RootsService(
 
 - **Specification**: `https://modelcontextprotocol.io/specification/2025-06-18/client/roots`
 - **Pagination**: `https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/pagination`
-- **Reference implementation**: `src/openmcp/server/services/roots.py` (RootGuard: lines 57-100)
+- **Reference implementation**: `src/dedalus_mcp/server/services/roots.py` (RootGuard: lines 57-100)
 - **Related docs**:
-  - `docs/openmcp/tools.md` — Tool registration and schema inference
-  - `docs/openmcp/resources.md` — Resource serving and subscriptions
-  - `docs/openmcp/context.md` — Accessing session context in handlers
-  - `docs/openmcp/pagination.md` — Cursor-based pagination semantics (when implemented)
+  - `docs/dedalus_mcp/tools.md` — Tool registration and schema inference
+  - `docs/dedalus_mcp/resources.md` — Resource serving and subscriptions
+  - `docs/dedalus_mcp/context.md` — Accessing session context in handlers
+  - `docs/dedalus_mcp/pagination.md` — Cursor-based pagination semantics (when implemented)
 - **Security references**:
   - RFC 8089 (File URI Scheme): `https://www.rfc-editor.org/rfc/rfc8089.html`
   - OWASP Path Traversal: `https://owasp.org/www-community/attacks/Path_Traversal`

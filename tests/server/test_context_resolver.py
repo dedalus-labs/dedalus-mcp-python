@@ -9,8 +9,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from openmcp import MCPServer, tool, get_context
-from openmcp.context import RUNTIME_CONTEXT_KEY
+from dedalus_mcp import MCPServer, tool, get_context
+from dedalus_mcp.context import RUNTIME_CONTEXT_KEY
 from ..helpers import RecordingSession, run_with_context
 
 
@@ -46,7 +46,7 @@ async def test_context_resolve_client_invokes_registered_resolver() -> None:
         server.tools.call_tool,
         "use_connection",
         {"connection": "ddls:conn_demo"},
-        request_scope={"openmcp.auth": auth_context},
+        request_scope={"dedalus_mcp.auth": auth_context},
         lifespan_context={RUNTIME_CONTEXT_KEY: {"server": server, "resolver": resolver}},
     )
 
@@ -54,4 +54,4 @@ async def test_context_resolve_client_invokes_registered_resolver() -> None:
     assert resolver.calls, "resolver should be invoked"
     handle, request_payload = resolver.calls[0]
     assert handle == "ddls:conn_demo"
-    assert request_payload["openmcp.auth"] is auth_context
+    assert request_payload["dedalus_mcp.auth"] is auth_context

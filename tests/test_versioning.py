@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from openmcp.versioning import (
+from dedalus_mcp.versioning import (
     ALL_VERSIONS,
     LATEST_VERSION,
     SUPPORTED_VERSIONS,

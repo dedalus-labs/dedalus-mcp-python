@@ -1,14 +1,14 @@
-# OpenMCP
+# Dedalus MCP
 
 Minimal, spec-faithful Python framework for building Model Context Protocol (MCP) clients and servers.
 
 [![Y Combinator S25](https://img.shields.io/badge/Y%20Combinator-S25-orange?style=flat&logo=ycombinator&logoColor=white)](https://www.ycombinator.com/launches/Od1-dedalus-labs-build-deploy-complex-agents-in-5-lines-of-code)
 
-OpenMCP wraps the official MCP reference SDK with ergonomic decorators, automatic schema inference, and production-grade operational features. 98% protocol compliance with MCP 2025-06-18.
+Dedalus MCP wraps the official MCP reference SDK with ergonomic decorators, automatic schema inference, and production-grade operational features. 98% protocol compliance with MCP 2025-06-18.
 
 ## Who this is for
 
-OpenMCP is for teams that have their infrastructure figured out. You have an IdP. You have logging. You have deployment pipelines. You don't need another framework's opinions on these things—you need MCP done correctly.
+Dedalus MCP is for teams that have their infrastructure figured out. You have an IdP. You have logging. You have deployment pipelines. You don't need another framework's opinions on these things—you need MCP done correctly.
 
 We don't bundle auth providers, CLI scaffolding, or opinionated middleware. If you want turnkey everything, FastMCP is solid. If you have your own stack and want spec-faithful MCP that integrates cleanly, you're here.
 
@@ -32,17 +32,19 @@ Transports and services are just factories. If you don't like ours, register you
 
 Context objects are plain async helpers (`get_context().progress()`, `get_context().info()`), not opaque singletons. You can stub them in tests.
 
-## Why OpenMCP over FastMCP
+## Why Dedalus MCP over FastMCP
 
-**Registration model.** FastMCP uses `@mcp.tool` where the function binds to that server at decoration time. This couples your code to a single server instance at import. Testing requires teardown. Multi-server scenarios require workarounds. OpenMCP's `@tool` decorator only attaches metadata. Registration happens when you call `server.collect(fn)`. Same function, multiple servers. No global state. Tests stay isolated. [Design rationale](docs/openmcp/ambient-registration.md).
+**Registration model.** FastMCP uses `@mcp.tool` where the function binds to that server at decoration time. This couples your code to a single server instance at import. Testing requires teardown. Multi-server scenarios require workarounds. Dedalus MCP's `@tool` decorator only attaches metadata. Registration happens when you call `server.collect(fn)`. Same function, multiple servers. No global state. Tests stay isolated. [Design rationale](docs/openmcp/ambient-registration.md).
 
-**Protocol versioning.** MCP has multiple spec versions with real behavioral differences. OpenMCP implements the Version Profile pattern: typed `ProtocolVersion` objects, capability dataclasses per version, `current_profile()` that tells you what the client actually negotiated. FastMCP inherits from the SDK and exposes none of this. You cannot determine which protocol version your handler is serving. [Version architecture](docs/openmcp/versioning.md).
+**Protocol versioning.** MCP has multiple spec versions with real behavioral differences. Dedalus MCP implements the Version Profile pattern: typed `ProtocolVersion` objects, capability dataclasses per version, `current_profile()` that tells you what the client actually negotiated. FastMCP inherits from the SDK and exposes none of this. You cannot determine which protocol version your handler is serving. [Version architecture](docs/openmcp/versioning.md).
 
-**Schema compliance.** OpenMCP validates responses against JSON schemas for each protocol version. When MCP ships breaking changes, our tests catch structural drift. FastMCP has no version-specific test infrastructure.
+**Schema compliance.** Dedalus MCP validates responses against JSON schemas for each protocol version. When MCP ships breaking changes, our tests catch structural drift. FastMCP has no version-specific test infrastructure.
 
-**Spec traceability.** Every OpenMCP feature cites its MCP spec clause in `docs/mcp/spec/`. Debugging why a client rejects your response? Trace back to the exact protocol requirement. FastMCP docs cover usage. Ours cover correctness.
+**Spec traceability.** Every Dedalus MCP feature cites its MCP spec clause in `docs/mcp/spec/`. Debugging why a client rejects your response? Trace back to the exact protocol requirement. FastMCP docs cover usage. Ours cover correctness.
 
 **Size.** 137 KB vs 8.2 MB. We're 60x smaller. They ship docs, tests, and PNG screenshots. We ship code.
+
+**Client ergonomics.** `client = await MCPClient.connect(url)` returns a ready-to-use client. No nested context managers required. Explicit `close()` or optional `async with` for cleanup. `weakref.finalize()` safety net warns if you forget. FastMCP requires `async with mcp.run_client():` context manager nesting.
 
 **Where FastMCP wins.** More batteries: OpenAPI integration, auth provider marketplace, CLI tooling. If you want turnkey auth with Supabase and don't want to think about it, FastMCP is probably easier to start with.
 
@@ -51,7 +53,7 @@ Context objects are plain async helpers (`get_context().progress()`, `get_contex
 ### Server
 
 ```python
-from openmcp import MCPServer, tool
+from dedalus_mcp import MCPServer, tool
 
 @tool(description="Add two numbers")
 def add(a: int, b: int) -> int:
@@ -68,18 +70,31 @@ if __name__ == "__main__":
 ### Client
 
 ```python
-from openmcp import MCPClient
-from openmcp.client import lambda_http_client
+from dedalus_mcp.client import MCPClient
 
 async def main():
-    async with lambda_http_client("http://127.0.0.1:8000/mcp") as (r, w, _):
-        async with MCPClient(r, w) as client:
-            tools = await client.session.list_tools()
-            result = await client.session.call_tool("add", {"a": 5, "b": 3})
-            print(result.content)
+    client = await MCPClient.connect("http://127.0.0.1:8000/mcp")
+    tools = await client.list_tools()
+    result = await client.call_tool("add", {"a": 5, "b": 3})
+    print(result)
+    await client.close()
 
 import asyncio
 asyncio.run(main())
+```
+
+For protected servers using DPoP (RFC 9449):
+
+```python
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.backends import default_backend
+from dedalus_mcp.client import MCPClient, DPoPAuth
+
+# Your DPoP key (same key used when obtaining the token)
+dpop_key = ec.generate_private_key(ec.SECP256R1(), default_backend())
+
+auth = DPoPAuth(access_token="eyJ...", dpop_key=dpop_key)
+client = await MCPClient.connect("https://mcp.example.com/mcp", auth=auth)
 ```
 
 ## Capabilities
@@ -213,13 +228,70 @@ Servers request structured user input. Schema validation, timeouts, accept/decli
 
 ## Authorization
 
-Security isn't bolted on. It's how we think about the framework.
+[4 tools called]
+
+Let me read these large files in chunks:
+
+[4 tools called]
+
+Let me continue reading the remaining content:
+
+[2 tools called]
+
+I've now read through all the auth specification documents. Let me synthesize my understanding:
+
+---
+
+**The Core Architecture:**
+
+You've designed a **dual-layer zero-trust model** that solves the critical gap in MCP auth: most downstream APIs (OpenAI, databases, SaaS) aren't OAuth apps, yet you need to call them securely on behalf of users without exposing credentials to untrusted third-party marketplace servers.
+
+**Layer 1 — MCP Authorization:** Standard OAuth 2.1. The Dedalus AS issues short-lived, audience-bound tokens that say "this client can invoke this MCP server." Tokens carry `org_id`, `connection_ids`, scopes. PKCE mandatory, DPoP for sender-constraining, RFC 9728 Protected Resource Metadata for discovery.
+
+**Layer 2 — Credential Authorization (The Enclave):** This is your differentiation. The Dedalus Enclave is a signer/vault service running in Nitro Enclaves that:
+- Holds encrypted downstream credentials (API keys, DB passwords, OAuth refresh tokens)
+- Exposes exactly one capability: `dispatch(intent_name, args)`
+- Validates intents against a contract, decrypts credentials in isolated memory, calls the downstream, and returns only results—never credentials
+
+**The `dispatch()` Pattern:**
+
+User code runs in untrusted compute (Lambda, Fargate, EC2). It can do arbitrary NumPy, loops, preprocessing—but it can **only** reach downstream providers through `dispatch()`. This is the "syscall" boundary. The enclave is the kernel; user code is userspace.
+
+```python
+# User code never sees API keys
+result = await dispatch("query_database", {"table": "users", "limit": 100})
+```
+
+**Two Credential Models:**
+
+1. **Organization-owned (Connection Handles):** Pre-registered in DynamoDB, keyed by `(org_id, connection_id)`. Server-side custody in vault. The `ddls:connections` JWT claim authorizes access.
+
+2. **User-owned (User Delegation):** Client-side custody in OS keychain. SDK encrypts with Enclave's public key. Marketplace servers receive opaque ciphertext and must forward to Enclave for execution. `ddls:user_delegations` claim tracks these.
+
+**Open-Source vs Proprietary Split:**
+
+The Dedalus MCP SDK (open-source) defines `DispatchBackend` as an abstract interface. Dedalus Cloud injects the concrete implementation that talks to the Enclave over mTLS. OSS users can run in "direct mode" with env var credentials (no zero-trust guarantees) or bring their own vault.
+
+**Marketplace Isolation:**
+
+Third-party MCP servers can orchestrate business logic but cannot access plaintext credentials. Even if compromised, they only see encrypted blobs. The Enclave is the single point where decryption happens, and it's not user-accessible.
+
+---
+
+**Questions / Ambiguities I noticed:**
+
+1. The docs mention both `contract` and `intents_manifest` in connection records—these seem synonymous. Should we pick one term?
+
+2. Section 5.4 (User Delegation) describes device-specific key derivation via HKDF, but the wire format shows `kid: "dedalus-enclave-key-v3"` which implies Enclave public key. The flow needs to be crisp: is the user token encrypted with a device-derived key (stored in keychain) or the Enclave's RSA public key?
+
+3. The `DispatchBackend` interface in the revisions-convo shows `HttpDispatchBackend` talking to a Dispatch Gateway that fans out to signer nodes. But auth-specs-notion Section 5.6 shows RS calling Enclave directly via VPC endpoint. Need to clarify if there's a gateway layer or direct RS→Enclave.
+
 
 **Session-scoped capability gating** (per-connection tool visibility):
 
 ```python
-from openmcp.context import Context
-from openmcp.server.dependencies import Depends
+from dedalus_mcp.context import Context
+from dedalus_mcp.server.dependencies import Depends
 
 USERS = {"bob": "basic", "alice": "pro"}
 SESSION_USERS: dict[str, str] = {}

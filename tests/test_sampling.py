@@ -9,17 +9,17 @@ from typing import Any
 from mcp.shared.exceptions import McpError
 import pytest
 
-from openmcp import MCPServer
-from openmcp.types.client.sampling import (
+from dedalus_mcp import MCPServer
+from dedalus_mcp.types.client.sampling import (
     CreateMessageRequest,
     CreateMessageRequestParams,
     CreateMessageResult,
     SamplingMessage,
 )
-from openmcp.types.messages import ServerRequest
-from openmcp.types.shared.base import ErrorData, INTERNAL_ERROR, METHOD_NOT_FOUND
-from openmcp.types.shared.capabilities import ClientCapabilities
-from openmcp.types.shared.content import TextContent
+from dedalus_mcp.types.messages import ServerRequest
+from dedalus_mcp.types.shared.base import ErrorData, INTERNAL_ERROR, METHOD_NOT_FOUND
+from dedalus_mcp.types.shared.capabilities import ClientCapabilities
+from dedalus_mcp.types.shared.content import TextContent
 from tests.helpers import DummySession, run_with_context
 
 

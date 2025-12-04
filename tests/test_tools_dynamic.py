@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import pytest
 
-from openmcp import MCPServer, tool
+from dedalus_mcp import MCPServer, tool
 
 
 def _bootstrap_server(*, allow_dynamic: bool) -> MCPServer:

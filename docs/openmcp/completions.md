@@ -4,10 +4,10 @@
 
 **Solution**: Provide a simple registration API that binds completion providers to prompt names or resource URIs, normalizes return payloads to the spec format, and enforces the 100-item response cap.
 
-**OpenMCP**: Decorate a callable with `@completion(prompt=...)` or `@completion(resource=...)`. The function receives the argument being completed plus optional context (previous arguments) and returns a list of suggestions, a `CompletionResult`, or raw `types.Completion`. OpenMCP handles coercion, `total`/`hasMore` fields, and capability advertisement automatically.
+**Dedalus MCP**: Decorate a callable with `@completion(prompt=...)` or `@completion(resource=...)`. The function receives the argument being completed plus optional context (previous arguments) and returns a list of suggestions, a `CompletionResult`, or raw `types.Completion`. Dedalus MCP handles coercion, `total`/`hasMore` fields, and capability advertisement automatically.
 
 ```python
-from openmcp import MCPServer, completion, prompt
+from dedalus_mcp import MCPServer, completion, prompt
 
 server = MCPServer("complete-demo")
 
@@ -25,5 +25,5 @@ with server.binding():
 ```
 
 - Spec receipts: `docs/mcp/spec/schema-reference/completion-complete.md`, `docs/mcp/capabilities/completion/index.md`
-- OpenMCP limits responses to 100 items and toggles `hasMore` when truncation occurs.
+- Dedalus MCP limits responses to 100 items and toggles `hasMore` when truncation occurs.
 - You can target resource template placeholders with `@completion(resource="file:///{path}")` to power URI autocompletion.

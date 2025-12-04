@@ -8,7 +8,7 @@ Then in another terminal, fetch the metadata:
     curl http://127.0.0.1:8000/.well-known/mcp-server.json | jq
 """
 
-from openmcp import MCPServer, tool
+from dedalus_mcp import MCPServer, tool
 
 
 async def main() -> None:

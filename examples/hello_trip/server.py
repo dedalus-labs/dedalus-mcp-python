@@ -31,7 +31,7 @@ import asyncio
 import logging
 from typing import Any
 
-from openmcp import MCPServer, get_context, prompt, resource, tool
+from dedalus_mcp import MCPServer, get_context, prompt, resource, tool
 
 # Suppress logs for cleaner demo output
 for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):

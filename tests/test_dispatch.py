@@ -40,7 +40,7 @@ class TestDispatchRequestModel:
 
     def test_dispatch_request_construction(self):
         """DispatchRequest should hold connection_handle, intent, and arguments."""
-        from openmcp.dispatch import DispatchRequest
+        from dedalus_mcp.dispatch import DispatchRequest
 
         request = DispatchRequest(
             connection_handle="ddls:conn:01ABC-github",
@@ -54,7 +54,7 @@ class TestDispatchRequestModel:
 
     def test_dispatch_request_validation(self):
         """DispatchRequest should validate required fields."""
-        from openmcp.dispatch import DispatchRequest
+        from dedalus_mcp.dispatch import DispatchRequest
         from pydantic import ValidationError
 
         with pytest.raises(ValidationError):
@@ -70,7 +70,7 @@ class TestDispatchResultModel:
 
     def test_success_result(self):
         """Successful dispatch should have success=True and data."""
-        from openmcp.dispatch import DispatchResult
+        from dedalus_mcp.dispatch import DispatchResult
 
         result = DispatchResult(
             success=True,
@@ -83,7 +83,7 @@ class TestDispatchResultModel:
 
     def test_error_result(self):
         """Failed dispatch should have success=False and error message."""
-        from openmcp.dispatch import DispatchResult
+        from dedalus_mcp.dispatch import DispatchResult
 
         result = DispatchResult(
             success=False,
@@ -100,7 +100,7 @@ class TestDispatchBackendProtocol:
 
     def test_backend_has_dispatch_method(self):
         """All backends should implement async dispatch() method."""
-        from openmcp.dispatch import DispatchBackend, DispatchRequest, DispatchResult
+        from dedalus_mcp.dispatch import DispatchBackend, DispatchRequest, DispatchResult
 
         # Verify protocol defines the method
         import inspect
@@ -121,7 +121,7 @@ class TestDirectDispatchBackend:
     @pytest.mark.asyncio
     async def test_direct_dispatch_calls_driver(self):
         """Direct dispatch should invoke registered driver."""
-        from openmcp.dispatch import DirectDispatchBackend, DispatchRequest
+        from dedalus_mcp.dispatch import DirectDispatchBackend, DispatchRequest
 
         # Register a mock driver
         calls = []
@@ -149,7 +149,7 @@ class TestDirectDispatchBackend:
     @pytest.mark.asyncio
     async def test_direct_dispatch_unknown_driver(self):
         """Dispatch to unknown driver should fail with clear error."""
-        from openmcp.dispatch import DirectDispatchBackend, DispatchRequest
+        from dedalus_mcp.dispatch import DirectDispatchBackend, DispatchRequest
 
         backend = DirectDispatchBackend()
 
@@ -167,7 +167,7 @@ class TestDirectDispatchBackend:
     @pytest.mark.asyncio
     async def test_direct_dispatch_driver_exception(self):
         """Driver exceptions should be caught and returned as error result."""
-        from openmcp.dispatch import DirectDispatchBackend, DispatchRequest
+        from dedalus_mcp.dispatch import DirectDispatchBackend, DispatchRequest
 
         async def failing_driver(intent: str, arguments: dict) -> dict:
             raise RuntimeError("API rate limited")
@@ -201,7 +201,7 @@ class TestEnclaveDispatchBackend:
         import httpx
         import respx
 
-        from openmcp.dispatch import EnclaveDispatchBackend, DispatchRequest
+        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchRequest
 
         # Mock the enclave endpoint
         respx_mock.post("https://enclave.example.com/dispatch").mock(
@@ -235,7 +235,7 @@ class TestEnclaveDispatchBackend:
         from cryptography.hazmat.primitives.asymmetric import ec
         from cryptography.hazmat.backends import default_backend
 
-        from openmcp.dispatch import EnclaveDispatchBackend, DispatchRequest
+        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchRequest
 
         # Generate ES256 key for DPoP
         dpop_key = ec.generate_private_key(ec.SECP256R1(), default_backend())
@@ -274,7 +274,7 @@ class TestEnclaveDispatchBackend:
         """401 from enclave should result in auth error."""
         import httpx
 
-        from openmcp.dispatch import EnclaveDispatchBackend, DispatchRequest
+        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchRequest
 
         respx_mock.post("https://enclave.example.com/dispatch").mock(
             return_value=httpx.Response(401, json={"error": "token_expired"})
@@ -301,7 +301,7 @@ class TestEnclaveDispatchBackend:
         """Timeout should be handled gracefully."""
         import httpx
 
-        from openmcp.dispatch import EnclaveDispatchBackend, DispatchRequest
+        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchRequest
 
         respx_mock.post("https://enclave.example.com/dispatch").mock(
             side_effect=httpx.TimeoutException("timeout")
@@ -335,8 +335,8 @@ class TestDispatchIntegration:
     @pytest.mark.asyncio
     async def test_dispatch_with_connection_gate(self):
         """Dispatch should check connection gate before forwarding."""
-        from openmcp.dispatch import DirectDispatchBackend, DispatchRequest
-        from openmcp.server.services.connection_gate import ConnectionHandleGate
+        from dedalus_mcp.dispatch import DirectDispatchBackend, DispatchRequest
+        from dedalus_mcp.server.services.connection_gate import ConnectionHandleGate
 
         backend = DirectDispatchBackend()
         gate = ConnectionHandleGate(authorized_handles={"ddls:conn_env_github_token"})
@@ -345,7 +345,7 @@ class TestDispatchIntegration:
         gate.check("ddls:conn_env_github_token")  # No raise
 
         # Unauthorized should fail before dispatch
-        from openmcp.server.services.connection_gate import ConnectionHandleNotAuthorizedError
+        from dedalus_mcp.server.services.connection_gate import ConnectionHandleNotAuthorizedError
 
         with pytest.raises(ConnectionHandleNotAuthorizedError):
             gate.check("ddls:conn:unauthorized-handle")

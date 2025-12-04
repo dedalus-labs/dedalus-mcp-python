@@ -4,12 +4,12 @@
 
 **Solution**: Provide simple hook points that call `server.notify_resource_updated(uri)` whenever a resource changes. You can wire these hooks into file watchers, async queues, or higher-level frameworks without touching the core MCP plumbing.
 
-**OpenMCP Patterns**
+**Dedalus MCP Patterns**
 
 1. **Tool-driven updates** – call the notifier from the tool that mutates state.
 
    ```python
-   from openmcp import MCPServer, resource, tool
+   from dedalus_mcp import MCPServer, resource, tool
 
    server = MCPServer("hooks")
 
@@ -58,4 +58,4 @@
                await server.notify_resource_updated(uri)
    ```
 
-These hooks keep OpenMCP decoupled from external systems while giving users a crisp, spec-compliant way to alert MCP clients. Pair them with the subscription registry to ensure `resources/updated` only goes to clients that have opted in.
+These hooks keep Dedalus MCP decoupled from external systems while giving users a crisp, spec-compliant way to alert MCP clients. Pair them with the subscription registry to ensure `resources/updated` only goes to clients that have opted in.

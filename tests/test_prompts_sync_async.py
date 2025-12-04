@@ -16,7 +16,7 @@ import asyncio
 
 import pytest
 
-from openmcp import MCPServer, prompt
+from dedalus_mcp import MCPServer, prompt
 
 
 @pytest.mark.asyncio
@@ -186,7 +186,7 @@ async def test_sync_prompt_with_required_arguments():
     """Sync prompts enforce required arguments."""
     from mcp.shared.exceptions import McpError
 
-    from openmcp import types
+    from dedalus_mcp import types
 
     server = MCPServer("sync-required")
 
@@ -212,7 +212,7 @@ async def test_async_prompt_with_required_arguments():
     """Async prompts enforce required arguments."""
     from mcp.shared.exceptions import McpError
 
-    from openmcp import types
+    from dedalus_mcp import types
 
     server = MCPServer("async-required")
 

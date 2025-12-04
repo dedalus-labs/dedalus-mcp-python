@@ -52,8 +52,8 @@ import socketserver
 import httpx
 from pydantic import ValidationError
 
-from openmcp.client import open_connection
-from openmcp.types import (
+from dedalus_mcp.client import open_connection
+from dedalus_mcp.types import (
     CallToolRequest,
     CallToolRequestParams,
     CallToolResult,
@@ -61,7 +61,7 @@ from openmcp.types import (
     ListToolsRequest,
     ListToolsResult,
 )
-from openmcp.utils import to_json
+from dedalus_mcp.utils import to_json
 
 DEFAULT_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://127.0.0.1:8000/mcp")
 DEFAULT_RESOURCE = os.getenv("MCP_RESOURCE_URL", "http://127.0.0.1:8000")

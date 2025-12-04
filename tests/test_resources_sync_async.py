@@ -9,7 +9,7 @@ import asyncio
 
 import pytest
 
-from openmcp import MCPServer, resource
+from dedalus_mcp import MCPServer, resource
 
 
 @pytest.mark.asyncio

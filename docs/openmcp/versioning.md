@@ -1,13 +1,13 @@
 # Versioning
 
-OpenMCP is a **temporal inscription of the MCP spec**—it respects that the protocol evolves over time. Every feature has a version where it originated, and our code must reflect this.
+Dedalus MCP is a **temporal inscription of the MCP spec**—it respects that the protocol evolves over time. Every feature has a version where it originated, and our code must reflect this.
 
 This module tracks MCP protocol versions at a granular level, allowing code to query whether specific features exist in a given protocol revision.
 
 ## Quick Start
 
 ```python
-from openmcp.versioning import ProtocolProfile, FeatureId
+from dedalus_mcp.versioning import ProtocolProfile, FeatureId
 
 # Get capabilities for a specific version
 profile = ProtocolProfile.for_version("2025-06-18")
@@ -25,7 +25,7 @@ profile.caps.jsonrpc.batching  # BatchingState.REMOVED
 
 ## Why Typed Capabilities?
 
-MCP evolves incrementally. A "feature" in version 1.0 might gain new fields in version 1.1. Tracking just "feature present/absent" is insufficient. OpenMCP tracks every incremental change so code can behave correctly for each protocol revision.
+MCP evolves incrementally. A "feature" in version 1.0 might gain new fields in version 1.1. Tracking just "feature present/absent" is insufficient. Dedalus MCP tracks every incremental change so code can behave correctly for each protocol revision.
 
 Example: `ProgressNotification` existed in 2024-11-05, but the optional `message` field was added in 2025-03-26. A server negotiating 2024-11-05 should NOT send `message` (older clients won't understand it).
 
@@ -62,7 +62,7 @@ profile.supports(FeatureId.PROGRESS_MESSAGE_FIELD)
 Get the detailed availability state:
 
 ```python
-from openmcp.versioning import Availability
+from dedalus_mcp.versioning import Availability
 
 state = profile.feature_state(FeatureId.JSONRPC_BATCHING)
 # Availability.UNSUPPORTED / AVAILABLE / DEPRECATED / REMOVED
@@ -107,7 +107,7 @@ No SDK patching required. Check the profile, conditionally construct, let the SD
 
 ## Zero Fallback Policy
 
-OpenMCP never silently falls back to a default version. If code requests an unsupported version, it raises `UnsupportedProtocolVersionError`:
+Dedalus MCP never silently falls back to a default version. If code requests an unsupported version, it raises `UnsupportedProtocolVersionError`:
 
 ```python
 # Raises UnsupportedProtocolVersionError

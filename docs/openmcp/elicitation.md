@@ -4,10 +4,10 @@
 
 **Solution**: The elicitation capability lets servers send `elicitation/create` requests to clients, specifying a user-facing message and a JSON Schema for the expected input fields. The client presents UI (dialog, form, etc.) and returns the user's response: accept with data, decline, or cancel.
 
-**OpenMCP**: Call `server.request_elicitation(params)` from any tool or resource handler. OpenMCP validates the schema (top-level properties only, per spec), sends the request over the active session, and propagates the client's response or raises `McpError` on timeout (60s default) or client rejection.
+**Dedalus MCP**: Call `server.request_elicitation(params)` from any tool or resource handler. Dedalus MCP validates the schema (top-level properties only, per spec), sends the request over the active session, and propagates the client's response or raises `McpError` on timeout (60s default) or client rejection.
 
 ```python
-from openmcp import MCPServer, types, tool
+from dedalus_mcp import MCPServer, types, tool
 
 server = MCPServer("approval-workflow")
 
@@ -97,7 +97,7 @@ Elicitation was introduced in the 2025-06-18 protocol revision to provide a stan
 Call `server.request_elicitation()` from any async context where you need user input. The method requires an active MCP session (i.e., you must be inside a tool/resource/prompt handler).
 
 ```python
-from openmcp import MCPServer, types, tool
+from dedalus_mcp import MCPServer, types, tool
 
 server = MCPServer("data-collector")
 
@@ -133,7 +133,7 @@ with server.binding():
 
 ```python
 from mcp.shared.exceptions import McpError
-from openmcp import types
+from dedalus_mcp import types
 
 try:
     result = await server.request_elicitation(params)
@@ -156,7 +156,7 @@ except McpError as exc:
 Clients advertise support via `capabilities.elicitation` and implement a handler for `elicitation/create`. The handler must present UI and return an `ElicitResult`.
 
 ```python
-from openmcp import MCPClient, types
+from dedalus_mcp import MCPClient, types
 
 client = MCPClient()
 
@@ -272,7 +272,7 @@ Servers should treat `decline` and `cancel` as similar (user did not proceed) bu
 ### Example 1: Confirmation Dialog
 
 ```python
-from openmcp import MCPServer, types, tool
+from dedalus_mcp import MCPServer, types, tool
 
 server = MCPServer("file-manager")
 
@@ -301,7 +301,7 @@ with server.binding():
 ### Example 2: Multi-Field Form
 
 ```python
-from openmcp import MCPServer, types, tool
+from dedalus_mcp import MCPServer, types, tool
 
 server = MCPServer("user-onboarding")
 
@@ -336,7 +336,7 @@ with server.binding():
 ### Example 3: Multi-Step Wizard
 
 ```python
-from openmcp import MCPServer, types, tool
+from dedalus_mcp import MCPServer, types, tool
 
 server = MCPServer("deployment-wizard")
 
@@ -392,10 +392,10 @@ with server.binding():
 
 ## See Also
 
-- **Tools**: `docs/openmcp/tools.md` (tool handlers that can call elicitation)
-- **Resources**: `docs/openmcp/resources.md` (resource handlers with elicitation)
-- **Sampling**: `docs/openmcp/sampling.md` (server-to-client LLM requests)
-- **Context**: `docs/openmcp/context.md` (`get_context()` for logging inside handlers)
+- **Tools**: `docs/dedalus_mcp/tools.md` (tool handlers that can call elicitation)
+- **Resources**: `docs/dedalus_mcp/resources.md` (resource handlers with elicitation)
+- **Sampling**: `docs/dedalus_mcp/sampling.md` (server-to-client LLM requests)
+- **Context**: `docs/dedalus_mcp/context.md` (`get_context()` for logging inside handlers)
 - **Spec**: `https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation`
 
 ---

@@ -1,6 +1,6 @@
 # MCP 2024-11-05 Specification Tests
 
-This directory contains tests that verify OpenMCP's implementation against the **MCP 2024-11-05** specification.
+This directory contains tests that verify Dedalus MCP's implementation against the **MCP 2024-11-05** specification.
 
 ## Specification Sources
 
@@ -20,7 +20,7 @@ Each test file corresponds to a section of the 2024-11-05 specification:
 
 ## Testing Approach
 
-Tests in this directory validate that OpenMCP correctly implements the 2024-11-05 spec by:
+Tests in this directory validate that Dedalus MCP correctly implements the 2024-11-05 spec by:
 
 1. **Structure Validation**: Ensuring messages match the JSON schema.
 2. **Behavior Validation**: Verifying MUST/SHOULD/MAY requirements from prose specs.

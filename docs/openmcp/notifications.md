@@ -4,7 +4,7 @@
 
 ## Overview
 
-MCP notifications are one-way, fire-and-forget messages sent from server to client without expecting a response. OpenMCP provides a lightweight notification broadcasting architecture built around the **ObserverRegistry** pattern and the **NotificationSink** abstraction.
+MCP notifications are one-way, fire-and-forget messages sent from server to client without expecting a response. Dedalus MCP provides a lightweight notification broadcasting architecture built around the **ObserverRegistry** pattern and the **NotificationSink** abstraction.
 
 This document explains the internal plumbing that powers list-changed notifications, progress updates, and logging messages. Understanding this architecture is useful when:
 
@@ -29,7 +29,7 @@ The spec requires that notifications:
 
 ## Architecture
 
-OpenMCP's notification system has two core abstractions:
+Dedalus MCP's notification system has two core abstractions:
 
 ### NotificationSink
 
@@ -145,7 +145,7 @@ This is primarily used in tests or when shutting down a server instance.
 
 ## Built-in Notifications
 
-OpenMCP emits several notification types defined by the MCP spec:
+Dedalus MCP emits several notification types defined by the MCP spec:
 
 ### List Changed Notifications
 
@@ -170,7 +170,7 @@ async def _notify_list_changed(self) -> None:
 
 ### Progress Notifications
 
-Sent during long-running operations to report progress. The `openmcp.progress` module handles these with more sophisticated logic (coalescing, retries, monotonicity enforcement).
+Sent during long-running operations to report progress. The `dedalus_mcp.progress` module handles these with more sophisticated logic (coalescing, retries, monotonicity enforcement).
 
 Progress notifications bypass `ObserverRegistry` entirely—they're sent directly via `session.send_progress_notification()` because they target a specific session identified by a `progressToken`, not a broadcast audience.
 
@@ -289,7 +289,7 @@ await sink.send_notification(session, notification)
 ```python
 from mcp import types
 from mcp.server.lowlevel.server import request_ctx
-from openmcp import tool
+from dedalus_mcp import tool
 
 class ThresholdEventParams(types.BaseModel):
     value: float

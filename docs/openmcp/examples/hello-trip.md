@@ -2,7 +2,7 @@
 
 This example stitches together the concepts from
 the MCP specification. It showcases how to build and use a
-minimal MCP server with OpenMCP.
+minimal MCP server with Dedalus MCP.
 
 ## Files
 
@@ -50,4 +50,4 @@ The `plan_trip` tool fetches the ambient request context, emits structured log
 messages, and streams progress updates using the coalescing helper from
 `docs/mcp/core/progress/index.md`. This mirrors the guidance in
 `docs/mcp/capabilities/logging/index.md` while keeping handler code inside the
-OpenMCP surface.
+Dedalus MCP surface.

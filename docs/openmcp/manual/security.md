@@ -1,6 +1,6 @@
 # Security & Operational Notes
 
-This section summarises the mitigations OpenMCP currently provides, along with TODO items aligned to
+This section summarises the mitigations Dedalus MCP currently provides, along with TODO items aligned to
 `docs/mcp/core/security-best-practices`.
 
 ## Implemented Safeguards
@@ -39,14 +39,14 @@ This section summarises the mitigations OpenMCP currently provides, along with T
 | Area | Status | Notes |
 | ---- | ------ | ----- |
 | OAuth token validation | 🚧 In design | `AuthorizationProvider` interface ready; full JWT/JWKS/introspection support will land once the AS is available. |
-| Authorization server discovery (clients) | 🚧 In design | Client-side flow (PRM, AS metadata, PKCE) outlined in `docs/openmcp/design/authorization.md`. |
+| Authorization server discovery (clients) | 🚧 In design | Client-side flow (PRM, AS metadata, PKCE) outlined in `docs/dedalus_mcp/design/authorization.md`. |
 | Token caching & circuit breakers | 🚧 In design | JWKS + metadata caches will use cache-aside + single-flight. |
-| Request rate limiting | ⏳ Planned | No built-in limiter yet. Recommended: front OpenMCP with a proxy (nginx/envoy) or add middleware. |
+| Request rate limiting | ⏳ Planned | No built-in limiter yet. Recommended: front Dedalus MCP with a proxy (nginx/envoy) or add middleware. |
 | SSRF protection for outbound fetches | ⏳ Planned | When client-side discovery lands we will implement scheme/host allowlists. |
 | Structured audit logging | ✅ Partial | Logging hooks in place; guidance to route to SIEMs will be documented alongside authorization rollout. |
 | DPoP / mTLS support | ⏳ Deferred | Not required by MCP spec; revisit if server or AS mandates it. |
-| Token passthrough prevention | ✅ | OpenMCP never forwards client tokens to downstream services; all tooling runs locally. |
-| Session identifier entropy | ✅ (SDK) | Reference SDK generates random session IDs for Streamable HTTP; OpenMCP does not override. |
+| Token passthrough prevention | ✅ | Dedalus MCP never forwards client tokens to downstream services; all tooling runs locally. |
+| Session identifier entropy | ✅ (SDK) | Reference SDK generates random session IDs for Streamable HTTP; Dedalus MCP does not override. |
 
 ## Recommended Deployment Practices
 
@@ -58,5 +58,5 @@ This section summarises the mitigations OpenMCP currently provides, along with T
   guidance (obtain user consent for each outgoing client registration, never re-use tokens for other
   resources).
 
-Security extends beyond the framework; combine OpenMCP with infrastructure safeguards (WAF, reverse
+Security extends beyond the framework; combine Dedalus MCP with infrastructure safeguards (WAF, reverse
 proxy, SIEM) for production deployments.

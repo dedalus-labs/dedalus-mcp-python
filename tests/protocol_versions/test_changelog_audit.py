@@ -18,7 +18,7 @@ from enum import Enum, auto
 
 import pytest
 
-from openmcp.versioning import MIGRATIONS, FeatureId, ProtocolVersion, V_2025_03_26, V_2025_06_18, V_2025_11_25
+from dedalus_mcp.versioning import MIGRATIONS, FeatureId, ProtocolVersion, V_2025_03_26, V_2025_06_18, V_2025_11_25
 
 
 # --- Typed changelog structures ------------------------------------------------

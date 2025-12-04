@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 
-from openmcp.utils.logger import ColoredFormatter, PlainFormatter, StructuredJSONFormatter, get_logger, setup_logger
+from dedalus_mcp.utils.logger import ColoredFormatter, PlainFormatter, StructuredJSONFormatter, get_logger, setup_logger
 
 
 def _capture_logging(level: int, *, use_json: bool, **kwargs: Any) -> list[str]:
@@ -26,7 +26,7 @@ def _capture_logging(level: int, *, use_json: bool, **kwargs: Any) -> list[str]:
     else:
         handler.setFormatter(logging.Formatter("%(levelname)s:%(name)s:%(message)s"))
 
-    logger = logging.getLogger("openmcp.test.logger")
+    logger = logging.getLogger("dedalus_mcp.test.logger")
     logger.handlers = []
     logger.setLevel(level)
     logger.addHandler(handler)
@@ -43,7 +43,7 @@ def _capture_logging(level: int, *, use_json: bool, **kwargs: Any) -> list[str]:
 def test_setup_logger_plain_stdout(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OPENMCP_LOG_JSON", "0")
     setup_logger(force=True)
-    log = get_logger("openmcp.test")
+    log = get_logger("dedalus_mcp.test")
 
     stream = io.StringIO()
     handler = logging.StreamHandler(stream)
@@ -53,7 +53,7 @@ def test_setup_logger_plain_stdout(monkeypatch: pytest.MonkeyPatch) -> None:
     log.info("demo")
     handler.flush()
 
-    assert stream.getvalue().strip().endswith("INFO:openmcp.test:demo")
+    assert stream.getvalue().strip().endswith("INFO:dedalus_mcp.test:demo")
 
 
 def test_setup_logger_json_with_custom_serializer(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -67,7 +67,7 @@ def test_setup_logger_json_with_custom_serializer(monkeypatch: pytest.MonkeyPatc
 
     assert len(lines) == 1
     payload = json.loads(lines[0])
-    assert payload["logger"] == "openmcp.test.logger"
+    assert payload["logger"] == "dedalus_mcp.test.logger"
     assert payload["context"] == {"value": 42}
 
 

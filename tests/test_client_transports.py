@@ -22,7 +22,7 @@ import anyio
 import anyio.abc
 import pytest
 
-from openmcp.client.transports import lambda_http_client
+from dedalus_mcp.client.transports import lambda_http_client
 
 from mcp.client.streamable_http import streamablehttp_client
 
@@ -86,8 +86,8 @@ async def test_lambda_http_client_injects_noop_get_stream(monkeypatch: pytest.Mo
     async def fake_client_factory(**_: Any):
         yield object()
 
-    monkeypatch.setattr("openmcp.client.transports.StreamableHTTPTransport", transport_factory)
-    monkeypatch.setattr("openmcp.client.transports.create_mcp_http_client", fake_client_factory)
+    monkeypatch.setattr("dedalus_mcp.client.transports.StreamableHTTPTransport", transport_factory)
+    monkeypatch.setattr("dedalus_mcp.client.transports.create_mcp_http_client", fake_client_factory)
 
     async with lambda_http_client("https://lambda.example.test/mcp") as (read, write, get_session_id):
         assert transport_instances, "transport should be created"

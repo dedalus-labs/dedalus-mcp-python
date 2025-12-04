@@ -9,13 +9,13 @@ import pytest
 
 from pydantic import BaseModel
 
-from openmcp.server.connectors import (
+from dedalus_mcp.server.connectors import (
     EnvironmentCredentialLoader,
     EnvironmentCredentials,
     EnvironmentBindings,
     define,
 )
-from openmcp.server.drivers.http_api import HTTPAPIClient, HTTPAPIDriver
+from dedalus_mcp.server.drivers.http_api import HTTPAPIClient, HTTPAPIDriver
 
 
 class HTTPAPIConfig(BaseModel):

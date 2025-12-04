@@ -95,7 +95,7 @@ This document tracks MCP protocol features across versions with spec citations.
 
 ## Non-Code Spec Items
 
-These spec sections don't correspond to OpenMCP code:
+These spec sections don't correspond to Dedalus MCP code:
 
 | Section | Version | Description |
 |---------|---------|-------------|
@@ -105,7 +105,7 @@ These spec sections don't correspond to OpenMCP code:
 | SDK Tiering | 2025-11-25 | SEP-1730: SDK requirements |
 | Security Best Practices | 2025-06-18 | Guidance document |
 
-## OpenMCP Support Status
+## Dedalus MCP Support Status
 
 | Version | Support | Notes |
 |---------|---------|-------|
@@ -120,7 +120,7 @@ When a new MCP version is released:
 
 1. Read `internals/references/modelcontextprotocol/docs/specification/{version}/changelog.mdx`
 2. Update the feature matrix above
-3. Add new `ProtocolDefinition` in `src/openmcp/versioning.py`
+3. Add new `ProtocolDefinition` in `src/dedalus_mcp/versioning.py`
 4. Copy schema to `tests/protocol_versions/{version}/schema.json`
 5. Add version-specific tests
 

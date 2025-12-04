@@ -11,10 +11,10 @@ from __future__ import annotations
 
 import pytest
 
-from openmcp import MCPServer, completion
-from openmcp.types.server.completions import CompletionArgument, CompletionContext, ResourceTemplateReference
-from openmcp.types.server.prompts import PromptReference
-from openmcp.completion import CompletionResult
+from dedalus_mcp import MCPServer, completion
+from dedalus_mcp.types.server.completions import CompletionArgument, CompletionContext, ResourceTemplateReference
+from dedalus_mcp.types.server.prompts import PromptReference
+from dedalus_mcp.completion import CompletionResult
 
 
 @pytest.mark.anyio

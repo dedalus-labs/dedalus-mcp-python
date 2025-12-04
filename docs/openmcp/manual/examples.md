@@ -19,7 +19,7 @@ Below are excerpts illustrating common patterns.
 ## 1. Registering Capabilities
 
 ```python
-from openmcp import MCPServer, tool, resource, prompt
+from dedalus_mcp import MCPServer, tool, resource, prompt
 
 server = MCPServer("full-demo")
 
@@ -44,7 +44,7 @@ with server.binding():
 ## 2. Progress Reporting
 
 ```python
-from openmcp import get_context, tool
+from dedalus_mcp import get_context, tool
 
 @tool(description="Processes batches")
 async def process(batch: list[str]) -> str:
@@ -58,7 +58,7 @@ async def process(batch: list[str]) -> str:
 ## 3. Sampling & Elicitation Hooks
 
 ```python
-from openmcp import MCPServer
+from dedalus_mcp import MCPServer
 
 server = MCPServer("full-demo")
 
@@ -80,8 +80,8 @@ async def elicitation(ref, params, context):
 `demo-token` and rejects others.
 
 ```python
-from openmcp import MCPServer, AuthorizationConfig
-from openmcp.server.authorization import AuthorizationContext, AuthorizationError
+from dedalus_mcp import MCPServer, AuthorizationConfig
+from dedalus_mcp.server.authorization import AuthorizationContext, AuthorizationError
 
 server = MCPServer(
     "auth-demo",

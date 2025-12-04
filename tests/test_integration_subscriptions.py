@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any, Awaitable, Callable  # noqa: UP035
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
-    from openmcp.server.transports.streamable_http import StreamableHTTPTransport
+    from dedalus_mcp.server.transports.streamable_http import StreamableHTTPTransport
 
 import anyio
 import anyio.abc
@@ -25,10 +25,10 @@ from mcp.client.session import ClientSession
 from mcp.shared.session import RequestResponder
 import pytest
 
-from openmcp import MCPServer, resource
-from openmcp.types.lifecycle import InitializeResult
-from openmcp.types.messages import ClientRequest, ClientResult, ServerNotification, ServerRequest
-from openmcp.types.server.resources import (
+from dedalus_mcp import MCPServer, resource
+from dedalus_mcp.types.lifecycle import InitializeResult
+from dedalus_mcp.types.messages import ClientRequest, ClientResult, ServerNotification, ServerRequest
+from dedalus_mcp.types.server.resources import (
     ListResourcesRequest,
     ListResourcesResult,
     SubscribeRequest,
@@ -36,9 +36,9 @@ from openmcp.types.server.resources import (
     UnsubscribeRequest,
     UnsubscribeRequestParams,
 )
-from openmcp.types.shared.base import EmptyResult, ErrorData
-from openmcp.types.shared.capabilities import Implementation
-from openmcp.server import NotificationFlags
+from dedalus_mcp.types.shared.base import EmptyResult, ErrorData
+from dedalus_mcp.types.shared.capabilities import Implementation
+from dedalus_mcp.server import NotificationFlags
 
 
 async def _exercise_transport(
@@ -140,7 +140,7 @@ async def test_stdio_subscription_end_to_end(monkeypatch: pytest.MonkeyPatch) ->
         async def fake_stdio(*_: object, **__: object) -> AsyncIterator[tuple[Any, Any]]:
             yield recv, send
 
-        monkeypatch.setattr("openmcp.server.transports.stdio.get_stdio_server", lambda: fake_stdio, raising=False)
+        monkeypatch.setattr("dedalus_mcp.server.transports.stdio.get_stdio_server", lambda: fake_stdio, raising=False)
 
     init_result, notifications, (before_updates, after_updates) = await _exercise_transport(
         monkeypatch, patch_stdio, start
@@ -188,7 +188,7 @@ async def test_streamable_http_subscription_end_to_end(monkeypatch: pytest.Monke
             )
 
         monkeypatch.setattr(
-            "openmcp.server.transports.streamable_http.StreamableHTTPTransport.run", fake_run, raising=False
+            "dedalus_mcp.server.transports.streamable_http.StreamableHTTPTransport.run", fake_run, raising=False
         )
 
     init_result, notifications, (before_updates, after_updates) = await _exercise_transport(

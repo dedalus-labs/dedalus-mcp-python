@@ -4,9 +4,9 @@
 
 **Problem**: MCP requires tools to declare JSON schemas for their input parameters and output structures. Manually writing these schemas is error-prone, verbose, and diverges from the single source of truth—the function signature itself. Type annotations already describe parameter constraints; duplicating this information in JSON Schema introduces maintenance burden.
 
-**Solution**: OpenMCP automatically derives JSON schemas from Python type annotations using Pydantic's `TypeAdapter`. Tool authors write typed function signatures, and the framework generates spec-compliant schemas at registration time. This ensures the declared schema always matches the actual implementation.
+**Solution**: Dedalus MCP automatically derives JSON schemas from Python type annotations using Pydantic's `TypeAdapter`. Tool authors write typed function signatures, and the framework generates spec-compliant schemas at registration time. This ensures the declared schema always matches the actual implementation.
 
-**OpenMCP**: The `ToolsService` implements schema inference for both input and output schemas during tool registration (lines 180-269 of `src/openmcp/server/services/tools.py`). Input schemas are derived from function parameters, output schemas from return annotations, with automatic scalar boxing to satisfy MCP's object-only structured content requirement.
+**Dedalus MCP**: The `ToolsService` implements schema inference for both input and output schemas during tool registration (lines 180-269 of `src/dedalus_mcp/server/services/tools.py`). Input schemas are derived from function parameters, output schemas from return annotations, with automatic scalar boxing to satisfy MCP's object-only structured content requirement.
 
 ## Specification
 
@@ -51,7 +51,7 @@ The output schema is derived from the function's return type annotation. Unlike 
 1. **Extract return annotation**: Inspect `signature.return_annotation`.
 2. **Resolve deferred types**: Use `get_type_hints()` to evaluate forward references and string annotations, including closure namespace resolution for locally defined types.
 3. **Check blocklist**: Skip schema generation if the return type is an MCP content type (e.g., `CallToolResult`, `TextContent`, `ImageContent`) or a Union containing such types.
-4. **Generate schema**: Pass the annotation to `resolve_output_schema()` from `openmcp.utils.schema`, which:
+4. **Generate schema**: Pass the annotation to `resolve_output_schema()` from `dedalus_mcp.utils.schema`, which:
    - Derives the base schema via `TypeAdapter.json_schema(mode="serialization")`.
    - Wraps scalar schemas into objects (e.g., `int` -> `{"type": "object", "properties": {"result": {"type": "integer"}}}`) to satisfy MCP's object requirement.
    - Adds vendor extension `x-dedalus-box` to record boxing metadata.
@@ -99,7 +99,7 @@ The `x-dedalus-box` vendor extension records the wrapping field name so clients 
 ### Primitives
 
 ```python
-from openmcp import tool
+from dedalus_mcp import tool
 
 @tool()
 def greet(name: str, age: int, active: bool = True) -> str:
@@ -374,7 +374,7 @@ This reduces schema size by 20-40% depending on type complexity.
 ### Basic Tool with Mixed Types
 
 ```python
-from openmcp import MCPServer, tool
+from dedalus_mcp import MCPServer, tool
 from typing import Optional
 
 server = MCPServer("analytics")
@@ -555,6 +555,6 @@ This is useful for edge cases where inference produces incorrect results or when
 
 - [Tools](./tools.md) — Overview of the tools capability and registration patterns
 - [Result Normalization](./result-normalization.md) — How return values are converted to MCP structured content
-- `src/openmcp/server/services/tools.py` — Reference implementation (lines 180-269)
-- `src/openmcp/utils/schema.py` — Schema utilities and scalar boxing logic
+- `src/dedalus_mcp/server/services/tools.py` — Reference implementation (lines 180-269)
+- `src/dedalus_mcp/utils/schema.py` — Schema utilities and scalar boxing logic
 - [MCP Tools Specification](https://modelcontextprotocol.io/specification/2025-06-18/server/tools)

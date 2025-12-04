@@ -172,10 +172,10 @@ This applies everywhere:
 ### Create Domain-Specific Exceptions
 
 ```python
-class OpenMCPError(Exception):
-    """Base exception for OpenMCP errors."""
+class Dedalus MCPError(Exception):
+    """Base exception for Dedalus MCP errors."""
 
-class ToolError(OpenMCPError):
+class ToolError(Dedalus MCPError):
     """Error executing a tool."""
 
 class ToolNotFoundError(ToolError):

@@ -1,7 +1,7 @@
 # Request Context Helper
 
-OpenMCP exposes the ambient MCP request context through `get_context()` and the
-`Context` wrapper. The goal is to keep handler code on the OpenMCP surface while
+Dedalus MCP exposes the ambient MCP request context through `get_context()` and the
+`Context` wrapper. The goal is to keep handler code on the Dedalus MCP surface while
 complying with the logging and progress semantics defined by the Model Context
 Protocol.
 
@@ -14,7 +14,7 @@ Spec receipts:
 ## Usage
 
 ```python
-from openmcp import get_context, tool
+from dedalus_mcp import get_context, tool
 
 @tool(description="Example tool that logs and reports progress")
 async def heavy_task(size: int) -> str:
@@ -50,7 +50,7 @@ await ctx.warning("rate limit approaching", data={"quota": remaining})
 ## Progress reporting
 
 Call `ctx.progress()` to obtain the coalescing progress tracker implemented in
-`openmcp.progress`. The helper enforces monotonic progress values, performs
+`dedalus_mcp.progress`. The helper enforces monotonic progress values, performs
 best-effort retries, and coalesces high-frequency updates so they respect the
 guidance in the spec. For simple fire-and-forget updates, use
 `ctx.report_progress(progress, total=None, message=None)`—it silently returns if

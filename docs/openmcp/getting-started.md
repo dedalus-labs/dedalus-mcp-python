@@ -1,13 +1,13 @@
-# Getting Started with OpenMCP
+# Getting Started with Dedalus MCP
 
 **Problem**: Building a spec-compliant MCP server from scratch requires wiring the reference SDK, handling initialization responses, and juggling transport setup before you can expose a single tool or resource.
 
 **Solution**: Standardize the bootstrapping workflow so every project gets the MCP handshake, capability advertisement, and transport selection right, without rewriting the same scaffolding.
 
-**OpenMCP**: `MCPServer` wraps the reference SDK with opinionated defaults. You supply a server name (plus optional metadata) and register capabilities within a short `binding()` scope. Streamable HTTP is the default transport, but `serve(transport="stdio")` gives you parity with CLI runtimes.
+**Dedalus MCP**: `MCPServer` wraps the reference SDK with opinionated defaults. You supply a server name (plus optional metadata) and register capabilities within a short `binding()` scope. Streamable HTTP is the default transport, but `serve(transport="stdio")` gives you parity with CLI runtimes.
 
 ```python
-from openmcp import MCPServer, tool, get_context
+from dedalus_mcp import MCPServer, tool, get_context
 
 server = MCPServer(
     "demo",
@@ -38,4 +38,4 @@ if __name__ == "__main__":
 
 ## Examples
 
-See ``examples/hello_trip`` and the accompanying documentation in `docs/openmcp/examples/hello-trip.md` for a runnable end-to-end walkthrough.
+See ``examples/hello_trip`` and the accompanying documentation in `docs/dedalus_mcp/examples/hello-trip.md` for a runnable end-to-end walkthrough.

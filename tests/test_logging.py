@@ -11,9 +11,9 @@ import anyio
 from mcp.shared.exceptions import McpError
 import pytest
 
-from openmcp import MCPServer
-from openmcp.types.messages import ServerResult
-from openmcp.types.server.logging import SetLevelRequest, SetLevelRequestParams
+from dedalus_mcp import MCPServer
+from dedalus_mcp.types.messages import ServerResult
+from dedalus_mcp.types.server.logging import SetLevelRequest, SetLevelRequestParams
 from tests.helpers import DummySession, run_with_context
 
 

@@ -1,4 +1,4 @@
-# Final Plan: OpenMCP Remote Authentication & Execution Architecture
+# Final Plan: Dedalus MCP Remote Authentication & Execution Architecture
 
 ## Overview
 
@@ -27,7 +27,7 @@ The goals are:
   `ddls:execution_backend` metadata.
 - Supports public clients (device flow/headless) and confidential clients.
 
-### Resource Server (Python OpenMCP runtime)
+### Resource Server (Python Dedalus MCP runtime)
 - Uses the typed connector framework (`EnvironmentCredentialLoader` or custom
   loaders) to describe connections.
 - For each request:

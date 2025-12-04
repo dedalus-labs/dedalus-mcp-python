@@ -1,10 +1,10 @@
-# OpenMCP Authorization Integration (Design Draft)
+# Dedalus MCP Authorization Integration (Design Draft)
 
 ## Goals
 
 - Support the HTTP authorization flow described in `docs/mcp/core/authorization`, ahead of the
   central Authorization Server (AS) going live at `https://as.dedaluslabs.ai`.
-- Allow MCP servers built with OpenMCP to protect HTTP endpoints via OAuth 2.1 access tokens while
+- Allow MCP servers built with Dedalus MCP to protect HTTP endpoints via OAuth 2.1 access tokens while
   remaining backward-compatible with unauthenticated deployments.
 - Equip MCP clients to discover authorization requirements, register dynamically when needed, obtain
   tokens (PKCE + resource indicators), and attach them to subsequent requests.
@@ -159,7 +159,7 @@ surface UX to the user. All error paths should emit structured logs (`auth.disco
 2. Implement server-side metadata + validation (feature-flagged).
 3. Update Streamable HTTP transport to enforce tokens when enabled; add tests.
 4. Extend `MCPClient` with discovery/registration/token management (mocked AS for tests).
-5. Document configuration (`docs/openmcp/authorization.md`) and add integration examples.
+5. Document configuration (`docs/dedalus_mcp/authorization.md`) and add integration examples.
 6. Wire in the real AS endpoint when available; end-to-end smoke test using staging credentials.
 
 ## Open Questions

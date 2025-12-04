@@ -18,7 +18,7 @@ from typing import Any
 
 import pytest
 
-from openmcp.server.services.dpop import (
+from dedalus_mcp.server.services.dpop import (
     DPoPValidator,
     DPoPValidatorConfig,
     DPoPValidationError,
