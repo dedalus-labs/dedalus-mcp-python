@@ -17,7 +17,7 @@ See the module docstrings for detailed usage patterns.
 
 from __future__ import annotations
 
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 from typing import TYPE_CHECKING, Any
 
 from . import types
@@ -35,7 +35,10 @@ from .tool import ToolSpec, extract_tool_spec, tool
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-__version__ = version("openmcp")
+try:
+    __version__ = version("dedalus_mcp")
+except PackageNotFoundError:
+    __version__ = "0.0.0+local"
 
 # Register Context for auto-injection in dependencies, TODO: sus
 register_injectable_type(Context)

@@ -11,7 +11,7 @@ build-backend = "uv_build"
 # =============================================================================
 
 [project]
-name = "openmcp"
+name = "dedalus_mcp"
 version = "0.0.1"
 description = "A simple and performant Model Context Protocol framework for Python."
 requires-python = ">=3.10"
@@ -67,7 +67,7 @@ Issues = "https://github.com/dedalus-labs/openmcp-python/issues"
 # =============================================================================
 
 [project.scripts]
-openmcp = "cli.main:app"
+dedalus_mcp = "dedalus_mcp.cli:main"
 
 # =============================================================================
 # DEPENDENCY GROUPS
