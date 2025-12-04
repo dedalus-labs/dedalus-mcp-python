@@ -35,7 +35,7 @@ jobs:
     if: ${{ needs.release-please.outputs.release_created }}
     environment:
       name: pypi
-      url: https://pypi.org/project/openmcp-python/
+      url: https://pypi.org/project/dedalus-mcp/
 
     steps:
       - uses: actions/checkout@v4
