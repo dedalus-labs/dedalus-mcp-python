@@ -31,8 +31,8 @@ import logging
 import time
 from typing import Any
 
-from openmcp import MCPServer, tool
-from openmcp.server.authorization import (
+from dedalus_mcp import MCPServer, tool
+from dedalus_mcp.server.authorization import (
     AuthorizationConfig,
     AuthorizationContext,
     AuthorizationError,

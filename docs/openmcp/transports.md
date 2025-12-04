@@ -1,6 +1,6 @@
 # Transports
 
-OpenMCP wraps the reference MCP SDK transports so applications can focus on tool
+Dedalus MCP wraps the reference MCP SDK transports so applications can focus on tool
 logic instead of connection plumbing. Two transports ship out of the box:
 
 * **STDIO** – newline-delimited JSON-RPC over `stdin`/`stdout`
@@ -35,7 +35,7 @@ because it enables resumability and aligns with the reference SDK’s behaviour.
 
 ## HTTP security defaults
 
-To align with `docs/mcp/core/transports/streamable-http.md`, OpenMCP enables DNS
+To align with `docs/mcp/core/transports/streamable-http.md`, Dedalus MCP enables DNS
 rebinding protection on the HTTP transport by default. The server validates the
 `Host` and `Origin` headers against:
 
@@ -79,7 +79,7 @@ Integration with that service will land in a future release; until then it simpl
 `BaseTransport` can be registered under a name:
 
 ```python
-from openmcp.server.transports import BaseTransport
+from dedalus_mcp.server.transports import BaseTransport
 
 class InMemoryTransport(BaseTransport):
     async def run(self, **kwargs):
@@ -102,12 +102,12 @@ using the same mechanism (`stdio`, `streamable-http`, `http`, `shttp`).
 
 ## Client helpers
 
-`openmcp.client` works with any transport that yields the reference SDK stream
+`dedalus_mcp.client` works with any transport that yields the reference SDK stream
 pairs. For serverless deployments, `lambda_http_client` implements the
 spec-compliant POST flow without the long-lived GET stream:
 
 ```python
-from openmcp.client import MCPClient, lambda_http_client
+from dedalus_mcp.client import MCPClient, lambda_http_client
 
 async with lambda_http_client("https://server/mcp") as (read_stream, write_stream, get_session_id):
     async with MCPClient(read_stream, write_stream) as client:

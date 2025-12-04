@@ -1,6 +1,6 @@
 # Guidelines for Coding Agents
 
-OpenMCP implements the Model Context Protocol. Spec-faithful, minimal surface.
+Dedalus MCP implements the Model Context Protocol. Spec-faithful, minimal surface.
 
 ## Quick Reference
 
@@ -101,7 +101,7 @@ Core deps: `mcp`, `pydantic`. Everything else is optional. Before adding a depen
 Decorators attach metadata. `collect()` registers.
 
 ```python
-from openmcp import MCPServer, tool
+from dedalus_mcp import MCPServer, tool
 
 @tool(description="Add numbers")
 def add(a: int, b: int) -> int:
@@ -115,7 +115,7 @@ Same function can register to multiple servers. No global state.
 
 ## Versioning
 
-OpenMCP is a **temporal inscription of the MCP spec**—it respects that the protocol evolves over time. Every feature has a version where it originated, and our code must reflect this.
+Dedalus MCP is a **temporal inscription of the MCP spec**—it respects that the protocol evolves over time. Every feature has a version where it originated, and our code must reflect this.
 
 **Before implementing any feature, ask:**
 - Which MCP version introduced this feature?
@@ -127,7 +127,7 @@ Protocol versions are tracked in `src/openmcp/versioning.py`. Check `docs/openmc
 **When adding version-specific behavior:**
 
 ```python
-from openmcp.versioning import current_profile, FeatureId
+from dedalus_mcp.versioning import current_profile, FeatureId
 
 profile = current_profile()
 if profile.supports(FeatureId.PROGRESS_MESSAGE_FIELD):
@@ -153,7 +153,7 @@ The SDK uses `exclude_none=True`. Set unsupported fields to `None`.
 4. Write migration function
 5. Add tests in `tests/protocol_versions/{version}/`
 
-**Why this matters:** Users negotiate protocol versions with servers. If OpenMCP claims to support `2024-11-05` but includes features from `2025-06-18`, we break interoperability. The versioning system is our contract with the spec.
+**Why this matters:** Users negotiate protocol versions with servers. If Dedalus MCP claims to support `2024-11-05` but includes features from `2025-06-18`, we break interoperability. The versioning system is our contract with the spec.
 
 ## Testing
 

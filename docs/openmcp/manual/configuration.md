@@ -1,6 +1,6 @@
 # Configuration Reference
 
-This appendix documents every tunable parameter exposed by OpenMCP. Tables include defaults,
+This appendix documents every tunable parameter exposed by Dedalus MCP. Tables include defaults,
 validation rules, and behavioral notes.
 
 ## MCPServer Parameters
@@ -91,7 +91,7 @@ Not yet implemented. Planned fields include:
 - `client_registration`: settings for dynamic client registration.
 - `http_client`: override to customise retry/backoff behavior.
 
-See `docs/openmcp/design/authorization.md` for the forthcoming design.
+See `docs/dedalus_mcp/design/authorization.md` for the forthcoming design.
 
 ## Environment Variables
 

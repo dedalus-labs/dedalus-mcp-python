@@ -1,6 +1,6 @@
 # Python Style
 
-Python's philosophy—"There should be one obvious way to do it"—guides how we write code at Dedalus. This guide codifies our conventions for OpenMCP.
+Python's philosophy—"There should be one obvious way to do it"—guides how we write code at Dedalus. This guide codifies our conventions for Dedalus MCP.
 
 We're heavily inspired by [Google's Python style guide](https://google.github.io/styleguide/pyguide.html), adapted for our needs.
 
@@ -144,7 +144,7 @@ from typing import Any
 from pydantic import BaseModel
 
 # Local
-from openmcp.context import get_context
+from dedalus_mcp.context import get_context
 ```
 
 ### Type Hints

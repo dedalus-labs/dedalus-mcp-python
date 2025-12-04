@@ -1,7 +1,7 @@
 # Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Custom logging configuration for OpenMCP.
+"""Custom logging configuration for Dedalus MCP.
 
 Demonstrates how to configure structured JSON logging using orjson and Pydantic
 for production applications. Shows three patterns: JSON logging, custom colors,
@@ -10,7 +10,7 @@ and filtered handlers.
 Pattern:
 1. Use setup_logger() with json_serializer for structured logging
 2. Subclass ColoredFormatter to customize color schemes
-3. Subclass OpenMCPHandler to add filtering logic
+3. Subclass Dedalus MCPHandler to add filtering logic
 
 When to use this pattern:
 - Production environments requiring structured logs
@@ -31,8 +31,8 @@ from typing import Any, ClassVar, cast
 
 from pydantic import BaseModel
 
-from openmcp import MCPServer, tool
-from openmcp.utils.logger import ColoredFormatter, OpenMCPHandler, get_logger, setup_logger
+from dedalus_mcp import MCPServer, tool
+from dedalus_mcp.utils.logger import ColoredFormatter, Dedalus MCPHandler, get_logger, setup_logger
 
 # Suppress SDK and server logs for cleaner demo output
 for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
@@ -88,7 +88,7 @@ class PastelColors(ColoredFormatter):
 
 
 # Example 3: Filtered handler
-class FilteredHandler(OpenMCPHandler):
+class FilteredHandler(Dedalus MCPHandler):
     """Handler that filters out debug messages from specific modules."""
 
     def emit(self, record: logging.LogRecord) -> None:

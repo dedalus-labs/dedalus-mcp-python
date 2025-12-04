@@ -4,15 +4,15 @@
 
 ```bash
 # Default (minimal)
-uv add openmcp
+uv add dedalus_mcp
 
 # With performance optimizations (recommended for production)
-uv add "openmcp[opt]"
+uv add "dedalus_mcp[opt]"
 ```
 
 ## What You Get
 
-Installing `openmcp[opt]` adds:
+Installing `dedalus_mcp[opt]` adds:
 
 1. **uvloop** - 2-4x faster event loop (Unix/Linux only)
 2. **orjson** - 2x faster JSON serialization (optional, for logging)
@@ -33,7 +33,7 @@ Look for: `Event loop: uvloop` or `Event loop: asyncio`
 uvloop is automatically installed and activated when available. Your code stays the same:
 
 ```python
-from openmcp import MCPServer, tool
+from dedalus_mcp import MCPServer, tool
 
 server = MCPServer("my-server")
 
@@ -41,11 +41,11 @@ server = MCPServer("my-server")
 async def my_tool() -> str:
     return "works with both asyncio and uvloop"
 
-# Same code, faster execution with openmcp[opt]
+# Same code, faster execution with dedalus_mcp[opt]
 ```
 
 ## Performance Impact
 
 Expect 2-4x speedup on async-heavy workloads (network, database, file I/O). Sync tools see no difference.
 
-See `docs/openmcp/performance.md` for detailed benchmarks and usage patterns.
+See `docs/dedalus_mcp/performance.md` for detailed benchmarks and usage patterns.

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import pytest
 
-from openmcp.server.subscriptions import SubscriptionManager
+from dedalus_mcp.server.subscriptions import SubscriptionManager
 
 
 @pytest.mark.anyio

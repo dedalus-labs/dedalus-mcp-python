@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from openmcp.server.execution_plan import ExecutionPlan, build_plan_from_claims
+from dedalus_mcp.server.execution_plan import ExecutionPlan, build_plan_from_claims
 
 
 @pytest.fixture

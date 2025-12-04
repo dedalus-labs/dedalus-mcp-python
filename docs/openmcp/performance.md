@@ -1,6 +1,6 @@
 # Performance Optimizations
 
-OpenMCP is designed to be fast out of the box while keeping the core minimal. Advanced performance features are available as optional extras.
+Dedalus MCP is designed to be fast out of the box while keeping the core minimal. Advanced performance features are available as optional extras.
 
 ## Default Optimizations
 
@@ -15,7 +15,7 @@ These are always enabled:
 Install performance optimizations:
 
 ```bash
-uv add "openmcp[opt]"
+uv add "dedalus_mcp[opt]"
 ```
 
 This adds:
@@ -28,13 +28,13 @@ Drop-in replacement for asyncio's event loop, implemented in Cython. Provides:
 - Better throughput for concurrent tasks
 - Unix/Linux only (automatically skipped on Windows)
 
-**Auto-detected**: OpenMCP automatically uses uvloop when installed. Check logs:
+**Auto-detected**: Dedalus MCP automatically uses uvloop when installed. Check logs:
 
 ```python
 import os
 os.environ["OPENMCP_LOG_LEVEL"] = "DEBUG"
 
-from openmcp import MCPServer
+from dedalus_mcp import MCPServer
 
 server = MCPServer("my-server")
 # Logs: "Event loop: uvloop" or "Event loop: asyncio"
@@ -47,7 +47,7 @@ server = MCPServer("my-server")
 Rust-based JSON serialization, ~2x faster than stdlib `json`:
 
 ```python
-from openmcp.utils.logger import setup_logger
+from dedalus_mcp.utils.logger import setup_logger
 
 # Use orjson for structured logging
 import orjson
@@ -60,7 +60,7 @@ setup_logger(
 
 ## Benchmarks
 
-Performance gains with `openmcp[opt]` on typical workloads:
+Performance gains with `dedalus_mcp[opt]` on typical workloads:
 
 | Scenario | Default | With uvloop | Speedup |
 |----------|---------|-------------|---------|
@@ -74,13 +74,13 @@ Performance gains with `openmcp[opt]` on typical workloads:
 
 ## When to Use Performance Extras
 
-**Use `openmcp[opt]` when:**
+**Use `dedalus_mcp[opt]` when:**
 - Production deployment with high request volume
 - Latency-sensitive applications (<10ms target)
 - Async-heavy workloads (network, database, file I/O)
 - Running on Unix/Linux servers
 
-**Skip `openmcp[opt]` when:**
+**Skip `dedalus_mcp[opt]` when:**
 - Development/prototyping
 - Windows deployment (uvloop unavailable)
 - Minimal dependencies required
@@ -88,7 +88,7 @@ Performance gains with `openmcp[opt]` on typical workloads:
 
 ## Philosophy
 
-Following OpenMCP's "dependency discipline" (CLAUDE.md):
+Following Dedalus MCP's "dependency discipline" (CLAUDE.md):
 
 > Every new dependency must justify its byte cost.
 

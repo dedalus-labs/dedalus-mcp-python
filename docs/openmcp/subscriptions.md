@@ -115,7 +115,7 @@ async with self._lock:
 
 **Why `anyio.Lock` instead of `asyncio.Lock`?**
 
-- OpenMCP uses `anyio` for transport-agnostic async I/O
+- Dedalus MCP uses `anyio` for transport-agnostic async I/O
 - Compatible with both `asyncio` and `trio` backends
 - Provides consistent semantics across environments
 
@@ -357,7 +357,7 @@ assert len(by_uri["resource://demo"]) == 2  # Two subscribers
 ### Example 1: Basic Subscription Lifecycle
 
 ```python
-from openmcp import MCPServer, resource
+from dedalus_mcp import MCPServer, resource
 
 server = MCPServer("demo")
 
@@ -389,7 +389,7 @@ async def demo_lifecycle():
 ### Example 2: Stale Session Detection
 
 ```python
-from openmcp import MCPServer, resource
+from dedalus_mcp import MCPServer, resource
 
 server = MCPServer("demo")
 
@@ -415,7 +415,7 @@ async def demo_stale_detection():
 ```python
 import pytest
 from mcp.client.session import ClientSession
-from openmcp import MCPServer, resource, types
+from dedalus_mcp import MCPServer, resource, types
 
 @pytest.mark.anyio
 async def test_subscription_flow():
@@ -465,7 +465,7 @@ async def test_subscription_flow():
 
 ## See Also
 
-- **Resources Guide**: `/docs/openmcp/resources.md` — Resource registration and listing
+- **Resources Guide**: `/docs/dedalus_mcp/resources.md` — Resource registration and listing
 - **MCP Specification**: https://modelcontextprotocol.io/specification/2025-06-18/server/resources
 - **Integration Tests**: `/tests/test_integration_subscriptions.py` — End-to-end examples
-- **Implementation**: `/src/openmcp/server/subscriptions.py` — Source code
+- **Implementation**: `/src/dedalus_mcp/server/subscriptions.py` — Source code

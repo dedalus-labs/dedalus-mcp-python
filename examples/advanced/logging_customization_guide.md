@@ -1,11 +1,11 @@
-# OpenMCP Logging Customization Guide
+# Dedalus MCP Logging Customization Guide
 
-Complete guide to customizing OpenMCP's logging system while keeping the core simple.
+Complete guide to customizing Dedalus MCP's logging system while keeping the core simple.
 
 ## Quick Start
 
 ```python
-from openmcp.utils.logger import get_logger
+from dedalus_mcp.utils.logger import get_logger
 
 logger = get_logger(__name__)
 logger.info("Colored output by default")
@@ -28,7 +28,7 @@ Or in Python:
 import os
 os.environ["NO_COLOR"] = "1"
 
-from openmcp.utils.logger import get_logger
+from dedalus_mcp.utils.logger import get_logger
 logger = get_logger(__name__)
 logger.info("No colors")
 ```
@@ -36,7 +36,7 @@ logger.info("No colors")
 ### Method 2: Explicit Parameter
 
 ```python
-from openmcp.utils.logger import setup_logger, get_logger
+from dedalus_mcp.utils.logger import setup_logger, get_logger
 
 setup_logger(use_color=False)
 logger = get_logger(__name__)
@@ -54,7 +54,7 @@ python your_script.py
 
 ```python
 import logging
-from openmcp.utils.logger import setup_logger, get_logger
+from dedalus_mcp.utils.logger import setup_logger, get_logger
 
 # Use plain formatter (no colors)
 setup_logger(force=True)
@@ -74,7 +74,7 @@ logger.info("No colors here")
 ### Method 3: Custom Setup Function
 
 ```python
-from openmcp.utils.logger import OpenMCPHandler, get_logger
+from dedalus_mcp.utils.logger import Dedalus MCPHandler, get_logger
 import logging
 
 def setup_plain_logging():
@@ -82,7 +82,7 @@ def setup_plain_logging():
     root = logging.getLogger()
     root.handlers.clear()
 
-    handler = OpenMCPHandler()
+    handler = Dedalus MCPHandler()
     handler.setLevel(logging.INFO)
     handler.setFormatter(logging.Formatter(
         fmt="%(asctime)s %(levelname)s [%(name)s] %(message)s",
@@ -96,12 +96,12 @@ setup_plain_logging()
 logger = get_logger(__name__)
 ```
 
-## Custom Colors with OpenMCP's ColoredFormatter
+## Custom Colors with Dedalus MCP's ColoredFormatter
 
 ### Using Built-in ANSI Constants
 
 ```python
-from openmcp.utils.logger import (
+from dedalus_mcp.utils.logger import (
     ColoredFormatter,
     setup_logger,
     get_logger,
@@ -118,7 +118,7 @@ from openmcp.utils.logger import (
 import logging
 
 class MyColorScheme(ColoredFormatter):
-    """Custom color palette using OpenMCP's constants."""
+    """Custom color palette using Dedalus MCP's constants."""
 
     LEVEL_COLORS = {
         "DEBUG": DEBUG_COLOR,      # Cyan
@@ -134,13 +134,13 @@ for handler in root.handlers:
     handler.setFormatter(MyColorScheme())
 
 logger = get_logger(__name__)
-logger.info("Using OpenMCP's color constants")
+logger.info("Using Dedalus MCP's color constants")
 ```
 
 ### Custom ANSI Codes (No Dependencies)
 
 ```python
-from openmcp.utils.logger import ColoredFormatter, setup_logger, get_logger
+from dedalus_mcp.utils.logger import ColoredFormatter, setup_logger, get_logger
 import logging
 
 class PastelColors(ColoredFormatter):
@@ -168,7 +168,7 @@ logger.info("Soft pastel colors")
 ### With Colorama
 
 ```python
-from openmcp.utils.logger import ColoredFormatter, setup_logger, get_logger
+from dedalus_mcp.utils.logger import ColoredFormatter, setup_logger, get_logger
 import logging
 
 try:
@@ -206,7 +206,7 @@ except ImportError:
 ### With Rich (Advanced)
 
 ```python
-from openmcp.utils.logger import OpenMCPHandler, get_logger
+from dedalus_mcp.utils.logger import Dedalus MCPHandler, get_logger
 import logging
 
 try:
@@ -214,7 +214,7 @@ try:
     from rich.console import Console
 
     def setup_rich_logging():
-        """Replace OpenMCP handler with Rich."""
+        """Replace Dedalus MCP handler with Rich."""
         console = Console()
 
         rich_handler = RichHandler(
@@ -244,10 +244,10 @@ except ImportError:
 ### Filter by Module
 
 ```python
-from openmcp.utils.logger import OpenMCPHandler, ColoredFormatter, get_logger
+from dedalus_mcp.utils.logger import Dedalus MCPHandler, ColoredFormatter, get_logger
 import logging
 
-class FilteredHandler(OpenMCPHandler):
+class FilteredHandler(Dedalus MCPHandler):
     """Filter out debug logs from noisy modules."""
 
     IGNORED_MODULES = {"httpx", "urllib3", "boto3"}
@@ -279,12 +279,12 @@ noisy_logger.debug("This is filtered")
 ### Rate Limiting
 
 ```python
-from openmcp.utils.logger import OpenMCPHandler, ColoredFormatter, get_logger
+from dedalus_mcp.utils.logger import Dedalus MCPHandler, ColoredFormatter, get_logger
 import logging
 import time
 from collections import defaultdict
 
-class RateLimitedHandler(OpenMCPHandler):
+class RateLimitedHandler(Dedalus MCPHandler):
     """Rate-limit repeated log messages."""
 
     def __init__(self, *args, max_per_minute=10, **kwargs):
@@ -326,7 +326,7 @@ for i in range(10):
 ### Multi-Destination Logging
 
 ```python
-from openmcp.utils.logger import OpenMCPHandler, ColoredFormatter, get_logger
+from dedalus_mcp.utils.logger import Dedalus MCPHandler, ColoredFormatter, get_logger
 import logging
 from pathlib import Path
 
@@ -337,7 +337,7 @@ def setup_multi_destination():
     root.setLevel(logging.DEBUG)
 
     # Console handler with colors
-    console_handler = OpenMCPHandler()
+    console_handler = Dedalus MCPHandler()
     console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(ColoredFormatter())
     root.addHandler(console_handler)
@@ -366,7 +366,7 @@ logger.info("In both console and file")
 ### Basic JSON
 
 ```python
-from openmcp.utils.logger import setup_logger, get_logger
+from dedalus_mcp.utils.logger import setup_logger, get_logger
 
 setup_logger(use_json=True, force=True)
 logger = get_logger(__name__)
@@ -379,7 +379,7 @@ logger.info("Structured log", user_id=123, action="login")
 ```python
 try:
     import orjson
-    from openmcp.utils.logger import setup_logger, get_logger
+    from dedalus_mcp.utils.logger import setup_logger, get_logger
 
     def orjson_serializer(payload):
         return orjson.dumps(payload).decode("utf-8")
@@ -400,7 +400,7 @@ except ImportError:
 ### Redacting Sensitive Data
 
 ```python
-from openmcp.utils.logger import setup_logger, get_logger
+from dedalus_mcp.utils.logger import setup_logger, get_logger
 import re
 
 def redact_sensitive(payload):
@@ -429,7 +429,7 @@ logger.info("Card: 4532-1234-5678-9010, token=abc123xyz")
 
 ```python
 import os
-from openmcp.utils.logger import setup_logger, get_logger
+from dedalus_mcp.utils.logger import setup_logger, get_logger
 
 def configure_logging():
     """Configure based on environment."""
@@ -453,12 +453,12 @@ logger.info(f"Configured for {os.getenv('ENVIRONMENT', 'development')}")
 
 ## Design Philosophy
 
-OpenMCP's logger is intentionally minimal:
+Dedalus MCP's logger is intentionally minimal:
 
 1. **Zero dependencies** - Uses only stdlib `logging` and ANSI escapes
 2. **Extensibility over features** - Provide classes to subclass, not config flags
 3. **Opt-in complexity** - Colors by default, everything else is user code
-4. **Small surface area** - `ColoredFormatter` and `OpenMCPHandler` are the extension points
+4. **Small surface area** - `ColoredFormatter` and `Dedalus MCPHandler` are the extension points
 
 This keeps the core small (~300 lines) while letting you build exactly what you need.
 
@@ -469,7 +469,7 @@ This keeps the core small (~300 lines) while letting you build exactly what you 
 | Disable colors | Set `NO_COLOR=1` or `setup_logger(use_color=False)` |
 | Custom colors | Subclass `ColoredFormatter` and override `LEVEL_COLORS` |
 | Use colorama/rich | Subclass formatters or replace handler entirely |
-| Filter logs | Subclass `OpenMCPHandler` and override `emit()` |
+| Filter logs | Subclass `Dedalus MCPHandler` and override `emit()` |
 | JSON logging | `setup_logger(use_json=True)` |
 | Fast JSON | Pass `json_serializer=orjson.dumps` |
 | Redact sensitive | Pass `payload_transformer=your_function` |

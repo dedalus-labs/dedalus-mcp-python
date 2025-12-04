@@ -9,8 +9,8 @@ from dataclasses import dataclass
 from pydantic import BaseModel
 import pytest
 
-from openmcp.tool import extract_tool_spec, tool
-from openmcp.utils.schema import (
+from dedalus_mcp.tool import extract_tool_spec, tool
+from dedalus_mcp.utils.schema import (
     DEDALUS_BOX_KEY,
     DEFAULT_WRAP_FIELD,
     SchemaEnvelope,
@@ -41,7 +41,7 @@ class TestSchemaEnvelope:
         assert envelope.unwrap(boxed) == 3.14
 
     def test_wrap_and_unwrap_passthrough_mapping(self) -> None:
-        payload = {"name": "openmcp"}
+        payload = {"name": "dedalus_mcp"}
         envelope = SchemaEnvelope(schema={"type": "object"})
 
         assert envelope.wrap(payload) is payload

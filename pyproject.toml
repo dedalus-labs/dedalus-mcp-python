@@ -17,7 +17,7 @@ description = "A simple and performant Model Context Protocol framework for Pyth
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [{ name = "Dedalus Labs", email = "oss@dedaluslabs.ai" }]
-keywords = ["openmcp", "mcp", "model context protocol", "framework"]
+keywords = ["dedalus_mcp", "mcp", "model context protocol", "framework"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Web Environment",
@@ -48,7 +48,7 @@ dependencies = [
 # =============================================================================
 
 [project.optional-dependencies]
-# Performance optimizations (install with: uv add "openmcp[opt]")
+# Performance optimizations (install with: uv add "dedalus_mcp[opt]")
 opt = [
     "uvloop>=0.22.1; platform_system != 'Windows'", # 2-4x faster event loop (Unix only)
 ]
@@ -58,9 +58,9 @@ opt = [
 # =============================================================================
 
 [project.urls]
-Homepage = "https://github.com/dedalus-labs/openmcp-python"
-Repository = "https://github.com/dedalus-labs/openmcp-python"
-Issues = "https://github.com/dedalus-labs/openmcp-python/issues"
+Homepage = "https://github.com/dedalus-labs/dedalus-mcp-python"
+Repository = "https://github.com/dedalus-labs/dedalus-mcp-python"
+Issues = "https://github.com/dedalus-labs/dedalus-mcp-python/issues"
 
 # =============================================================================
 # PROJECT SCRIPTS
@@ -206,7 +206,7 @@ extend-exclude = [
     "dist/",
     ".venv/",
     "__pycache__/",
-    "openmcp/",     # Deployment directory placeholder
+    "dedalus_mcp/",     # Deployment directory placeholder
 ]
 
 
@@ -307,7 +307,7 @@ convention = "google" # Google docstring style
 # =============================================================================
 
 [tool.ruff.lint.isort]
-known-first-party = ["openmcp", "cli", "core", "utils", "rt"]
+known-first-party = ["dedalus_mcp", "cli", "core", "utils", "rt"]
 force-single-line = false
 force-sort-within-sections = true
 section-order = [
@@ -360,7 +360,7 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "--tb=short",
-    "--cov=openmcp",
+    "--cov=dedalus_mcp",
     "--cov=src",
     "--cov-report=term-missing",
     "--cov-report=html",
@@ -399,7 +399,7 @@ log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 # =============================================================================
 
 [tool.coverage.run]
-source = ["openmcp"]
+source = ["dedalus_mcp"]
 omit = ["tests/*", "*/tests/*", "test_*.py", "*_test.py"]
 
 [tool.coverage.report]

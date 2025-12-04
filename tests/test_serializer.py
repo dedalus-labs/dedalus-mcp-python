@@ -13,14 +13,14 @@ from uuid import UUID
 import pytest
 from pydantic import BaseModel, Field
 
-from openmcp.types import (
+from dedalus_mcp.types import (
     CallToolResult,
     ErrorData,
     TextContent,
     ImageContent,
     EmbeddedResource,
 )
-from openmcp.utils.serializer import to_json
+from dedalus_mcp.utils.serializer import to_json
 
 
 class Color(Enum):
@@ -190,7 +190,7 @@ def test_dump_mixed_nested_structures():
 def test_dump_embedded_resource():
     """Test EmbeddedResource serialization (complex MCP type)."""
     # EmbeddedResource expects TextResourceContents or BlobResourceContents, not TextContent
-    from openmcp.types import TextResourceContents
+    from dedalus_mcp.types import TextResourceContents
 
     resource = EmbeddedResource(
         type="resource",

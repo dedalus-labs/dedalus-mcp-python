@@ -1,12 +1,12 @@
 # Ping & Heartbeat
 
-**DRAFT**: This document describes the current OpenMCP heartbeat implementation and may change before public release.
+**DRAFT**: This document describes the current Dedalus MCP heartbeat implementation and may change before public release.
 
 **Problem**: Long-lived MCP sessions require keepalive probing to detect stale connections, but binary alive/dead decisions are fragile in networks with transient faults. Clients need adaptive failure detection that balances responsiveness with tolerance for intermittent delays.
 
 **Solution**: Implement ping/pong with phi-accrual failure detection, which computes a continuous suspicion score instead of flipping between binary states. Combine this with exponentially weighted moving average (EWMA) round-trip time tracking, jittered heartbeats, and configurable thresholds to prevent premature session evictions.
 
-**OpenMCP**: The `PingService` provides session registration, suspicion scoring, and an automatic heartbeat loop. Register sessions when they connect, optionally start a background heartbeat, and install callbacks for `on_suspect` and `on_down` events. The implementation follows the base spec at `https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/ping` while extending it with phi-accrual scoring (lines 236-278 in `src/openmcp/server/services/ping.py`) and EWMA RTT tracking for production-grade reliability.
+**Dedalus MCP**: The `PingService` provides session registration, suspicion scoring, and an automatic heartbeat loop. Register sessions when they connect, optionally start a background heartbeat, and install callbacks for `on_suspect` and `on_down` events. The implementation follows the base spec at `https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/ping` while extending it with phi-accrual scoring (lines 236-278 in `src/dedalus_mcp/server/services/ping.py`) and EWMA RTT tracking for production-grade reliability.
 
 ---
 
@@ -17,7 +17,7 @@ Per the MCP specification:
 - **Pong response**: Recipient returns empty result `{}` immediately.
 - **Purpose**: Verify network path liveness and measure round-trip latency.
 
-OpenMCP extends this foundation with adaptive failure detection to avoid false positives in unreliable networks and to provide gradual suspicion signals before declaring sessions dead.
+Dedalus MCP extends this foundation with adaptive failure detection to avoid false positives in unreliable networks and to provide gradual suspicion signals before declaring sessions dead.
 
 Spec receipts: `docs/mcp/spec/schema-reference/utilities/ping.md`
 
@@ -90,7 +90,7 @@ start_heartbeat(
 ### Basic Usage
 
 ```python
-from openmcp.server.services.ping import PingService
+from dedalus_mcp.server.services.ping import PingService
 import anyio
 
 ping_service = PingService(logger=my_logger)
@@ -226,8 +226,8 @@ In practice, `phi_threshold=3.0` means "raise suspicion when there's less than 0
 
 ```python
 import anyio
-from openmcp import MCPServer
-from openmcp.server.services.ping import PingService
+from dedalus_mcp import MCPServer
+from dedalus_mcp.server.services.ping import PingService
 
 server = MCPServer("demo")
 ping_service = PingService(logger=server.logger)
@@ -347,11 +347,11 @@ This pattern lowers the threshold for stable connections (fast eviction) while t
 ## See Also
 
 - **Specification**: `https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/ping`
-- **Reference Implementation**: `src/openmcp/server/services/ping.py` (phi-accrual at lines 236-278)
+- **Reference Implementation**: `src/dedalus_mcp/server/services/ping.py` (phi-accrual at lines 236-278)
 - **Lifecycle**: `docs/mcp/core/lifecycle/lifecycle-phases.md` (session initialization hooks)
-- **Cancellation**: `docs/openmcp/cancellation.md` (handling ping timeouts gracefully)
-- **Notifications**: `docs/openmcp/notifications.md` (emitting structured ping events)
+- **Cancellation**: `docs/dedalus_mcp/cancellation.md` (handling ping timeouts gracefully)
+- **Notifications**: `docs/dedalus_mcp/notifications.md` (emitting structured ping events)
 
 ---
 
-**DRAFT NOTICE**: This document describes OpenMCP's ping implementation as of 2025-01-XX. The API surface is production-ready but may evolve before the 1.0 release. Consult the reference implementation at `src/openmcp/server/services/ping.py` for authoritative behavior.
+**DRAFT NOTICE**: This document describes Dedalus MCP's ping implementation as of 2025-01-XX. The API surface is production-ready but may evolve before the 1.0 release. Consult the reference implementation at `src/dedalus_mcp/server/services/ping.py` for authoritative behavior.

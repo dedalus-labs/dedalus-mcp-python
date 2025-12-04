@@ -1,4 +1,4 @@
-# CLAUDE.md - OpenMCP coding guidelines
+# CLAUDE.md - Dedalus MCP coding guidelines
 
 This file will be deprecated soon (see [here](https://agents.md/)).
 

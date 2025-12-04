@@ -1,6 +1,6 @@
 # Releases
 
-How OpenMCP releases work and how your contributions become published packages.
+How Dedalus MCP releases work and how your contributions become published packages.
 
 ## How Releases Work
 
@@ -42,7 +42,7 @@ You don't need to do anything else. The automation handles versioning, changelog
 
 ## Package Versions vs. Protocol Versions
 
-OpenMCP package versions (e.g., `1.2.3`) are independent of MCP protocol versions (e.g., `2025-06-18`). A single package version can support multiple protocol versions. See [versioning.md](docs/openmcp/versioning.md) for details.
+Dedalus MCP package versions (e.g., `1.2.3`) are independent of MCP protocol versions (e.g., `2025-06-18`). A single package version can support multiple protocol versions. See [versioning.md](docs/openmcp/versioning.md) for details.
 
 ## Questions?
 

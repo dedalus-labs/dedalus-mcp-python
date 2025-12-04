@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from openmcp.server.authorization import AuthorizationContext
-from openmcp.server.resolver import (
+from dedalus_mcp.server.authorization import AuthorizationContext
+from dedalus_mcp.server.resolver import (
     BackendError,
     ConnectionMetadata,
     ConnectionResolver,
@@ -167,7 +167,7 @@ async def test_resolve_org_credential_success(
         secret="postgres://user:pass@host/db",
     )
 
-    request_context = {"openmcp.auth": auth_context}
+    request_context = {"dedalus_mcp.auth": auth_context}
 
     # Execute
     client = await resolver.resolve_client("ddls:conn_org", request_context)
@@ -201,7 +201,7 @@ async def test_resolve_org_credential_with_fingerprint_validation(
         fingerprint="fp_org_123",
     )
 
-    request_context = {"openmcp.auth": auth_context}
+    request_context = {"dedalus_mcp.auth": auth_context}
 
     # Execute
     client = await resolver.resolve_client("ddls:conn_org", request_context)
@@ -230,7 +230,7 @@ async def test_resolve_org_credential_fingerprint_mismatch(
         fingerprint="fp_wrong_999",  # Wrong fingerprint
     )
 
-    request_context = {"openmcp.auth": auth_context}
+    request_context = {"dedalus_mcp.auth": auth_context}
 
     # Execute & Verify
     with pytest.raises(FingerprintMismatchError, match="fingerprint mismatch"):
@@ -255,7 +255,7 @@ async def test_resolve_org_credential_driver_not_found(
         secret="postgres://user:pass@host/db",
     )
 
-    request_context = {"openmcp.auth": auth_context}
+    request_context = {"dedalus_mcp.auth": auth_context}
 
     # Execute & Verify
     with pytest.raises(DriverNotFoundError, match="driver not found"):
@@ -286,7 +286,7 @@ async def test_resolve_user_credential_success(
     )
 
     request_context = {
-        "openmcp.auth": auth_context,
+        "dedalus_mcp.auth": auth_context,
         "operation": {"type": "query", "sql": "SELECT * FROM users"},
     }
 
@@ -320,7 +320,7 @@ async def test_resolve_user_credential_backend_disabled(
         secret="",
     )
 
-    request_context = {"openmcp.auth": auth_context}
+    request_context = {"dedalus_mcp.auth": auth_context}
 
     # Execute & Verify
     with pytest.raises(BackendError, match="backend not configured"):
@@ -354,7 +354,7 @@ async def test_resolve_user_credential_missing_encrypted_cred(
         },
     )
 
-    request_context = {"openmcp.auth": auth_context}
+    request_context = {"dedalus_mcp.auth": auth_context}
 
     # Execute & Verify
     with pytest.raises(BackendError, match="missing encrypted credential"):
@@ -393,7 +393,7 @@ async def test_unauthorized_handle_rejected(
         },
     )
 
-    request_context = {"openmcp.auth": auth_context}
+    request_context = {"dedalus_mcp.auth": auth_context}
 
     # Execute & Verify
     with pytest.raises(UnauthorizedHandleError, match="handle not authorized"):
@@ -448,7 +448,7 @@ async def test_validate_handle_in_connections_claim(
         },
     )
 
-    request_context = {"openmcp.auth": auth_context}
+    request_context = {"dedalus_mcp.auth": auth_context}
 
     # Execute - should succeed
     client = await resolver.resolve_client("ddls:conn_test", request_context)
@@ -486,7 +486,7 @@ async def test_validate_fingerprint_from_token_claim(
         },
     )
 
-    request_context = {"openmcp.auth": auth_context}
+    request_context = {"dedalus_mcp.auth": auth_context}
 
     # Execute - should succeed
     client = await resolver.resolve_client("ddls:conn_fp", request_context)
@@ -526,7 +526,7 @@ async def test_per_handle_scopes_validation(
         },
     )
 
-    request_context = {"openmcp.auth": auth_context}
+    request_context = {"dedalus_mcp.auth": auth_context}
 
     # Execute - currently succeeds (no per-handle scope enforcement yet)
     client = await resolver.resolve_client("ddls:conn_scoped", request_context)
@@ -553,7 +553,7 @@ async def test_vault_disabled(
         claims={"ddls:connectors": ["ddls:conn_test"]},
     )
 
-    request_context = {"openmcp.auth": auth_context}
+    request_context = {"dedalus_mcp.auth": auth_context}
 
     # Execute & Verify
     with pytest.raises(VaultError, match="vault connector not configured"):
@@ -571,7 +571,7 @@ async def test_vault_connection_not_found(
     resolver = ConnectionResolver(resolver_config, vault=mock_vault)
     # Don't add connection to vault
 
-    request_context = {"openmcp.auth": auth_context}
+    request_context = {"dedalus_mcp.auth": auth_context}
 
     # Execute & Verify
     with pytest.raises(VaultError, match="failed to retrieve connection metadata"):
@@ -598,7 +598,7 @@ async def test_vault_secret_decryption_failure(
     )
     # Don't add secret to mock_vault.secrets
 
-    request_context = {"openmcp.auth": auth_context}
+    request_context = {"dedalus_mcp.auth": auth_context}
 
     # Execute & Verify
     with pytest.raises(VaultError, match="failed to decrypt secret"):
@@ -642,7 +642,7 @@ async def test_register_multiple_drivers(
         claims={"ddls:connectors": ["ddls:conn_postgres"]},
     )
 
-    request_context = {"openmcp.auth": auth_context}
+    request_context = {"dedalus_mcp.auth": auth_context}
 
     client = await resolver.resolve_client("ddls:conn_postgres", request_context)
     assert client is not None
@@ -679,7 +679,7 @@ async def test_driver_initialization_with_registry(
         claims={"ddls:connectors": ["ddls:conn_supabase"]},
     )
 
-    request_context = {"openmcp.auth": auth_context}
+    request_context = {"dedalus_mcp.auth": auth_context}
 
     # Execute
     client = await resolver.resolve_client("ddls:conn_supabase", request_context)
@@ -715,7 +715,7 @@ async def test_audit_logging_enabled(
     # Update auth context with correct handle
     auth_context.claims["ddls:connectors"] = ["ddls:conn_audit"]
 
-    request_context = {"openmcp.auth": auth_context}
+    request_context = {"dedalus_mcp.auth": auth_context}
 
     # Execute
     await resolver.resolve_client("ddls:conn_audit", request_context)
@@ -745,7 +745,7 @@ async def test_audit_logging_disabled(
     )
 
     auth_context.claims["ddls:connectors"] = ["ddls:conn_no_audit"]
-    request_context = {"openmcp.auth": auth_context}
+    request_context = {"dedalus_mcp.auth": auth_context}
 
     # Execute
     await resolver.resolve_client("ddls:conn_no_audit", request_context)
@@ -790,7 +790,7 @@ async def test_end_to_end_org_credential_flow(
         },
     )
 
-    request_context = {"openmcp.auth": auth_context}
+    request_context = {"dedalus_mcp.auth": auth_context}
 
     # Execute
     client = await resolver.resolve_client("ddls:conn_e2e_org", request_context)
@@ -837,7 +837,7 @@ async def test_end_to_end_user_credential_flow(
     )
 
     request_context = {
-        "openmcp.auth": auth_context,
+        "dedalus_mcp.auth": auth_context,
         "operation": {
             "type": "rpc",
             "function": "get_user_profile",

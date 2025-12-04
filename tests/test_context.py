@@ -5,8 +5,8 @@ from __future__ import annotations
 
 import pytest
 
-from openmcp import MCPServer, get_context, prompt, resource, tool
-from openmcp.types.shared.base import RequestParams
+from dedalus_mcp import MCPServer, get_context, prompt, resource, tool
+from dedalus_mcp.types.shared.base import RequestParams
 from tests.helpers import RecordingSession, run_with_context
 
 

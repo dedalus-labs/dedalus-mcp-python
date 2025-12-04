@@ -1,4 +1,4 @@
-# OpenMCP Cookbook
+# Dedalus MCP Cookbook
 
 Copy-paste examples. Self-contained.
 
@@ -6,7 +6,7 @@ Copy-paste examples. Self-contained.
 
 ### Minimal
 ```python
-from openmcp import MCPServer, tool
+from dedalus_mcp import MCPServer, tool
 
 server = MCPServer("my-server")
 
@@ -61,7 +61,7 @@ async def query_user(user_id: int) -> dict:
 
 ### Allow-Lists
 ```python
-from openmcp import allow_tools
+from dedalus_mcp import allow_tools
 
 with server.binding():
     @tool(description="Admin only")
@@ -75,7 +75,7 @@ allow_tools(server, ["search"])
 
 ### Plan-tier gating with Depends
 ```python
-from openmcp import MCPServer, Depends, tool
+from dedalus_mcp import MCPServer, Depends, tool
 
 server = MCPServer("plans")
 USERS = {"bob": {"tier": "basic"}, "alice": {"tier": "pro"}}
@@ -100,7 +100,7 @@ with server.binding():
 
 ### Dynamic tools (feature flag)
 ```python
-from openmcp import MCPServer, tool
+from dedalus_mcp import MCPServer, tool
 
 server = MCPServer("feature-flagged", allow_dynamic_tools=True)
 flag_enabled = False
@@ -139,7 +139,7 @@ async def set_feature(enabled: bool) -> None:
 
 ### Static
 ```python
-from openmcp import resource
+from dedalus_mcp import resource
 
 @resource("config://app/settings", name="App Settings", mime_type="application/json")
 def settings() -> dict:
@@ -148,7 +148,7 @@ def settings() -> dict:
 
 ### Templates
 ```python
-from openmcp import resource_template
+from dedalus_mcp import resource_template
 
 @resource_template(
     uri_template="file://logs/{date}/{level}",
@@ -161,7 +161,7 @@ def logs(date: str, level: str) -> str:
 
 ### Subscriptions
 ```python
-from openmcp import resource, MCPServer
+from dedalus_mcp import resource, MCPServer
 
 server = MCPServer("watcher")
 
@@ -177,7 +177,7 @@ async def on_change():
 
 ### Arguments
 ```python
-from openmcp import prompt, types
+from dedalus_mcp import prompt, types
 
 @prompt(
     name="code-review",
@@ -194,7 +194,7 @@ def review(args: dict[str, str]) -> list[tuple[str, str]]:
 
 ### Completions
 ```python
-from openmcp import completion
+from dedalus_mcp import completion
 
 @completion(prompt="code-review")
 async def review_completions(argument: types.CompletionArgument, ctx) -> list[str]:
@@ -209,7 +209,7 @@ async def review_completions(argument: types.CompletionArgument, ctx) -> list[st
 
 ### Progress
 ```python
-from openmcp import tool, get_context
+from dedalus_mcp import tool, get_context
 
 @tool
 async def batch_process(items: list[str]) -> dict:
@@ -224,7 +224,7 @@ async def batch_process(items: list[str]) -> dict:
 
 ### Logging
 ```python
-from openmcp import tool, get_context
+from dedalus_mcp import tool, get_context
 
 @tool
 async def debug_tool(input: str) -> str:
@@ -243,8 +243,8 @@ async def debug_tool(input: str) -> str:
 
 ### Minimal
 ```python
-from openmcp import MCPClient
-from openmcp.client import lambda_http_client
+from dedalus_mcp import MCPClient
+from dedalus_mcp.client import lambda_http_client
 
 async def main():
     async with lambda_http_client("http://127.0.0.1:8000/mcp") as (r, w, _):
@@ -255,7 +255,7 @@ async def main():
 
 ### Capabilities
 ```python
-from openmcp import MCPClient, ClientCapabilitiesConfig, types
+from dedalus_mcp import MCPClient, ClientCapabilitiesConfig, types
 
 async def sampling_handler(ctx, params):
     return types.CreateMessageResult(
@@ -282,7 +282,7 @@ async with MCPClient(read_stream, write_stream, capabilities=config) as client:
 
 ### Decorator
 ```python
-from openmcp import tool, require_within_roots
+from dedalus_mcp import tool, require_within_roots
 from pathlib import Path
 
 @tool
@@ -293,7 +293,7 @@ async def read_file(path: str) -> str:
 
 ### Manual
 ```python
-from openmcp.server.services.roots import RootGuard
+from dedalus_mcp.server.services.roots import RootGuard
 
 async def safe_operation(path: str):
     guard = RootGuard(await server._roots.snapshot())
@@ -315,7 +315,7 @@ async with stdio_client(["python", "server.py", "--transport", "stdio"]) as (r, 
 
 ### Lambda HTTP
 ```python
-from openmcp.client import lambda_http_client
+from dedalus_mcp.client import lambda_http_client
 
 async with lambda_http_client("https://api.example.com/mcp") as (r, w, _):
     async with MCPClient(r, w) as client:
@@ -324,7 +324,7 @@ async with lambda_http_client("https://api.example.com/mcp") as (r, w, _):
 
 ### Custom
 ```python
-from openmcp.server.transports import register_transport
+from dedalus_mcp.server.transports import register_transport
 
 class MyTransport:
     def __init__(self, server):
@@ -340,7 +340,7 @@ await server.serve(transport="my-transport")
 
 ### Provider
 ```python
-from openmcp.server.authorization import AuthorizationProvider, AuthorizationContext
+from dedalus_mcp.server.authorization import AuthorizationProvider, AuthorizationContext
 
 class MyAuthProvider(AuthorizationProvider):
     async def validate(self, token: str) -> AuthorizationContext:
@@ -361,7 +361,7 @@ server.set_authorization_provider(MyAuthProvider())
 
 ### Context
 ```python
-from openmcp import tool, get_context
+from dedalus_mcp import tool, get_context
 
 @tool
 async def user_operation() -> dict:
@@ -373,7 +373,7 @@ async def user_operation() -> dict:
 
 ### Notifications
 ```python
-from openmcp import MCPServer, NotificationFlags
+from dedalus_mcp import MCPServer, NotificationFlags
 
 server = MCPServer(
     "dynamic",
@@ -412,9 +412,9 @@ async def test_tool():
 
 ## Sync vs Async: When to Use Each
 
-OpenMCP handles both synchronous and asynchronous tool functions transparently via `utils.maybe_await_with_args`. The framework inspects callables at invocation time and awaits only when necessary.
+Dedalus MCP handles both synchronous and asynchronous tool functions transparently via `utils.maybe_await_with_args`. The framework inspects callables at invocation time and awaits only when necessary.
 
-**Implementation**: See `src/openmcp/utils/coro.py` for the `maybe_await_with_args` utility that enables this pattern. During tool invocation (`services/tools.py:call_tool`), the framework calls the tool function and checks if the result is awaitable using `inspect.isawaitable`.
+**Implementation**: See `src/dedalus_mcp/utils/coro.py` for the `maybe_await_with_args` utility that enables this pattern. During tool invocation (`services/tools.py:call_tool`), the framework calls the tool function and checks if the result is awaitable using `inspect.isawaitable`.
 
 **Performance**: Synchronous tools have no async overhead—they execute directly. No wrapper, no extra coroutine frame.
 
@@ -453,6 +453,6 @@ async def process_and_save(data: str) -> dict:
 ## References
 
 - `examples/` - Full examples
-- `docs/openmcp/manual/server.md` - Server guide
-- `docs/openmcp/manual/client.md` - Client guide
-- `docs/openmcp/features.md` - Feature matrix
+- `docs/dedalus_mcp/manual/server.md` - Server guide
+- `docs/dedalus_mcp/manual/client.md` - Client guide
+- `docs/dedalus_mcp/features.md` - Feature matrix

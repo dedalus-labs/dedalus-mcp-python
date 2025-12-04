@@ -9,11 +9,11 @@ from typing import Any, Literal
 from mcp.shared.exceptions import McpError
 import pytest
 
-from openmcp.types.server.tools import ListToolsRequest
-from openmcp.types.shared.base import INVALID_PARAMS, PaginatedRequestParams
-from openmcp.server import MCPServer, NotificationFlags
-from openmcp.tool import tool
-from openmcp.utils.schema import resolve_output_schema
+from dedalus_mcp.types.server.tools import ListToolsRequest
+from dedalus_mcp.types.shared.base import INVALID_PARAMS, PaginatedRequestParams
+from dedalus_mcp.server import MCPServer, NotificationFlags
+from dedalus_mcp.tool import tool
+from dedalus_mcp.utils.schema import resolve_output_schema
 from tests.helpers import DummySession, run_with_context
 
 

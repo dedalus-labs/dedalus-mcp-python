@@ -12,7 +12,7 @@ from starlette.responses import JSONResponse
 from starlette.routing import Route
 from starlette.testclient import TestClient
 
-from openmcp.server.authorization import (
+from dedalus_mcp.server.authorization import (
     AuthorizationConfig,
     AuthorizationContext,
     AuthorizationError,
@@ -181,7 +181,7 @@ def test_middleware_accepts_valid_token(metadata_manager: AuthorizationManager, 
     metadata_manager.set_provider(dummy_provider)
 
     async def endpoint(request):
-        ctx = request.scope.get("openmcp.auth")
+        ctx = request.scope.get("dedalus_mcp.auth")
         return JSONResponse({"subject": ctx.subject})
 
     routes = [Route("/mcp", endpoint, methods=["GET"]), metadata_manager.starlette_route()]
@@ -233,11 +233,11 @@ def test_middleware_www_authenticate_header_format(metadata_manager: Authorizati
 
 
 def test_middleware_stores_auth_context_in_scope(metadata_manager: AuthorizationManager, dummy_provider) -> None:
-    """Middleware stores AuthorizationContext in request.scope['openmcp.auth']."""
+    """Middleware stores AuthorizationContext in request.scope['dedalus_mcp.auth']."""
     metadata_manager.set_provider(dummy_provider)
 
     async def endpoint(request):
-        ctx = request.scope.get("openmcp.auth")
+        ctx = request.scope.get("dedalus_mcp.auth")
         return JSONResponse({"subject": ctx.subject, "scopes": ctx.scopes, "claims": ctx.claims})
 
     app = Starlette(routes=[Route("/mcp", endpoint, methods=["GET"])])
@@ -392,7 +392,7 @@ def test_fail_open_allows_request(metadata_manager: AuthorizationManager) -> Non
     metadata_manager.set_provider(FailingProvider())
 
     async def endpoint(request):
-        return JSONResponse({"auth": request.scope.get("openmcp.auth")})
+        return JSONResponse({"auth": request.scope.get("dedalus_mcp.auth")})
 
     app = Starlette(routes=[Route("/mcp", endpoint, methods=["GET"])])
     wrapped = metadata_manager.wrap_asgi(app)
@@ -434,7 +434,7 @@ def test_provider_delegation(metadata_manager: AuthorizationManager) -> None:
     metadata_manager.set_provider(CustomProvider())
 
     async def endpoint(request):
-        ctx = request.scope.get("openmcp.auth")
+        ctx = request.scope.get("dedalus_mcp.auth")
         return JSONResponse({"subject": ctx.subject, "scopes": ctx.scopes})
 
     app = Starlette(routes=[Route("/mcp", endpoint, methods=["GET"])])
@@ -527,7 +527,7 @@ def test_concurrent_requests(metadata_manager: AuthorizationManager, dummy_provi
     metadata_manager.set_provider(dummy_provider)
 
     async def endpoint(request):
-        ctx = request.scope.get("openmcp.auth")
+        ctx = request.scope.get("dedalus_mcp.auth")
         return JSONResponse({"subject": ctx.subject if ctx else None})
 
     app = Starlette(routes=[Route("/mcp", endpoint, methods=["GET"])])

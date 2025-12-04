@@ -2,15 +2,15 @@
 
 **Problem**: MCP exposes a `logging/setLevel` request so clients can tune verbosity at runtime. Wiring this manually requires JSON-RPC plumbing and consistent logger configuration across transports.
 
-**Design Principle**: Keep the framework lean. OpenMCP should never force third-party logging stacks (Rich, structlog, etc.) on host applications. Instead we provide stdlib defaults and clear hooks so projects can bring their own structured logging if they want.
+**Design Principle**: Keep the framework lean. Dedalus MCP should never force third-party logging stacks (Rich, structlog, etc.) on host applications. Instead we provide stdlib defaults and clear hooks so projects can bring their own structured logging if they want.
 
-**Solution**: Ship a minimal logging helper built on `logging` + MCP notifications and let applications layer richer tooling when needed. The logging service handles the MCP contract while `openmcp.utils.logger.setup_logger()` offers a single entry point for baseline configuration.
+**Solution**: Ship a minimal logging helper built on `logging` + MCP notifications and let applications layer richer tooling when needed. The logging service handles the MCP contract while `dedalus_mcp.utils.logger.setup_logger()` offers a single entry point for baseline configuration.
 
-**OpenMCP**: `MCPServer` bundles a default `logging/setLevel` handler that maps MCP levels (`debug` -> `emergency`) onto Python’s logging levels, updating both the root logger and the scoped logger returned by `openmcp.utils.get_logger`. The logging service also installs a lightweight handler that mirrors Python log records to `notifications/message` so any configured client receives log events, satisfying both [`logging/setLevel`](https://modelcontextprotocol.io/specification/2025-06-18/schema-reference/logging-setLevel) and [`notifications/message`](https://modelcontextprotocol.io/specification/2025-06-18/schema-reference/notifications-message) in the public spec.
+**Dedalus MCP**: `MCPServer` bundles a default `logging/setLevel` handler that maps MCP levels (`debug` -> `emergency`) onto Python’s logging levels, updating both the root logger and the scoped logger returned by `dedalus_mcp.utils.get_logger`. The logging service also installs a lightweight handler that mirrors Python log records to `notifications/message` so any configured client receives log events, satisfying both [`logging/setLevel`](https://modelcontextprotocol.io/specification/2025-06-18/schema-reference/logging-setLevel) and [`notifications/message`](https://modelcontextprotocol.io/specification/2025-06-18/schema-reference/notifications-message) in the public spec.
 
 ```python
-from openmcp import MCPServer
-from openmcp.utils.logger import get_logger, setup_logger
+from dedalus_mcp import MCPServer
+from dedalus_mcp.utils.logger import get_logger, setup_logger
 
 server = MCPServer("logging-demo")
 log = get_logger("demo")
@@ -37,13 +37,13 @@ async def do_work():
 
 ## Minimalist by Default, Extensible by Design
 
-`setup_logger()` sets up a single `StreamHandler` with a plain formatter. This keeps runtime dependencies at zero. If your project already configures logging, you can ignore the helper entirely and OpenMCP will respect your existing handlers.
+`setup_logger()` sets up a single `StreamHandler` with a plain formatter. This keeps runtime dependencies at zero. If your project already configures logging, you can ignore the helper entirely and Dedalus MCP will respect your existing handlers.
 
-Applications that want structured output can opt into JSON mode and supply their own serializer. The helper accepts any callable that turns a payload dict into a string, so you can wire `orjson`, `ujson`, etc., without OpenMCP bundling them:
+Applications that want structured output can opt into JSON mode and supply their own serializer. The helper accepts any callable that turns a payload dict into a string, so you can wire `orjson`, `ujson`, etc., without Dedalus MCP bundling them:
 
 ```python
 import json
-from openmcp.utils.logger import setup_logger
+from dedalus_mcp.utils.logger import setup_logger
 
 try:
     import orjson
@@ -74,7 +74,7 @@ If you need more control, build your own handler and still enjoy MCP notificatio
 
 ```python
 import logging
-from openmcp import MCPServer
+from dedalus_mcp import MCPServer
 
 server = MCPServer("custom-logging")
 
@@ -89,6 +89,6 @@ logging.basicConfig(
 
 ## Takeaways
 
-- OpenMCP stays dependency-light; you choose if/when to add richer logging stacks.
+- Dedalus MCP stays dependency-light; you choose if/when to add richer logging stacks.
 - MCP logging notifications continue to function regardless of how you configure Python’s logging module.
 - `StructuredJSONFormatter` is exported for convenience if you want to reuse the minimal payload shape with a custom serializer.

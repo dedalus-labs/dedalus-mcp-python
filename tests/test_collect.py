@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from openmcp import (
+from dedalus_mcp import (
     MCPServer,
     ToolSpec,
     completion,
@@ -100,7 +100,7 @@ class TestCollect:
 
         server = MCPServer("test")
 
-        with pytest.raises(ValueError, match="has no OpenMCP metadata"):
+        with pytest.raises(ValueError, match="has no Dedalus MCP metadata"):
             server.collect(not_decorated)
 
     def test_collect_same_function_multiple_servers(self) -> None:

@@ -62,7 +62,7 @@ Revert "<reverted commit subject line>"
 
 The `scope` provides additional context. It's **optional** but encouraged.
 
-**OpenMCP scopes:**
+**Dedalus MCP scopes:**
 
 - `server` — Server implementation
 - `client` — Client implementation

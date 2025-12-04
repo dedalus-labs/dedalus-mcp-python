@@ -33,8 +33,8 @@ from typing import Any
 
 import anyio
 
-from openmcp import MCPServer, tool
-from openmcp.server.transports.base import BaseTransport
+from dedalus_mcp import MCPServer, tool
+from dedalus_mcp.server.transports.base import BaseTransport
 
 # Suppress SDK and server logs for cleaner demo output
 for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):

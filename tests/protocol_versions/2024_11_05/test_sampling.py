@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import pytest
 
-from openmcp.types.client.sampling import (
+from dedalus_mcp.types.client.sampling import (
     CreateMessageRequest,
     CreateMessageRequestParams,
     CreateMessageResult,
@@ -25,7 +25,7 @@ from openmcp.types.client.sampling import (
     ModelPreferences,
     SamplingMessage,
 )
-from openmcp.types.shared.content import TextContent
+from dedalus_mcp.types.shared.content import TextContent
 
 
 @pytest.mark.anyio

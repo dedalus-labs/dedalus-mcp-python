@@ -1,10 +1,10 @@
 import pytest
 import types
 
-from openmcp import MCPServer, tool
-from openmcp.server.dependencies import Depends
-from openmcp.server.dependencies.solver import resolve
-import openmcp.context as context_module
+from dedalus_mcp import MCPServer, tool
+from dedalus_mcp.server.dependencies import Depends
+from dedalus_mcp.server.dependencies.solver import resolve
+import dedalus_mcp.context as context_module
 
 
 @pytest.mark.anyio
@@ -41,7 +41,7 @@ async def test_dependency_cache(monkeypatch):
             self.dependency_cache: dict = {}
 
     dummy = DummyContext()
-    monkeypatch.setattr("openmcp.server.dependencies.solver.get_context", lambda: dummy)
+    monkeypatch.setattr("dedalus_mcp.server.dependencies.solver.get_context", lambda: dummy)
 
     await resolve(Depends(expensive_call))
     await resolve(Depends(expensive_call))
@@ -97,8 +97,8 @@ async def test_tool_allow_list_dependency():
 async def test_dependency_returns_context(monkeypatch):
     dummy_context = types.SimpleNamespace(dependency_cache={})
 
-    monkeypatch.setattr("openmcp.server.dependencies.solver.get_context", lambda: dummy_context)
-    monkeypatch.setattr("openmcp.context.get_context", lambda: dummy_context)
+    monkeypatch.setattr("dedalus_mcp.server.dependencies.solver.get_context", lambda: dummy_context)
+    monkeypatch.setattr("dedalus_mcp.context.get_context", lambda: dummy_context)
     monkeypatch.setattr(
         "tests.server.test_dependencies.framework_get_context",
         lambda: dummy_context,
@@ -130,8 +130,8 @@ async def test_tool_injects_context_parameter():
 
 @pytest.mark.anyio
 async def test_circular_dependency_detection():
-    from openmcp.server.dependencies.models import CircularDependencyError, DependencyCall
-    from openmcp.server.dependencies.solver import _resolve_dependency
+    from dedalus_mcp.server.dependencies.models import CircularDependencyError, DependencyCall
+    from dedalus_mcp.server.dependencies.solver import _resolve_dependency
 
     # Create a cycle by manually injecting the same object into the seen set
     # This tests the cycle detection mechanism directly
@@ -149,7 +149,7 @@ async def test_circular_dependency_detection():
 
 @pytest.mark.anyio
 async def test_dependency_resolution_error_propagation():
-    from openmcp.server.dependencies.models import DependencyResolutionError
+    from dedalus_mcp.server.dependencies.models import DependencyResolutionError
 
     def failing_dep() -> int:
         raise ValueError("Intentional failure")
@@ -181,11 +181,11 @@ async def test_use_cache_false():
 
 @pytest.mark.anyio
 async def test_auto_inject_context(monkeypatch):
-    from openmcp.context import Context
+    from dedalus_mcp.context import Context
 
     dummy_context = types.SimpleNamespace(dependency_cache={}, request_id="auto-inject-123")
     # Patch where solver imports get_context from
-    monkeypatch.setattr("openmcp.server.dependencies.solver.get_context", lambda: dummy_context)
+    monkeypatch.setattr("dedalus_mcp.server.dependencies.solver.get_context", lambda: dummy_context)
 
     # Define a dependency that expects Context to be auto-injected
     def get_request_id(ctx: Context) -> str:
@@ -197,11 +197,11 @@ async def test_auto_inject_context(monkeypatch):
 
 @pytest.mark.anyio
 async def test_auto_inject_with_nested_dependencies(monkeypatch):
-    from openmcp import Context
+    from dedalus_mcp import Context
 
     dummy_context = types.SimpleNamespace(dependency_cache={}, request_id="nested-123")
     # Patch where solver imports get_context from
-    monkeypatch.setattr("openmcp.server.dependencies.solver.get_context", lambda: dummy_context)
+    monkeypatch.setattr("dedalus_mcp.server.dependencies.solver.get_context", lambda: dummy_context)
 
     # Subdependency that uses auto-injection
     def get_prefix(ctx: Context) -> str:

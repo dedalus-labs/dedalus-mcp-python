@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import pytest
 
-from openmcp.server.services.connection_gate import (
+from dedalus_mcp.server.services.connection_gate import (
     ConnectionHandleGate,
     parse_connections_claim,
     ConnectionHandleNotAuthorizedError,

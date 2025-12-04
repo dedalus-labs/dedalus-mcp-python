@@ -1,7 +1,7 @@
 # Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Supabase REST demo protected by the OpenMCP Authorization Server.
+"""Supabase REST demo protected by the Dedalus MCP Authorization Server.
 
 This example reuses the Supabase tool from ``01_simple`` but requires OAuth 2.1
 access tokens issued by the Go Authorization Server that lives in the
@@ -47,9 +47,9 @@ from typing import Any
 import httpx
 from dotenv import load_dotenv
 
-from openmcp import MCPServer, get_context, tool
-from openmcp.server.authorization import AuthorizationConfig
-from openmcp.server.services.jwt_validator import JWTValidator, JWTValidatorConfig
+from dedalus_mcp import MCPServer, get_context, tool
+from dedalus_mcp.server.authorization import AuthorizationConfig
+from dedalus_mcp.server.services.jwt_validator import JWTValidator, JWTValidatorConfig
 
 
 load_dotenv()

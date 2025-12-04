@@ -1,13 +1,13 @@
 # Client Guide
 
-`openmcp.client.MCPClient` wraps the reference SDK’s `ClientSession` to provide capability registration,
+`dedalus_mcp.client.MCPClient` wraps the reference SDK’s `ClientSession` to provide capability registration,
 root management, cancellation, and the groundwork for authorization.
 
 ## Creating a Client
 
 ```python
-from openmcp import types
-from openmcp.client import ClientCapabilitiesConfig, open_connection
+from dedalus_mcp import types
+from dedalus_mcp.client import ClientCapabilitiesConfig, open_connection
 
 async with open_connection(
     url="https://localhost:8000/mcp",
@@ -48,7 +48,7 @@ result models (`types.CreateMessageResult`, `types.ElicitResult`).
 
 ### Runtime capability mutations
 
-OpenMCP clients must treat capability lists as live data. When the server emits
+Dedalus MCP clients must treat capability lists as live data. When the server emits
 `notifications/tools/list_changed` (or the equivalent for prompts/resources), re-fetch the
 definitions and update any allow-lists or cached schemas:
 
@@ -113,7 +113,7 @@ no-ops. Once implemented, the wrapper will automatically:
 4. Run the authorization-code-with-PKCE flow using host callbacks.
 5. Manage access/refresh tokens via a pluggable `TokenStore`.
 
-The design is detailed in `docs/openmcp/design/authorization.md`. No client changes are required until
+The design is detailed in `docs/dedalus_mcp/design/authorization.md`. No client changes are required until
 those features land.
 
 ## Example: Reading a Resource
@@ -130,5 +130,5 @@ for content in result.contents:
         print(content.text)
 ```
 
-Refer to `docs/openmcp/manual/examples.md` for complete scripts demonstrating tools invocation,
+Refer to `docs/dedalus_mcp/manual/examples.md` for complete scripts demonstrating tools invocation,
 resource reads, sampling callbacks, and cancellation.

@@ -11,8 +11,8 @@ import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-from openmcp.server.authorization import AuthorizationError
-from openmcp.server.services.jwt_validator import Clock, JWTValidator, JWTValidatorConfig, SystemClock
+from dedalus_mcp.server.authorization import AuthorizationError
+from dedalus_mcp.server.services.jwt_validator import Clock, JWTValidator, JWTValidatorConfig, SystemClock
 
 
 def _b64url_uint(value: int) -> str:

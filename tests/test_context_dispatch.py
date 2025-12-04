@@ -11,10 +11,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from openmcp.context import Context
-from openmcp.dispatch import DirectDispatchBackend, DispatchRequest, DispatchResult
-from openmcp.server.authorization import AuthorizationContext
-from openmcp.server.services.connection_gate import ConnectionHandleNotAuthorizedError
+from dedalus_mcp.context import Context
+from dedalus_mcp.dispatch import DirectDispatchBackend, DispatchRequest, DispatchResult
+from dedalus_mcp.server.authorization import AuthorizationContext
+from dedalus_mcp.server.services.connection_gate import ConnectionHandleNotAuthorizedError
 
 
 @dataclass
@@ -51,9 +51,9 @@ class TestContextDispatch:
     @pytest.fixture
     def context_with_backend(self, backend, auth_context_with_handle):
         """Context with dispatch backend configured."""
-        mock_request_ctx = MockRequestContext(lifespan_context={"openmcp.runtime": {"dispatch_backend": backend}})
+        mock_request_ctx = MockRequestContext(lifespan_context={"dedalus_mcp.runtime": {"dispatch_backend": backend}})
         mock_request = MagicMock()
-        mock_request.scope = {"openmcp.auth": auth_context_with_handle}
+        mock_request.scope = {"dedalus_mcp.auth": auth_context_with_handle}
         mock_request_ctx.request = mock_request
 
         ctx = Context(_request_context=mock_request_ctx, runtime={"dispatch_backend": backend})

@@ -20,8 +20,8 @@ from __future__ import annotations
 
 import pytest
 
-from openmcp import MCPServer, tool
-from openmcp.types.server.tools import (
+from dedalus_mcp import MCPServer, tool
+from dedalus_mcp.types.server.tools import (
     CallToolRequest,
     CallToolRequestParams,
     CallToolResult,
@@ -30,9 +30,9 @@ from openmcp.types.server.tools import (
     Tool,
     ToolListChangedNotification,
 )
-from openmcp.types.shared.base import PaginatedRequestParams
-from openmcp.types.shared.content import TextContent
-from openmcp.server.core import NotificationFlags
+from dedalus_mcp.types.shared.base import PaginatedRequestParams
+from dedalus_mcp.types.shared.content import TextContent
+from dedalus_mcp.server.core import NotificationFlags
 
 
 @pytest.mark.anyio

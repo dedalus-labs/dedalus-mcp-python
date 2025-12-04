@@ -14,7 +14,7 @@ import asyncio
 
 import pytest
 
-from openmcp.utils import maybe_await, maybe_await_with_args
+from dedalus_mcp.utils import maybe_await, maybe_await_with_args
 
 
 @pytest.mark.asyncio

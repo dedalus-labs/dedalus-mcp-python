@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import pytest
 
-from openmcp.types.server.prompts import (
+from dedalus_mcp.types.server.prompts import (
     GetPromptRequest,
     GetPromptRequestParams,
     GetPromptResult,
@@ -29,8 +29,8 @@ from openmcp.types.server.prompts import (
     PromptListChangedNotification,
     PromptMessage,
 )
-from openmcp.types.shared.base import PaginatedRequestParams
-from openmcp.types.shared.content import TextContent
+from dedalus_mcp.types.shared.base import PaginatedRequestParams
+from dedalus_mcp.types.shared.content import TextContent
 
 
 @pytest.mark.anyio

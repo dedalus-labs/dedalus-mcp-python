@@ -12,9 +12,9 @@ import anyio
 import pytest
 from httpx import AsyncClient
 
-from openmcp import MCPServer, tool
-from openmcp.server import NotificationFlags
-from openmcp.server.authorization import AuthorizationConfig
+from dedalus_mcp import MCPServer, tool
+from dedalus_mcp.server import NotificationFlags
+from dedalus_mcp.server.authorization import AuthorizationConfig
 
 
 if TYPE_CHECKING:
@@ -214,7 +214,7 @@ async def test_metadata_properties_none() -> None:
 @pytest.mark.anyio
 async def test_http_endpoint_route_exists(configured_server: MCPServer) -> None:
     """Test HTTP transport includes metadata endpoint route."""
-    from openmcp.server.transports import StreamableHTTPTransport
+    from dedalus_mcp.server.transports import StreamableHTTPTransport
 
     transport = StreamableHTTPTransport(configured_server)
     handler = transport._build_handler(transport._build_session_manager())
@@ -343,7 +343,7 @@ async def test_metadata_caching_headers() -> None:
     pytest.importorskip("httpx")
 
     server = MCPServer("cache-test-server")
-    from openmcp.server.transports import StreamableHTTPTransport
+    from dedalus_mcp.server.transports import StreamableHTTPTransport
 
     transport = StreamableHTTPTransport(server)
     handler = transport._build_handler(transport._build_session_manager())

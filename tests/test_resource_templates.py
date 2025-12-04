@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import pytest
 
-from openmcp import MCPServer, resource_template
-from openmcp.resource_template import ResourceTemplateSpec
+from dedalus_mcp import MCPServer, resource_template
+from dedalus_mcp.resource_template import ResourceTemplateSpec
 
 
 @pytest.mark.anyio

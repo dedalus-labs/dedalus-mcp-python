@@ -1,6 +1,6 @@
 # Protocol Version Tests
 
-Version-specific tests verifying OpenMCP against each MCP protocol revision.
+Version-specific tests verifying Dedalus MCP against each MCP protocol revision.
 
 ## How It Works
 
@@ -49,7 +49,7 @@ tests/protocol_versions/
 Use `ProtocolProfile` to check feature availability:
 
 ```python
-from openmcp.versioning import FeatureId, ProtocolProfile, V_2025_03_26
+from dedalus_mcp.versioning import FeatureId, ProtocolProfile, V_2025_03_26
 
 def test_progress_message_field():
     profile = ProtocolProfile.for_version(V_2025_03_26)
@@ -59,7 +59,7 @@ def test_progress_message_field():
 For features that were removed:
 
 ```python
-from openmcp.versioning import Availability, FeatureId, ProtocolProfile, V_2025_06_18
+from dedalus_mcp.versioning import Availability, FeatureId, ProtocolProfile, V_2025_06_18
 
 def test_batching_removed():
     profile = ProtocolProfile.for_version(V_2025_06_18)
@@ -89,7 +89,7 @@ The `test_migrations_match_declared_changes` test catches drift between declared
 
 ```python
 # test_features_2025_09_01.py
-from openmcp.versioning import FeatureId, ProtocolProfile, V_2025_09_01
+from dedalus_mcp.versioning import FeatureId, ProtocolProfile, V_2025_09_01
 
 def test_new_feature():
     profile = ProtocolProfile.for_version(V_2025_09_01)

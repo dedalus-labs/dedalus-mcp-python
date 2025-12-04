@@ -147,8 +147,8 @@ from typing import Any, TypeVar
 from pydantic import BaseModel, Field
 
 # Local imports
-from openmcp.context import Context, get_context
-from openmcp.types import Tool, Resource
+from dedalus_mcp.context import Context, get_context
+from dedalus_mcp.types import Tool, Resource
 ```
 
 Don't use relative imports except within a package:
@@ -158,7 +158,7 @@ Don't use relative imports except within a package:
 from ..utils import helper
 
 # Good
-from openmcp.utils import helper
+from dedalus_mcp.utils import helper
 ```
 
 ### Naming

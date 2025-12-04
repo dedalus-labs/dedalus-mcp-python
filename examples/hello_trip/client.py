@@ -22,8 +22,8 @@ from __future__ import annotations
 
 import asyncio
 
-from openmcp import MCPClient
-from openmcp.client import lambda_http_client
+from dedalus_mcp import MCPClient
+from dedalus_mcp.client import lambda_http_client
 
 
 SERVER_URL = "http://127.0.0.1:8000/mcp"

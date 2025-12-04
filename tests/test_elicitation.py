@@ -8,11 +8,11 @@ from typing import Any
 from mcp.shared.exceptions import McpError
 import pytest
 
-from openmcp import MCPServer
-from openmcp.types.client.elicitation import ElicitRequest, ElicitRequestParams, ElicitResult
-from openmcp.types.messages import ServerRequest
-from openmcp.types.shared.base import ErrorData, METHOD_NOT_FOUND
-from openmcp.types.shared.capabilities import ClientCapabilities
+from dedalus_mcp import MCPServer
+from dedalus_mcp.types.client.elicitation import ElicitRequest, ElicitRequestParams, ElicitResult
+from dedalus_mcp.types.messages import ServerRequest
+from dedalus_mcp.types.shared.base import ErrorData, METHOD_NOT_FOUND
+from dedalus_mcp.types.shared.capabilities import ClientCapabilities
 from tests.helpers import run_with_context
 
 

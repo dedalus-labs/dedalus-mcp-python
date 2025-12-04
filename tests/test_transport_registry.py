@@ -8,9 +8,9 @@ from typing import Any
 from mcp.server.transport_security import TransportSecuritySettings
 import pytest
 
-from openmcp.server import MCPServer
-from openmcp.server.transports import BaseTransport, StreamableHTTPTransport
-from openmcp.server.transports.asgi import SessionManagerHandler
+from dedalus_mcp.server import MCPServer
+from dedalus_mcp.server.transports import BaseTransport, StreamableHTTPTransport
+from dedalus_mcp.server.transports.asgi import SessionManagerHandler
 
 
 class DummyTransport(BaseTransport):

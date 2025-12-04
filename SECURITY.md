@@ -24,7 +24,7 @@ We will acknowledge your report within 48 hours and provide a detailed response 
 
 ## Security Model
 
-OpenMCP is a framework for building MCP servers and clients. Security considerations:
+Dedalus MCP is a framework for building MCP servers and clients. Security considerations:
 
 ### Server-Side
 

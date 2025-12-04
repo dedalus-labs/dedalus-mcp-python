@@ -1,0 +1,344 @@
+# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
+
+"""Request context helpers for Dedalus MCP handlers.
+
+The utilities in this module provide a stable surface over the reference
+SDK's ``request_ctx`` primitive so application code can access
+capabilities such as logging and progress without importing SDK internals.
+
+Implements context integration for MCP capabilities:
+
+- https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging
+  (server-to-client logging notifications)
+- https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress
+  (progress notifications during long-running operations)
+"""
+
+from __future__ import annotations
+
+from collections.abc import AsyncIterator, Iterator, Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar, Token
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, cast
+
+from mcp.server.lowlevel.server import request_ctx
+from mcp.shared.context import RequestContext
+from mcp.types import LoggingLevel, ProgressToken
+
+from .progress import ProgressConfig, ProgressTelemetry, ProgressTracker
+from .progress import progress as progress_manager
+
+
+if TYPE_CHECKING:
+    from mcp.server.session import ServerSession
+    from .dispatch import DispatchResult
+    from .server.core import MCPServer
+    from .server.dependencies.models import DependencyCall, ResolvedDependency
+    from .server.resolver import ConnectionResolver
+
+
+_CURRENT_CONTEXT: ContextVar[Context | None] = ContextVar("openmcp_current_context", default=None)
+RUNTIME_CONTEXT_KEY = "dedalus_mcp.runtime"
+
+
+def get_context() -> Context:
+    """Return the active :class:`Context`.
+
+    Raises:
+        LookupError: If called outside of an MCP request handler.
+
+    Example::
+
+        from dedalus_mcp import get_context, tool
+
+
+        @tool(description="Reports its own request id")
+        async def whoami() -> str:
+            ctx = get_context()
+            await ctx.info("Handling whoami request")
+            return ctx.request_id
+    """
+    ctx = _CURRENT_CONTEXT.get()
+    if ctx is None:
+        raise LookupError("No active context; use get_context() from within a request handler")
+    return ctx
+
+
+@dataclass(slots=True)
+class Context:
+    """Lightweight façade over the SDK request context.
+
+    This wrapper keeps Dedalus MCP applications within the framework surface
+    while still enabling access to logging and progress utilities mandated
+    by the MCP specification.
+    """
+
+    _request_context: RequestContext
+    dependency_cache: dict["DependencyCall", "ResolvedDependency"] | None = None
+    runtime: Mapping[str, Any] | None = None
+
+    # ------------------------------------------------------------------
+    # Introspection helpers
+    # ------------------------------------------------------------------
+
+    @property
+    def request_id(self) -> str:
+        """Return the request identifier assigned by the SDK."""
+        return str(self._request_context.request_id)
+
+    @property
+    def session(self) -> ServerSession:
+        """Expose the underlying session for advanced scenarios."""
+        return self._request_context.session
+
+    @property
+    def server(self) -> "MCPServer" | None:
+        """Return the MCP server associated with this request, if any."""
+
+        runtime = self.runtime
+        if not isinstance(runtime, Mapping):
+            return None
+        return cast("MCPServer | None", runtime.get("server"))
+
+    @property
+    def session_id(self) -> str | None:
+        """Return the Mcp-Session-Id from the request headers.
+
+        Per the MCP specification, servers MAY assign a session ID during
+        initialization via the Mcp-Session-Id header. This property extracts
+        that session ID from subsequent requests.
+
+        Returns None for transports without session IDs (e.g., STDIO).
+
+        See more: https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#session-management
+        """
+        request = getattr(self._request_context, "request", None)
+        if request is None:
+            return None
+        headers = getattr(request, "headers", None)
+        if headers is None:
+            return None
+        return headers.get("mcp-session-id")
+
+    @property
+    def progress_token(self) -> ProgressToken | None:
+        """Return the progress token supplied by the client, if any."""
+        meta = self._request_context.meta
+        return None if meta is None else getattr(meta, "progressToken", None)
+
+    @property
+    def auth_context(self) -> Any | None:
+        """Return the authorization context populated by transports, if present."""
+
+        scope = self._request_scope()
+        if isinstance(scope, Mapping):
+            return scope.get("dedalus_mcp.auth")
+        return None
+
+    @property
+    def resolver(self) -> "ConnectionResolver" | None:
+        """Return the configured connection resolver for this server, if any."""
+
+        runtime = self.runtime
+        if not isinstance(runtime, Mapping):
+            return None
+        resolver = runtime.get("resolver")
+        if resolver is None:
+            return None
+        return cast("ConnectionResolver", resolver)
+
+    # ------------------------------------------------------------------
+    # Logging conveniences
+    # See: https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging
+    # ------------------------------------------------------------------
+
+    async def log(
+        self,
+        level: LoggingLevel | str,
+        message: str,
+        *,
+        logger: str | None = None,
+        data: Mapping[str, Any] | None = None,
+    ) -> None:
+        """Send a log message to the client.
+
+        Args:
+            level: Severity level defined by the MCP logging capability.
+            message: Human-readable message describing the event.
+            logger: Optional logger name for client-side routing.
+            data: Optional structured payload merged into the log body.
+        """
+        payload: dict[str, Any] = {"msg": message}
+        if data:
+            payload.update(dict(data))
+
+        await self._request_context.session.send_log_message(level=level, data=payload, logger=logger)
+
+    async def debug(self, message: str, *, logger: str | None = None, data: Mapping[str, Any] | None = None) -> None:
+        await self.log("debug", message, logger=logger, data=data)
+
+    async def info(self, message: str, *, logger: str | None = None, data: Mapping[str, Any] | None = None) -> None:
+        await self.log("info", message, logger=logger, data=data)
+
+    async def warning(self, message: str, *, logger: str | None = None, data: Mapping[str, Any] | None = None) -> None:
+        await self.log("warning", message, logger=logger, data=data)
+
+    async def error(self, message: str, *, logger: str | None = None, data: Mapping[str, Any] | None = None) -> None:
+        await self.log("error", message, logger=logger, data=data)
+
+    # ------------------------------------------------------------------
+    # Progress helpers
+    # See: https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress
+    # ------------------------------------------------------------------
+
+    async def report_progress(self, progress: float, *, total: float | None = None, message: str | None = None) -> None:
+        """Emit a single progress notification if the client requested one."""
+        token = self.progress_token
+        if token is None:
+            return
+
+        await self._request_context.session.send_progress_notification(
+            progress_token=token, progress=progress, total=total, message=message
+        )
+
+    def progress(
+        self,
+        total: float | None = None,
+        *,
+        config: ProgressConfig | None = None,
+        telemetry: ProgressTelemetry | None = None,
+    ) -> AsyncIterator[ProgressTracker]:
+        """Return the coalescing progress context manager for this request."""
+        return progress_manager(total=total, config=config, telemetry=telemetry)
+
+    async def resolve_client(self, handle: str, *, operation: Mapping[str, Any] | None = None) -> Any:
+        """Resolve a connection handle into a driver client via the configured resolver."""
+
+        if not isinstance(handle, str):
+            raise TypeError("Connection handle must be a string identifier")
+
+        resolver = self.resolver
+        if resolver is None:
+            raise RuntimeError("Connection resolver is not configured for this server")
+
+        request_payload = self._build_resolver_context(operation)
+        return await resolver.resolve_client(handle, request_payload)
+
+    async def dispatch(
+        self, connection_handle: str, intent: str, arguments: dict[str, Any] | None = None
+    ) -> "DispatchResult":
+        """Dispatch a privileged operation via a connection handle.
+
+        This method gates access using the `ddls:connections` claim from the
+        authorization context, then forwards to the configured dispatch backend.
+
+        Args:
+            connection_handle: Identifier for the connection (e.g., "ddls:conn:01ABC-github")
+            intent: Operation identifier (e.g., "github:create_issue")
+            arguments: Operation-specific arguments
+
+        Returns:
+            DispatchResult with success/failure and data/error
+
+        Raises:
+            RuntimeError: If dispatch backend is not configured
+            ConnectionHandleNotAuthorizedError: If handle not in JWT claims
+
+        Example:
+            >>> result = await ctx.dispatch(
+            ...     connection_handle="ddls:conn:01ABC-github",
+            ...     intent="github:create_issue",
+            ...     arguments={"title": "Bug", "body": "Description"},
+            ... )
+            >>> if result.success:
+            ...     print(result.data)
+        """
+        from .dispatch import DispatchBackend, DispatchRequest, DispatchResult
+        from .server.services.connection_gate import ConnectionHandleGate
+
+        # Get dispatch backend from runtime
+        runtime = self.runtime
+        if not isinstance(runtime, Mapping):
+            raise RuntimeError("Dispatch backend not configured")
+
+        backend = runtime.get("dispatch_backend")
+        if backend is None or not isinstance(backend, DispatchBackend):
+            raise RuntimeError("Dispatch backend not configured")
+
+        # Gate check: verify handle is authorized in JWT claims
+        auth_context = self.auth_context
+        if auth_context is not None:
+            claims = getattr(auth_context, "claims", {})
+            gate = ConnectionHandleGate.from_claims(claims)
+            gate.check(connection_handle)  # Raises if not authorized
+
+        # Build and execute dispatch request
+        request = DispatchRequest(connection_handle=connection_handle, intent=intent, arguments=arguments or {})
+
+        return await backend.dispatch(request)
+
+    # ------------------------------------------------------------------
+    # Construction helpers
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def from_request_context(cls, request_context: RequestContext) -> Context:
+        """Build a :class:`Context` from the SDK request context."""
+        runtime_payload: Mapping[str, Any] | None = None
+        lifespan_context = request_context.lifespan_context
+        if isinstance(lifespan_context, Mapping):
+            candidate = lifespan_context.get(RUNTIME_CONTEXT_KEY)
+            if candidate is not None and isinstance(candidate, Mapping):
+                runtime_payload = cast(Mapping[str, Any], candidate)
+        return cls(_request_context=request_context, runtime=runtime_payload)
+
+    def _request_scope(self) -> Mapping[str, Any] | None:
+        request = getattr(self._request_context, "request", None)
+        if request is None:
+            return None
+        return getattr(request, "scope", None)
+
+    def _build_resolver_context(self, operation: Mapping[str, Any] | None) -> dict[str, Any]:
+        auth_context = self.auth_context
+        if auth_context is None:
+            raise RuntimeError("Authorization context missing; cannot resolve connection handle")
+        payload: dict[str, Any] = {"dedalus_mcp.auth": auth_context}
+        if operation is not None:
+            payload["operation"] = dict(operation)
+        return payload
+
+
+def _activate_request_context() -> Token[Context | None]:
+    """Populate the ambient context var from the SDK request context."""
+    request_context = request_ctx.get()
+    context = Context.from_request_context(request_context)
+    return _CURRENT_CONTEXT.set(context)
+
+
+def _reset_context(token: Token[Context | None]) -> None:
+    """Restore the previous context after a handler completes."""
+    _CURRENT_CONTEXT.reset(token)
+
+
+@contextmanager
+def context_scope() -> Iterator[Context | None]:
+    """Context manager that activates the current request context.
+
+    Yields None if no request context is available (e.g., during testing).
+    """
+    try:
+        token = _activate_request_context()
+    except LookupError:
+        # No request context available (e.g., direct service method calls in tests)
+        yield None
+        return
+
+    try:
+        yield get_context()
+    finally:
+        _reset_context(token)
+
+
+__all__ = ["Context", "RUNTIME_CONTEXT_KEY", "get_context", "context_scope"]

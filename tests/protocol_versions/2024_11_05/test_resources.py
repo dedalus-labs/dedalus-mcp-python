@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import pytest
 
-from openmcp import types
+from dedalus_mcp import types
 
 
 @pytest.mark.anyio

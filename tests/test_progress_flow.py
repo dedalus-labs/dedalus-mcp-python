@@ -13,7 +13,7 @@ from mcp.server.lowlevel.server import request_ctx
 from mcp.shared.context import RequestContext
 import pytest
 
-from openmcp.progress import (
+from dedalus_mcp.progress import (
     ProgressCloseEvent,
     ProgressConfig,
     ProgressEmitEvent,

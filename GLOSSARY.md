@@ -8,7 +8,7 @@ MCP and related terminology used in this project.
 : A protocol for AI models to access external tools, resources, and prompts in a standardized way.
 
 **MCP Server**
-: A service that exposes tools, resources, and prompts via the MCP protocol. Built with OpenMCP.
+: A service that exposes tools, resources, and prompts via the MCP protocol. Built with Dedalus MCP.
 
 **MCP Client**
 : An application (typically an AI assistant) that connects to MCP servers to use their capabilities.
@@ -89,7 +89,7 @@ MCP and related terminology used in this project.
 ## Framework Terms
 
 **MCPServer**
-: The main class for building MCP servers in OpenMCP.
+: The main class for building MCP servers in Dedalus MCP.
 
 **MCPClient**
 : The main class for connecting to MCP servers.
@@ -101,4 +101,4 @@ MCP and related terminology used in this project.
 
 - [MCP Specification](https://spec.modelcontextprotocol.io/) — Official protocol spec
 - [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk) — Low-level SDK
-- [OpenMCP Documentation](docs/openmcp/) — Framework guides
+- [Dedalus MCP Documentation](docs/openmcp/) — Framework guides

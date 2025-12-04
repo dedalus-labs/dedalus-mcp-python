@@ -1,8 +1,35 @@
-# Client Capability Examples
+# Client Examples
 
-**DRAFT**: These examples demonstrate client-side MCP capabilities. All examples are self-contained and runnable.
+Examples demonstrating client-side MCP capabilities. All examples are self-contained and runnable.
 
-## Files
+## Connection & Auth
+
+### basic_connect.py
+Script-style client connection without context managers. The primary API for most applications.
+
+```python
+client = await MCPClient.connect("http://localhost:8000/mcp")
+tools = await client.list_tools()
+await client.close()
+```
+
+### dpop_auth.py
+RFC 9449 DPoP authentication for sender-constrained tokens. Required for Dedalus MCP servers.
+
+```python
+auth = DPoPAuth(access_token="...", dpop_key=ec_private_key)
+client = await MCPClient.connect(url, auth=auth)
+```
+
+### bearer_auth.py
+Simple OAuth Bearer token auth for standard protected servers.
+
+```python
+auth = BearerAuth(access_token="...")
+client = await MCPClient.connect(url, auth=auth)
+```
+
+## Capability Handlers
 
 ### sampling_handler.py (99 LOC)
 Demonstrates client handling of `sampling/createMessage` requests from servers. Integrates with the Anthropic API to provide real LLM completions when servers need them during tool execution.
@@ -48,16 +75,35 @@ Combines all client capabilities (sampling, elicitation, roots, logging) into a 
 
 ## Running the Examples
 
-All examples require a running MCP server at `http://127.0.0.1:8000/mcp`.
+### Connection examples
 
-For sampling_handler.py:
 ```bash
-export ANTHROPIC_API_KEY=your-key
-uv run python examples/client/sampling_handler.py
+# Start a server first
+uv run python examples/tools/basic_tool.py
+
+# In another terminal
+uv run python examples/client/basic_connect.py
 ```
 
-For other examples:
+### Auth examples
+
+Auth examples require a protected server and valid tokens. Update the constants before running:
+
 ```bash
+uv run python examples/client/bearer_auth.py
+uv run python examples/client/dpop_auth.py
+```
+
+### Capability handler examples
+
+All require a running MCP server at `http://127.0.0.1:8000/mcp`.
+
+```bash
+# For sampling (requires Anthropic API key)
+export ANTHROPIC_API_KEY=your-key
+uv run python examples/client/sampling_handler.py
+
+# For other handlers
 uv run python examples/client/elicitation_handler.py
 uv run python examples/client/roots_config.py
 uv run python examples/client/full_capabilities.py

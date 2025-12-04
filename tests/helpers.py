@@ -12,8 +12,8 @@ import anyio
 from mcp.server.lowlevel.server import request_ctx
 from mcp.shared.context import RequestContext
 
-from openmcp.types.messages import ServerNotification
-from openmcp.types.shared.primitives import RequestId
+from dedalus_mcp.types.messages import ServerNotification
+from dedalus_mcp.types.shared.primitives import RequestId
 
 
 _REQUEST_COUNTER = count(1)

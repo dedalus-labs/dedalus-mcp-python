@@ -13,10 +13,10 @@ from __future__ import annotations
 from mcp.shared.exceptions import McpError
 import pytest
 
-from openmcp import MCPServer, prompt
-from openmcp.types.server.prompts import ListPromptsRequest
-from openmcp.types.shared.base import INVALID_PARAMS, PaginatedRequestParams
-from openmcp.server import NotificationFlags
+from dedalus_mcp import MCPServer, prompt
+from dedalus_mcp.types.server.prompts import ListPromptsRequest
+from dedalus_mcp.types.shared.base import INVALID_PARAMS, PaginatedRequestParams
+from dedalus_mcp.server import NotificationFlags
 from tests.helpers import DummySession, run_with_context
 
 

@@ -9,9 +9,9 @@ import httpx
 import pytest
 from starlette.applications import Starlette
 
-from openmcp import MCPServer, tool
-from openmcp.server.authorization import AuthorizationConfig, AuthorizationContext, AuthorizationError, AuthorizationProvider
-from openmcp.server.transports import StreamableHTTPTransport
+from dedalus_mcp import MCPServer, tool
+from dedalus_mcp.server.authorization import AuthorizationConfig, AuthorizationContext, AuthorizationError, AuthorizationProvider
+from dedalus_mcp.server.transports import StreamableHTTPTransport
 
 
 class DummyProvider(AuthorizationProvider):

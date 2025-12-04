@@ -5,7 +5,7 @@
 **Solution**: Decorators (`@tool`, `@resource`, `@prompt`) attach metadata to functions *without* binding them to a server instance. Registration happens explicitly via `server.collect()`. This approach separates *declaration* (what the function is) from *registration* (which server it serves).
 
 ```python
-from openmcp import MCPServer, tool
+from dedalus_mcp import MCPServer, tool
 
 @tool(description="Add two numbers")
 def add(a: int, b: int) -> int:
@@ -25,7 +25,7 @@ server_a.collect(add)
 server_b.collect(add)
 ```
 
-**OpenMCP**: The `@tool`, `@resource`, `@prompt`, `@resource_template`, and `@completion` decorators attach metadata attributes (`__openmcp_tool__`, `__openmcp_resource__`, etc.). The `server.collect()` method extracts these specs and routes them to the appropriate registration method.
+**Dedalus MCP**: The `@tool`, `@resource`, `@prompt`, `@resource_template`, and `@completion` decorators attach metadata attributes (`__dedalus_mcp_tool__`, `__dedalus_mcp_resource__`, etc.). The `server.collect()` method extracts these specs and routes them to the appropriate registration method.
 
 ## Design Rationale
 
@@ -38,7 +38,7 @@ Instance decorators (`@server.tool`) couple the function to the server at decora
 3. **Global state leakage**: Frameworks typically use a singleton pattern to make `server` available everywhere. This makes testing harder and violates separation of concerns.
 4. **Unclear ownership**: When `@server.tool` executes at import time, the server's lifecycle is unclear. Did someone start it already? Is it safe to mutate?
 
-OpenMCP inverts this: decorators attach metadata, and the server pulls that metadata when you call `collect()`. Benefits:
+Dedalus MCP inverts this: decorators attach metadata, and the server pulls that metadata when you call `collect()`. Benefits:
 
 - **Explicit registration timing**: `server.collect(fn)` is a visible, testable boundary.
 - **Multi-server support**: The same decorated function can be registered to multiple servers.
@@ -67,14 +67,14 @@ from tools import math, text
 server.collect_from(math, text)
 ```
 
-Inspects each module for public callables with OpenMCP metadata. Functions without metadata are silently skipped.
+Inspects each module for public callables with Dedalus MCP metadata. Functions without metadata are silently skipped.
 
 ### `extract_spec(fn)`
 
-Extract OpenMCP metadata from a decorated function. Returns `None` if no metadata found.
+Extract Dedalus MCP metadata from a decorated function. Returns `None` if no metadata found.
 
 ```python
-from openmcp import extract_spec
+from dedalus_mcp import extract_spec
 
 spec = extract_spec(add)  # ToolSpec instance
 ```
@@ -97,9 +97,9 @@ Inside the binding context, decorators immediately register with the active serv
 `server.binding()` uses Python's `contextvars.ContextVar` for task-local storage. Each capability maintains its own ContextVar to track the active server:
 
 ```python
-# From src/openmcp/tool.py
+# From src/dedalus_mcp/tool.py
 _ACTIVE_SERVER: ContextVar[MCPServer | None] = ContextVar(
-    "_openmcp_active_server", default=None
+    "_dedalus_mcp_active_server", default=None
 )
 ```
 
@@ -118,7 +118,7 @@ Most users should use `collect()`. The binding context is for power users and dy
 For most cases, define functions at module scope and collect them:
 
 ```python
-from openmcp import MCPServer, tool
+from dedalus_mcp import MCPServer, tool
 
 @tool(description="Add two numbers")
 def add(a: int, b: int) -> int:
@@ -210,7 +210,7 @@ def add(a: int, b: int) -> int:
 
 **Problems**: Function is coupled to that server instance. Multi-server scenarios require workarounds.
 
-### OpenMCP's Approach
+### Dedalus MCP's Approach
 
 Decorators only attach metadata. You explicitly collect:
 
@@ -229,7 +229,7 @@ server.collect(add)  # Registration happens here
 Because decorators only attach metadata, the same function can be registered to multiple servers:
 
 ```python
-from openmcp import MCPServer, tool
+from dedalus_mcp import MCPServer, tool
 
 @tool(description="Shared multiplication")
 def multiply(a: int, b: int) -> int:
@@ -254,7 +254,7 @@ Each server gets its own registration. The function object is shared. No state c
 Register shared utilities across multiple services:
 
 ```python
-from openmcp import MCPServer, tool
+from dedalus_mcp import MCPServer, tool
 
 @tool(description="Get current Unix timestamp")
 def timestamp() -> int:
@@ -286,7 +286,7 @@ print(public_server.tool_names)    # ["timestamp", "version"]
 Add tools after the server starts:
 
 ```python
-from openmcp import MCPServer, tool
+from dedalus_mcp import MCPServer, tool
 import asyncio
 
 @tool(description="Always available")
@@ -319,7 +319,7 @@ asyncio.run(main())
 Register tools based on environment or config:
 
 ```python
-from openmcp import MCPServer, tool
+from dedalus_mcp import MCPServer, tool
 import os
 
 @tool(description="Production-safe operation")
@@ -342,7 +342,7 @@ if os.getenv("ENABLE_DEBUG") == "1":
 Each test case gets a fresh server without shared state:
 
 ```python
-from openmcp import MCPServer, tool
+from dedalus_mcp import MCPServer, tool
 import pytest
 
 @tool(description="Test fixture tool")
@@ -374,7 +374,7 @@ Organize tools in separate modules and register them all at once:
 
 ```python
 # tools/math.py
-from openmcp import tool
+from dedalus_mcp import tool
 
 @tool(description="Add two numbers")
 def add(a: int, b: int) -> int:
@@ -385,14 +385,14 @@ def multiply(a: int, b: int) -> int:
     return a * b
 
 # tools/text.py
-from openmcp import tool
+from dedalus_mcp import tool
 
 @tool(description="Convert to uppercase")
 def uppercase(text: str) -> str:
     return text.upper()
 
 # server.py
-from openmcp import MCPServer
+from dedalus_mcp import MCPServer
 from tools import math, text
 
 server = MCPServer("multi-module")
@@ -408,11 +408,11 @@ print(server.tool_names)  # ["add", "multiply", "uppercase"]
 When you write `@tool()`, the decorator attaches metadata without registering:
 
 ```python
-# Simplified from src/openmcp/tool.py
+# Simplified from src/dedalus_mcp/tool.py
 def tool(name=None, *, description=None, ...):
     def decorator(fn):
         spec = ToolSpec(name=name or fn.__name__, fn=fn, description=description, ...)
-        setattr(fn, "__openmcp_tool__", spec)  # Attach metadata
+        setattr(fn, "__dedalus_mcp_tool__", spec)  # Attach metadata
 
         # Check for binding context (optional auto-registration)
         server = get_active_server()
@@ -426,7 +426,7 @@ def tool(name=None, *, description=None, ...):
 Key steps:
 
 1. Create a `ToolSpec` dataclass with the function and metadata.
-2. Attach the spec to the function as `__openmcp_tool__`.
+2. Attach the spec to the function as `__dedalus_mcp_tool__`.
 3. Return the original function unchanged (no wrapping).
 
 ### `collect()` Implementation
@@ -434,12 +434,12 @@ Key steps:
 The `collect()` method extracts metadata and routes to the appropriate registration:
 
 ```python
-# From src/openmcp/server/core.py (simplified)
+# From src/dedalus_mcp/server/core.py (simplified)
 def collect(self, *fns):
     for fn in fns:
         spec = self._extract_spec(fn)
         if spec is None:
-            raise ValueError(f"'{fn.__name__}' has no OpenMCP metadata")
+            raise ValueError(f"'{fn.__name__}' has no Dedalus MCP metadata")
         self._register_spec(spec)
 
 def _extract_spec(self, fn):
@@ -480,7 +480,7 @@ Inside `binding()`, decorators immediately register. Outside, they only attach m
 - [Tools](tools.md) - Using the `@tool` decorator and schema inference
 - [Resources](resources.md) - Using the `@resource` decorator for content serving
 - [Prompts](prompts.md) - Using the `@prompt` decorator for template authoring
-- [Schema Inference](schema-inference.md) - How OpenMCP generates JSON schemas from type hints
+- [Schema Inference](schema-inference.md) - How Dedalus MCP generates JSON schemas from type hints
 - [Result Normalization](result-normalization.md) - How function return values become MCP responses
 - Official spec: [MCP Server Tools](https://modelcontextprotocol.io/specification/2025-06-18/server/tools)
 - Official spec: [MCP Server Resources](https://modelcontextprotocol.io/specification/2025-06-18/server/resources)

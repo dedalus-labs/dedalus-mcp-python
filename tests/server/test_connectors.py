@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from openmcp.server.connectors import (
+from dedalus_mcp.server.connectors import (
     ConnectorDefinition,
     ConnectorHandle,
     EnvironmentCredentialLoader,

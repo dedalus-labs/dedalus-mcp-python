@@ -1,6 +1,6 @@
 # Progress Reporting
 
-OpenMCP ships a dedicated progress helper that implements the semantics outlined
+Dedalus MCP ships a dedicated progress helper that implements the semantics outlined
 in [docs/mcp/core/progress/progress-flow.md](../mcp/core/progress/progress-flow.md)
 and the `notifications/progress` schema documented in
 [docs/mcp/spec/schema-reference/notifications-progress.md](../mcp/spec/schema-reference/notifications-progress.md).
@@ -8,7 +8,7 @@ and the `notifications/progress` schema documented in
 ## Usage
 
 ```python
-from openmcp.progress import progress
+from dedalus_mcp.progress import progress
 
 @server.call_tool()
 async def long_running(name: str, arguments: dict[str, object] | None):
@@ -44,7 +44,7 @@ active requests.
 metrics) to attach callbacks:
 
 ```python
-from openmcp.progress import ProgressTelemetry, progress
+from dedalus_mcp.progress import ProgressTelemetry, progress
 
 telemetry = ProgressTelemetry(
     on_start=lambda evt: meter.counter("progress_started").add(1, {"token": evt.token}),
@@ -65,7 +65,7 @@ also exposes `set_default_progress_telemetry()` and
 `ProgressConfig` tunes emission frequency and retry behavior:
 
 ```python
-from openmcp.progress import ProgressConfig, progress
+from dedalus_mcp.progress import ProgressConfig, progress
 
 custom = ProgressConfig(emit_hz=4, retry_backoff=(0.1, 0.5))
 
@@ -84,5 +84,5 @@ backends.
 Legacy call sites that relied on `tracker.progress(...)` should be updated to
 `tracker.advance(...)` for increments or `tracker.set(...)` when supplying an
 absolute value. When working inside a tool, resource, or prompt, prefer
-`get_context().progress(...)` so you stay within the OpenMCP surface without
-referencing the SDK's `request_ctx` directly (see `docs/openmcp/context.md`).
+`get_context().progress(...)` so you stay within the Dedalus MCP surface without
+referencing the SDK's `request_ctx` directly (see `docs/dedalus_mcp/context.md`).
