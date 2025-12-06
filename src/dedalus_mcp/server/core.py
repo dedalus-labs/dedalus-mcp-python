@@ -109,6 +109,7 @@ if TYPE_CHECKING:
     from anyio.abc import TaskGroup
     from mcp.server.models import InitializationOptions
     from mcp.server.session import ServerSession
+    from .connectors import Connection
     from .resolver import ConnectionResolver
 
 TransportLiteral = Literal["stdio", "streamable-http"]
@@ -168,11 +169,20 @@ class MCPServer(Server[Any, Any]):
         connector_kind: str | None = None,
         connector_params: dict[str, type] | None = None,
         auth_methods: list[str] | None = None,
+        connections: list["Connection"] | None = None,
     ) -> None:
         self._notification_flags = notification_flags or NotificationFlags()
         self._experimental_capabilities = {key: dict(value) for key, value in (experimental_capabilities or {}).items()}
         self._base_lifespan = lifespan
         self._connection_resolver: "ConnectionResolver" | None = None
+
+        # Build connections map with duplicate name validation
+        self._connections: dict[str, "Connection"] = {}
+        if connections:
+            for conn in connections:
+                if conn.name in self._connections:
+                    raise ValueError(f"Duplicate connection name: '{conn.name}'")
+                self._connections[conn.name] = conn
         super().__init__(
             name, version=version, instructions=instructions, website_url=website_url, icons=icons, lifespan=lifespan
         )
@@ -350,6 +360,11 @@ class MCPServer(Server[Any, Any]):
     @property
     def auth_methods(self) -> list[str] | None:
         return self._auth_methods
+
+    @property
+    def connections(self) -> dict[str, "Connection"]:
+        """Connection definitions declared by this server."""
+        return self._connections
 
     @property
     def url(self) -> str | None:

@@ -137,7 +137,7 @@ class PlainFormatter(logging.Formatter):
         return _append_duration_suffix(result, record, colored=False)
 
 
-class Dedalus MCPHandler(logging.StreamHandler):  # type: ignore[type-arg]
+class DedalusMCPHandler(logging.StreamHandler):  # type: ignore[type-arg]
     """StreamHandler subclass managed by Dedalus MCP.
 
     Subclass this to customize behavior or override formatters.
@@ -197,7 +197,7 @@ def _default_payload_transformer(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def _has_openmcp_handler(root: logging.Logger) -> bool:
-    return any(isinstance(handler, Dedalus MCPHandler) for handler in root.handlers)
+    return any(isinstance(handler, DedalusMCPHandler) for handler in root.handlers)
 
 
 def _read_bool_env(key: str) -> bool:
@@ -269,7 +269,7 @@ def setup_logger(
 
     if force:
         for handler in list(root.handlers):
-            if isinstance(handler, Dedalus MCPHandler):
+            if isinstance(handler, DedalusMCPHandler):
                 root.removeHandler(handler)
                 handler.close()
 
@@ -286,7 +286,7 @@ def setup_logger(
     else:
         resolved_use_color = not resolved_use_json
 
-    handler = Dedalus MCPHandler()
+    handler = DedalusMCPHandler()
     handler.setLevel(resolved_level)
 
     formatter: logging.Formatter
@@ -319,7 +319,7 @@ def get_logger(name: str | None = None) -> logging.Logger:
 __all__ = [
     "DEFAULT_LOGGER_NAME",
     "ColoredFormatter",
-    "Dedalus MCPHandler",
+    "DedalusMCPHandler",
     "PlainFormatter",
     "StructuredJSONFormatter",
     "get_logger",

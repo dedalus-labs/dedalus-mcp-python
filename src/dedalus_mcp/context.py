@@ -33,7 +33,8 @@ from .progress import progress as progress_manager
 
 if TYPE_CHECKING:
     from mcp.server.session import ServerSession
-    from .dispatch import DispatchResult
+    from .dispatch import DispatchResponse
+    from .server.connectors import Connection
     from .server.core import MCPServer
     from .server.dependencies.models import DependencyCall, ResolvedDependency
     from .server.resolver import ConnectionResolver
@@ -227,38 +228,68 @@ class Context:
         return await resolver.resolve_client(handle, request_payload)
 
     async def dispatch(
-        self, connection_handle: str, intent: str, arguments: dict[str, Any] | None = None
-    ) -> "DispatchResult":
-        """Dispatch a privileged operation via a connection handle.
+        self,
+        target: "Connection | str | None" = None,
+        request: Any = None,
+        /,
+    ) -> "DispatchResponse":
+        """Execute authenticated HTTP request through dispatch backend.
 
-        This method gates access using the `ddls:connections` claim from the
-        authorization context, then forwards to the configured dispatch backend.
+        Single-connection server (target omitted):
+            ctx.dispatch(HttpRequest(method=HttpMethod.GET, path="/user"))
+
+        Multi-connection server (target required):
+            ctx.dispatch(github, HttpRequest(method=HttpMethod.GET, path="/user"))
+            ctx.dispatch("github", HttpRequest(...))
 
         Args:
-            connection_handle: Identifier for the connection (e.g., "ddls:conn:01ABC-github")
-            intent: Operation identifier (e.g., "github:create_issue")
-            arguments: Operation-specific arguments
+            target: Connection to use. Required for multi-connection servers.
+                    Can be Connection object or string name.
+                    Omit for single-connection servers.
+            request: HttpRequest to execute.
 
         Returns:
-            DispatchResult with success/failure and data/error
+            DispatchResponse with HTTP response or error
 
         Raises:
-            RuntimeError: If dispatch backend is not configured
+            RuntimeError: If dispatch backend or connections not configured
+            ValueError: If target required but not provided
             ConnectionHandleNotAuthorizedError: If handle not in JWT claims
 
         Example:
-            >>> result = await ctx.dispatch(
-            ...     connection_handle="ddls:conn:01ABC-github",
-            ...     intent="github:create_issue",
-            ...     arguments={"title": "Bug", "body": "Description"},
-            ... )
-            >>> if result.success:
-            ...     print(result.data)
+            >>> response = await ctx.dispatch(HttpRequest(
+            ...     method=HttpMethod.POST,
+            ...     path="/repos/owner/repo/issues",
+            ...     body={"title": "Bug", "body": "Description"},
+            ... ))
+            >>> if response.success:
+            ...     print(response.response.body)
         """
-        from .dispatch import DispatchBackend, DispatchRequest, DispatchResult
+        from .dispatch import (
+            DispatchBackend,
+            DispatchResponse,
+            DispatchWireRequest,
+            HttpRequest,
+        )
+        from .server.connectors import Connection
         from .server.services.connection_gate import ConnectionHandleGate
 
-        # Get dispatch backend from runtime
+        # Handle overloaded signature: dispatch(HttpRequest) or dispatch(target, HttpRequest)
+        if request is None:
+            # Single arg: target is actually the request
+            if target is None:
+                raise ValueError("request is required")
+            if not isinstance(target, HttpRequest):
+                raise TypeError(f"expected HttpRequest, got {type(target).__name__}")
+            http_request = target
+            connection_target = None
+        else:
+            if not isinstance(request, HttpRequest):
+                raise TypeError(f"expected HttpRequest, got {type(request).__name__}")
+            http_request = request
+            connection_target = target
+
+        # Get runtime config
         runtime = self.runtime
         if not isinstance(runtime, Mapping):
             raise RuntimeError("Dispatch backend not configured")
@@ -267,17 +298,42 @@ class Context:
         if backend is None or not isinstance(backend, DispatchBackend):
             raise RuntimeError("Dispatch backend not configured")
 
+        # Resolve connection target to handle
+        connections: dict[str, str] = runtime.get("connection_handles", {})
+
+        if connection_target is None:
+            # Single-connection server: use the only connection
+            if len(connections) == 0:
+                raise RuntimeError("No connections configured")
+            if len(connections) > 1:
+                raise ValueError("Multiple connections configured; target is required")
+            connection_handle = next(iter(connections.values()))
+        elif isinstance(connection_target, str):
+            # String name lookup
+            if connection_target not in connections:
+                available = list(connections.keys())
+                raise ValueError(f"Connection '{connection_target}' not found. Available: {available}")
+            connection_handle = connections[connection_target]
+        elif isinstance(connection_target, Connection):
+            # Connection object lookup
+            if connection_target.name not in connections:
+                available = list(connections.keys())
+                raise ValueError(f"Connection '{connection_target.name}' not found. Available: {available}")
+            connection_handle = connections[connection_target.name]
+        else:
+            raise TypeError(f"target must be Connection, str, or None; got {type(connection_target).__name__}")
+
         # Gate check: verify handle is authorized in JWT claims
         auth_context = self.auth_context
         if auth_context is not None:
             claims = getattr(auth_context, "claims", {})
             gate = ConnectionHandleGate.from_claims(claims)
-            gate.check(connection_handle)  # Raises if not authorized
+            gate.check(connection_handle)
 
-        # Build and execute dispatch request
-        request = DispatchRequest(connection_handle=connection_handle, intent=intent, arguments=arguments or {})
+        # Build and execute wire request
+        wire_request = DispatchWireRequest(connection_handle=connection_handle, request=http_request)
 
-        return await backend.dispatch(request)
+        return await backend.dispatch(wire_request)
 
     # ------------------------------------------------------------------
     # Construction helpers

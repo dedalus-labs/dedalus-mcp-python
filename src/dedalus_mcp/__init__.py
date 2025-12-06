@@ -24,11 +24,20 @@ from . import types
 from .client import MCPClient
 from .completion import CompletionResult, CompletionSpec, completion, extract_completion_spec
 from .context import Context, get_context
+from .dispatch import (
+    DispatchError,
+    DispatchErrorCode,
+    DispatchResponse,
+    HttpMethod,
+    HttpRequest,
+    HttpResponse,
+)
 from .progress import progress
 from .prompt import PromptSpec, extract_prompt_spec, prompt
 from .resource import ResourceSpec, extract_resource_spec, resource
 from .resource_template import ResourceTemplateSpec, extract_resource_template_spec, resource_template
 from .server import MCPServer
+from .server.connectors import Connection, EnvironmentBinding, EnvironmentBindings
 from .server.dependencies import register_injectable_type
 from .tool import ToolSpec, extract_tool_spec, tool
 
@@ -74,23 +83,39 @@ def extract_spec(fn: Callable[..., Any]) -> CapabilitySpec | None:
 
 
 __all__ = [
-    "CapabilitySpec",
-    "CompletionResult",
-    "CompletionSpec",
-    "MCPClient",
+    # Core
+    "__version__",
+    "types",
+    # Server
     "MCPServer",
-    "PromptSpec",
+    "MCPClient",
+    "Context",
+    "get_context",
+    # Connections
+    "Connection",
+    "EnvironmentBinding",
+    "EnvironmentBindings",
+    # Dispatch
+    "HttpMethod",
+    "HttpRequest",
+    "HttpResponse",
+    "DispatchResponse",
+    "DispatchError",
+    "DispatchErrorCode",
+    # Capabilities
+    "CapabilitySpec",
+    "ToolSpec",
     "ResourceSpec",
     "ResourceTemplateSpec",
-    "ToolSpec",
-    "__version__",
-    "completion",
-    "extract_spec",
-    "get_context",
-    "progress",
-    "prompt",
+    "PromptSpec",
+    "CompletionSpec",
+    "CompletionResult",
+    # Decorators
+    "tool",
     "resource",
     "resource_template",
-    "tool",
-    "types",
+    "prompt",
+    "completion",
+    "progress",
+    "extract_spec",
 ]

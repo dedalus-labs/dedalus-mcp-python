@@ -244,6 +244,7 @@ def _type_to_json_schema(typ: type) -> dict[str, str]:
 
 
 __all__ = [
+    "Connection",
     "ConnectorDefinition",
     "ConnectorHandle",
     "EnvironmentBinding",
@@ -253,6 +254,118 @@ __all__ = [
     "ResolvedConnector",
     "define",
 ]
+
+
+# =============================================================================
+# Connection - High-level abstraction for MCP server authors
+# =============================================================================
+
+
+class Connection:
+    """Named connection to an external service.
+
+    MCP server authors use this to declare what external services their server
+    needs. The framework resolves logical names to connection handles at runtime.
+
+    Attributes:
+        name: Logical name (e.g., "github", "openai"). Used in dispatch() calls.
+        env: Mapping from credential fields to environment variable names.
+        base_url: Override default base URL (for enterprise/self-hosted).
+        timeout_ms: Default request timeout in milliseconds.
+
+    Example:
+        >>> github = Connection(
+        ...     "github",
+        ...     env=EnvironmentBindings(token="GITHUB_TOKEN"),
+        ... )
+        >>> openai = Connection(
+        ...     "openai",
+        ...     env=EnvironmentBindings(api_key="OPENAI_API_KEY"),
+        ...     base_url="https://api.openai.com/v1",
+        ... )
+        >>> server = MCPServer(
+        ...     name="code-reviewer",
+        ...     connections=[github, openai],
+        ... )
+    """
+
+    __slots__ = ("_name", "_env", "_base_url", "_timeout_ms")
+
+    def __init__(
+        self,
+        name: str,
+        env: EnvironmentBindings | dict[str, Any],
+        *,
+        base_url: str | None = None,
+        timeout_ms: int = 30_000,
+    ) -> None:
+        """Create a named connection.
+
+        Args:
+            name: Logical name for this connection. Must be unique within a server.
+            env: Environment bindings for credentials. Can be EnvironmentBindings
+                 or a dict that will be converted.
+            base_url: Optional base URL override. If None, uses provider default.
+            timeout_ms: Default timeout for requests (1000-300000 ms).
+
+        Raises:
+            ValueError: If name is empty or timeout_ms is out of range.
+        """
+        if not name:
+            raise ValueError("Connection name must be non-empty")
+        if not (1000 <= timeout_ms <= 300_000):
+            raise ValueError(f"timeout_ms must be 1000-300000, got {timeout_ms}")
+
+        self._name = name
+        self._env = env if isinstance(env, EnvironmentBindings) else EnvironmentBindings(**env)
+        self._base_url = base_url
+        self._timeout_ms = timeout_ms
+
+    @property
+    def name(self) -> str:
+        """Logical name of this connection."""
+        return self._name
+
+    @property
+    def env(self) -> EnvironmentBindings:
+        """Environment bindings for credentials."""
+        return self._env
+
+    @property
+    def base_url(self) -> str | None:
+        """Base URL override, or None for provider default."""
+        return self._base_url
+
+    @property
+    def timeout_ms(self) -> int:
+        """Default request timeout in milliseconds."""
+        return self._timeout_ms
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize for wire transport or storage."""
+        result: dict[str, Any] = {
+            "name": self._name,
+            "env": self._env.to_dict(),
+        }
+        if self._base_url is not None:
+            result["base_url"] = self._base_url
+        if self._timeout_ms != 30_000:
+            result["timeout_ms"] = self._timeout_ms
+        return result
+
+    def __repr__(self) -> str:
+        parts = [f"name={self._name!r}"]
+        if self._base_url:
+            parts.append(f"base_url={self._base_url!r}")
+        return f"Connection({', '.join(parts)})"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Connection):
+            return NotImplemented
+        return self._name == other._name
+
+    def __hash__(self) -> int:
+        return hash(self._name)
 
 
 @dataclass(frozen=True, slots=True)
@@ -283,6 +396,31 @@ class EnvironmentBinding:
     default: Any = _UNSET
     optional: bool = False
 
+    def to_dict(self) -> dict[str, Any] | str:
+        """Serialize binding for wire transport.
+
+        Simple bindings (name only) serialize to string.
+        Bindings with options serialize to dict.
+        """
+        has_options = (
+            self.cast != str
+            or self.default is not _UNSET
+            or self.optional
+        )
+
+        if not has_options:
+            return self.name
+
+        result: dict[str, Any] = {"name": self.name}
+        if self.cast != str:
+            result["cast"] = self.cast.__name__
+        if self.default is not _UNSET:
+            result["default"] = self.default
+        if self.optional:
+            result["optional"] = True
+
+        return result
+
 
 @dataclass(frozen=True, slots=True)
 class EnvironmentBindings:
@@ -296,6 +434,10 @@ class EnvironmentBindings:
             for key, value in kwargs.items()
         }
         object.__setattr__(self, "entries", entries)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize all bindings for wire transport."""
+        return {key: binding.to_dict() for key, binding in self.entries.items()}
 
 
 @dataclass(frozen=True, slots=True)

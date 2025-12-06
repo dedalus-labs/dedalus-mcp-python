@@ -559,3 +559,116 @@ class TestEnvironmentCredentialLoader:
 
         with pytest.raises(ValueError, match="auth_type 'user_token' not configured"):
             loader.load("user_token")
+
+
+class TestEnvironmentBindingsSerialization:
+    """Tests for EnvironmentBindings.to_dict() wire serialization."""
+
+    def test_simple_string_bindings(self) -> None:
+        """Simple string bindings serialize to name mapping."""
+        from dedalus_mcp.server.connectors import EnvironmentBinding
+
+        bindings = EnvironmentBindings(
+            api_key="OPENAI_API_KEY",
+            org_id="OPENAI_ORG_ID",
+        )
+
+        result = bindings.to_dict()
+
+        assert result == {
+            "api_key": "OPENAI_API_KEY",
+            "org_id": "OPENAI_ORG_ID",
+        }
+
+    def test_binding_with_default(self) -> None:
+        """Binding with default value includes it in serialization."""
+        from dedalus_mcp.server.connectors import EnvironmentBinding
+
+        bindings = EnvironmentBindings(
+            api_key="OPENAI_API_KEY",
+            base_url=EnvironmentBinding("OPENAI_BASE_URL", default="https://api.openai.com/v1"),
+        )
+
+        result = bindings.to_dict()
+
+        assert result["api_key"] == "OPENAI_API_KEY"
+        assert result["base_url"] == {
+            "name": "OPENAI_BASE_URL",
+            "default": "https://api.openai.com/v1",
+        }
+
+    def test_binding_with_optional(self) -> None:
+        """Optional binding includes flag in serialization."""
+        from dedalus_mcp.server.connectors import EnvironmentBinding
+
+        bindings = EnvironmentBindings(
+            api_key="OPENAI_API_KEY",
+            org_id=EnvironmentBinding("OPENAI_ORG_ID", optional=True),
+        )
+
+        result = bindings.to_dict()
+
+        assert result["api_key"] == "OPENAI_API_KEY"
+        assert result["org_id"] == {
+            "name": "OPENAI_ORG_ID",
+            "optional": True,
+        }
+
+    def test_binding_with_cast(self) -> None:
+        """Binding with cast type includes it in serialization."""
+        from dedalus_mcp.server.connectors import EnvironmentBinding
+
+        bindings = EnvironmentBindings(
+            timeout=EnvironmentBinding("TIMEOUT_SECONDS", cast=int, default=30),
+        )
+
+        result = bindings.to_dict()
+
+        assert result["timeout"] == {
+            "name": "TIMEOUT_SECONDS",
+            "cast": "int",
+            "default": 30,
+        }
+
+    def test_empty_bindings(self) -> None:
+        """Empty bindings serialize to empty dict."""
+        bindings = EnvironmentBindings()
+
+        result = bindings.to_dict()
+
+        assert result == {}
+
+    def test_complex_bindings(self) -> None:
+        """Complex bindings with mixed options."""
+        from dedalus_mcp.server.connectors import EnvironmentBinding
+
+        bindings = EnvironmentBindings(
+            api_key="OPENAI_API_KEY",
+            base_url=EnvironmentBinding("OPENAI_BASE_URL", default="https://api.openai.com/v1"),
+            org_id=EnvironmentBinding("OPENAI_ORG_ID", optional=True),
+            timeout=EnvironmentBinding("TIMEOUT", cast=int, default=30),
+        )
+
+        result = bindings.to_dict()
+
+        assert result["api_key"] == "OPENAI_API_KEY"
+        assert result["base_url"]["default"] == "https://api.openai.com/v1"
+        assert result["org_id"]["optional"] is True
+        assert result["timeout"]["cast"] == "int"
+
+    def test_serialization_is_json_compatible(self) -> None:
+        """Wire format round-trips through JSON."""
+        import json
+        from dedalus_mcp.server.connectors import EnvironmentBinding
+
+        bindings = EnvironmentBindings(
+            api_key="OPENAI_API_KEY",
+            timeout=EnvironmentBinding("TIMEOUT", cast=int, default=30),
+        )
+
+        result = bindings.to_dict()
+        json_str = json.dumps(result)
+        parsed = json.loads(json_str)
+
+        assert parsed["api_key"] == "OPENAI_API_KEY"
+        assert parsed["timeout"]["default"] == 30
