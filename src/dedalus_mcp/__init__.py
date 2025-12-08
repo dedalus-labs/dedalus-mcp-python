@@ -20,9 +20,16 @@ from __future__ import annotations
 from importlib.metadata import PackageNotFoundError, version
 from typing import TYPE_CHECKING, Any
 
+from pydantic.types import T
+
 from . import types
 from .client import MCPClient
-from .completion import CompletionResult, CompletionSpec, completion, extract_completion_spec
+from .completion import (
+    CompletionResult,
+    CompletionSpec,
+    completion,
+    extract_completion_spec,
+)
 from .context import Context, get_context
 from .dispatch import (
     DispatchError,
@@ -35,25 +42,34 @@ from .dispatch import (
 from .progress import progress
 from .prompt import PromptSpec, extract_prompt_spec, prompt
 from .resource import ResourceSpec, extract_resource_spec, resource
-from .resource_template import ResourceTemplateSpec, extract_resource_template_spec, resource_template
+from .resource_template import (
+    ResourceTemplateSpec,
+    extract_resource_template_spec,
+    resource_template,
+)
 from .server import MCPServer
-from .server.connectors import Connection, EnvironmentBinding, EnvironmentBindings
+from .server.connectors import (
+    Binding,
+    Connection,
+    Credential,
+    Credentials,
+)
 from .server.dependencies import register_injectable_type
 from .tool import ToolSpec, extract_tool_spec, tool
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-try:
-    __version__ = version("dedalus_mcp")
-except PackageNotFoundError:
-    __version__ = "0.0.0+local"
+__version__ = version('dedalus_mcp')
+
 
 # Register Context for auto-injection in dependencies, TODO: sus
 register_injectable_type(Context)
 
 # Type alias for any Dedalus MCP capability spec
-CapabilitySpec = ToolSpec | ResourceSpec | PromptSpec | CompletionSpec | ResourceTemplateSpec
+CapabilitySpec = (
+    ToolSpec | ResourceSpec | PromptSpec | CompletionSpec | ResourceTemplateSpec
+)
 
 
 def extract_spec(fn: Callable[..., Any]) -> CapabilitySpec | None:
@@ -84,38 +100,39 @@ def extract_spec(fn: Callable[..., Any]) -> CapabilitySpec | None:
 
 __all__ = [
     # Core
-    "__version__",
-    "types",
+    '__version__',
+    'types',
     # Server
-    "MCPServer",
-    "MCPClient",
-    "Context",
-    "get_context",
+    'MCPServer',
+    'MCPClient',
+    'Context',
+    'get_context',
     # Connections
-    "Connection",
-    "EnvironmentBinding",
-    "EnvironmentBindings",
+    'Binding',
+    'Connection',
+    'Credential',
+    'Credentials',
     # Dispatch
-    "HttpMethod",
-    "HttpRequest",
-    "HttpResponse",
-    "DispatchResponse",
-    "DispatchError",
-    "DispatchErrorCode",
+    'HttpMethod',
+    'HttpRequest',
+    'HttpResponse',
+    'DispatchResponse',
+    'DispatchError',
+    'DispatchErrorCode',
     # Capabilities
-    "CapabilitySpec",
-    "ToolSpec",
-    "ResourceSpec",
-    "ResourceTemplateSpec",
-    "PromptSpec",
-    "CompletionSpec",
-    "CompletionResult",
+    'CapabilitySpec',
+    'ToolSpec',
+    'ResourceSpec',
+    'ResourceTemplateSpec',
+    'PromptSpec',
+    'CompletionSpec',
+    'CompletionResult',
     # Decorators
-    "tool",
-    "resource",
-    "resource_template",
-    "prompt",
-    "completion",
-    "progress",
-    "extract_spec",
+    'tool',
+    'resource',
+    'resource_template',
+    'prompt',
+    'completion',
+    'progress',
+    'extract_spec',
 ]

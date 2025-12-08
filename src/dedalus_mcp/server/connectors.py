@@ -45,21 +45,23 @@ class ConnectorDefinition:
     kind: str
     params: dict[str, type]
     auth_methods: list[str]
-    description: str = ""
+    description: str = ''
 
     def __post_init__(self) -> None:
         """Validate connection definition invariants."""
         if not self.kind:
-            raise ValueError("kind must be non-empty")
+            raise ValueError('kind must be non-empty')
         if not self.params:
-            raise ValueError("params must contain at least one parameter")
+            raise ValueError('params must contain at least one parameter')
         if not self.auth_methods:
-            raise ValueError("auth_methods must contain at least one method")
+            raise ValueError('auth_methods must contain at least one method')
 
         # Validate param types
         for param_name, param_type in self.params.items():
             if not isinstance(param_type, type):
-                raise TypeError(f"param '{param_name}' must be a type, got {type(param_type).__name__}")
+                raise TypeError(
+                    f"param '{param_name}' must be a type, got {type(param_type).__name__}"
+                )
 
     def to_json(self) -> dict[str, Any]:
         """Serialize to JSON for .well-known endpoint.
@@ -68,10 +70,12 @@ class ConnectorDefinition:
             JSON-serializable dictionary representation
         """
         return {
-            "kind": self.kind,
-            "params": {name: _type_to_json_schema(typ) for name, typ in self.params.items()},
-            "auth_methods": self.auth_methods,
-            "description": self.description,
+            'kind': self.kind,
+            'params': {
+                name: _type_to_json_schema(typ) for name, typ in self.params.items()
+            },
+            'auth_methods': self.auth_methods,
+            'description': self.description,
         }
 
 
@@ -96,24 +100,24 @@ class ConnectorHandle:
 
     def __post_init__(self) -> None:
         """Validate connection handle invariants."""
-        if not self.id.startswith("ddls:conn_"):
+        if not self.id.startswith('ddls:conn_'):
             raise ValueError(f"id must start with 'ddls:conn_', got {self.id}")
         if not self.kind:
-            raise ValueError("kind must be non-empty")
+            raise ValueError('kind must be non-empty')
         if not self.config:
-            raise ValueError("config must be non-empty")
+            raise ValueError('config must be non-empty')
         if not self.auth_type:
-            raise ValueError("auth_type must be non-empty")
+            raise ValueError('auth_type must be non-empty')
 
 
 # Type variable for connection handles
-ConnT = TypeVar("ConnT", bound=ConnectorHandle)
+ConnT = TypeVar('ConnT', bound=ConnectorHandle)
 
 
 def _model_name(kind: str, suffix: str) -> str:
-    parts = [part for part in kind.replace("_", "-").split("-") if part]
-    base = "".join(part.capitalize() for part in parts) or "Connector"
-    return f"{base}{suffix}"
+    parts = [part for part in kind.replace('_', '-').split('-') if part]
+    base = ''.join(part.capitalize() for part in parts) or 'Connector'
+    return f'{base}{suffix}'
 
 
 class _ConnectorType:
@@ -125,9 +129,11 @@ class _ConnectorType:
 
     def __init__(self, definition: ConnectorDefinition) -> None:
         self._definition = definition
-        fields = {name: (param_type, ...) for name, param_type in definition.params.items()}
+        fields = {
+            name: (param_type, ...) for name, param_type in definition.params.items()
+        }
         self._config_model = create_model(
-            _model_name(definition.kind, "Config"),
+            _model_name(definition.kind, 'Config'),
             __base__=BaseModel,
             **fields,
         )
@@ -158,12 +164,14 @@ class _ConnectorType:
             ValueError: If handle doesn't match definition requirements
         """
         if handle.kind != self._definition.kind:
-            raise ValueError(f"expected kind '{self._definition.kind}', got '{handle.kind}'")
+            raise ValueError(
+                f"expected kind '{self._definition.kind}', got '{handle.kind}'"
+            )
 
         # Validate all required params are present
         missing = set(self._definition.params.keys()) - set(handle.config.keys())
         if missing:
-            raise ValueError(f"missing required params: {', '.join(sorted(missing))}")
+            raise ValueError(f'missing required params: {", ".join(sorted(missing))}')
 
         # Validate auth method is supported
         if handle.auth_type not in self._definition.auth_methods:
@@ -180,14 +188,14 @@ class _ConnectorType:
                 )
 
     def __repr__(self) -> str:
-        return f"ConnectionType(kind={self._definition.kind!r})"
+        return f'ConnectionType(kind={self._definition.kind!r})'
 
 
 def define(
     kind: str,
     params: dict[str, type],
     auth: list[str],
-    description: str = "",
+    description: str = '',
 ) -> _ConnectorType:
     """Define a connection type for use in tool signatures.
 
@@ -233,26 +241,27 @@ def _type_to_json_schema(typ: type) -> dict[str, str]:
         JSON Schema type dictionary
     """
     type_map: dict[type, str] = {
-        str: "string",
-        int: "integer",
-        float: "number",
-        bool: "boolean",
+        str: 'string',
+        int: 'integer',
+        float: 'number',
+        bool: 'boolean',
     }
 
-    json_type = type_map.get(typ, "string")
-    return {"type": json_type}
+    json_type = type_map.get(typ, 'string')
+    return {'type': json_type}
 
 
 __all__ = [
-    "Connection",
-    "ConnectorDefinition",
-    "ConnectorHandle",
-    "EnvironmentBinding",
-    "EnvironmentBindings",
-    "EnvironmentCredentials",
-    "EnvironmentCredentialLoader",
-    "ResolvedConnector",
-    "define",
+    'Connection',
+    'Binding',
+    'ConnectorDefinition',
+    'ConnectorHandle',
+    'Credential',
+    'Credentials',
+    'EnvironmentCredentials',
+    'EnvironmentCredentialLoader',
+    'ResolvedConnector',
+    'define',
 ]
 
 
@@ -269,18 +278,18 @@ class Connection:
 
     Attributes:
         name: Logical name (e.g., "github", "openai"). Used in dispatch() calls.
-        env: Mapping from credential fields to environment variable names.
+        credentials: Mapping from credential fields to their sources (e.g., env var names).
         base_url: Override default base URL (for enterprise/self-hosted).
         timeout_ms: Default request timeout in milliseconds.
 
     Example:
         >>> github = Connection(
         ...     "github",
-        ...     env=EnvironmentBindings(token="GITHUB_TOKEN"),
+        ...     credentials=Credentials(token="GITHUB_TOKEN"),
         ... )
         >>> openai = Connection(
         ...     "openai",
-        ...     env=EnvironmentBindings(api_key="OPENAI_API_KEY"),
+        ...     credentials=Credentials(api_key="OPENAI_API_KEY"),
         ...     base_url="https://api.openai.com/v1",
         ... )
         >>> server = MCPServer(
@@ -289,12 +298,12 @@ class Connection:
         ... )
     """
 
-    __slots__ = ("_name", "_env", "_base_url", "_timeout_ms")
+    __slots__ = ('_name', '_credentials', '_base_url', '_timeout_ms')
 
     def __init__(
         self,
         name: str,
-        env: EnvironmentBindings | dict[str, Any],
+        credentials: Credentials | dict[str, Any],
         *,
         base_url: str | None = None,
         timeout_ms: int = 30_000,
@@ -303,8 +312,7 @@ class Connection:
 
         Args:
             name: Logical name for this connection. Must be unique within a server.
-            env: Environment bindings for credentials. Can be EnvironmentBindings
-                 or a dict that will be converted.
+            credentials: Credential bindings. Can be Credentials or a dict.
             base_url: Optional base URL override. If None, uses provider default.
             timeout_ms: Default timeout for requests (1000-300000 ms).
 
@@ -312,12 +320,16 @@ class Connection:
             ValueError: If name is empty or timeout_ms is out of range.
         """
         if not name:
-            raise ValueError("Connection name must be non-empty")
+            raise ValueError('Connection name must be non-empty')
         if not (1000 <= timeout_ms <= 300_000):
-            raise ValueError(f"timeout_ms must be 1000-300000, got {timeout_ms}")
+            raise ValueError(f'timeout_ms must be 1000-300000, got {timeout_ms}')
 
         self._name = name
-        self._env = env if isinstance(env, EnvironmentBindings) else EnvironmentBindings(**env)
+        self._credentials = (
+            credentials
+            if isinstance(credentials, Credentials)
+            else Credentials(**credentials)
+        )
         self._base_url = base_url
         self._timeout_ms = timeout_ms
 
@@ -327,9 +339,9 @@ class Connection:
         return self._name
 
     @property
-    def env(self) -> EnvironmentBindings:
-        """Environment bindings for credentials."""
-        return self._env
+    def credentials(self) -> Credentials:
+        """Credential bindings for this connection."""
+        return self._credentials
 
     @property
     def base_url(self) -> str | None:
@@ -344,20 +356,20 @@ class Connection:
     def to_dict(self) -> dict[str, Any]:
         """Serialize for wire transport or storage."""
         result: dict[str, Any] = {
-            "name": self._name,
-            "env": self._env.to_dict(),
+            'name': self._name,
+            'credentials': self._credentials.to_dict(),
         }
         if self._base_url is not None:
-            result["base_url"] = self._base_url
+            result['base_url'] = self._base_url
         if self._timeout_ms != 30_000:
-            result["timeout_ms"] = self._timeout_ms
+            result['timeout_ms'] = self._timeout_ms
         return result
 
     def __repr__(self) -> str:
-        parts = [f"name={self._name!r}"]
+        parts = [f'name={self._name!r}']
         if self._base_url:
-            parts.append(f"base_url={self._base_url!r}")
-        return f"Connection({', '.join(parts)})"
+            parts.append(f'base_url={self._base_url!r}')
+        return f'Connection({", ".join(parts)})'
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Connection):
@@ -382,14 +394,24 @@ class ResolvedConnector:
     config: BaseModel
     auth: BaseModel
 
-    async def build_client(self, driver: "Driver") -> Any:
+    async def build_client(self, driver: 'Driver') -> Any:
         """Instantiate a client using the provided driver."""
 
         return await driver.create_client(self.config, self.auth)
 
+
 @dataclass(frozen=True, slots=True)
-class EnvironmentBinding:
-    """Descriptor for a single environment-provided value."""
+class Binding:
+    """Single credential field binding with options.
+
+    Maps a credential field name to its source (typically an environment variable).
+    Use this when you need optional fields, defaults, or type casting.
+
+    Example:
+        >>> Binding("GITHUB_TOKEN")  # simple
+        >>> Binding("TIMEOUT", cast=int, default=30)  # with options
+        >>> Binding("WORKSPACE", optional=True)  # optional field
+    """
 
     name: str
     cast: type = str
@@ -397,43 +419,43 @@ class EnvironmentBinding:
     optional: bool = False
 
     def to_dict(self) -> dict[str, Any] | str:
-        """Serialize binding for wire transport.
-
-        Simple bindings (name only) serialize to string.
-        Bindings with options serialize to dict.
-        """
-        has_options = (
-            self.cast != str
-            or self.default is not _UNSET
-            or self.optional
-        )
+        """Serialize binding for wire transport."""
+        has_options = self.cast != str or self.default is not _UNSET or self.optional
 
         if not has_options:
             return self.name
 
-        result: dict[str, Any] = {"name": self.name}
+        result: dict[str, Any] = {'name': self.name}
         if self.cast != str:
-            result["cast"] = self.cast.__name__
+            result['cast'] = self.cast.__name__
         if self.default is not _UNSET:
-            result["default"] = self.default
+            result['default'] = self.default
         if self.optional:
-            result["optional"] = True
+            result['optional'] = True
 
         return result
 
 
 @dataclass(frozen=True, slots=True)
-class EnvironmentBindings:
-    """Mapping from field names to environment bindings."""
+class Credentials:
+    """Schema declaring what credentials a Connection needs.
 
-    entries: dict[str, EnvironmentBinding]
+    Maps credential field names to their sources (typically environment variable names).
+    Simple strings are auto-converted to Binding objects.
+
+    Example:
+        >>> Credentials(token="GITHUB_TOKEN")  # simple
+        >>> Credentials(token="GITHUB_TOKEN", org=Binding("GITHUB_ORG", optional=True))
+    """
+
+    entries: dict[str, Binding]
 
     def __init__(self, **kwargs: Any) -> None:  # type: ignore[override]
         entries = {
-            key: value if isinstance(value, EnvironmentBinding) else EnvironmentBinding(str(value))
+            key: value if isinstance(value, Binding) else Binding(str(value))
             for key, value in kwargs.items()
         }
-        object.__setattr__(self, "entries", entries)
+        object.__setattr__(self, 'entries', entries)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize all bindings for wire transport."""
@@ -444,8 +466,8 @@ class EnvironmentBindings:
 class EnvironmentCredentials:
     """Environment-backed configuration for a connector auth method."""
 
-    config: EnvironmentBindings = field(default_factory=EnvironmentBindings)
-    secrets: EnvironmentBindings = field(default_factory=EnvironmentBindings)
+    config: Credentials = field(default_factory=Credentials)
+    secrets: Credentials = field(default_factory=Credentials)
 
 
 class EnvironmentCredentialLoader:
@@ -463,22 +485,22 @@ class EnvironmentCredentialLoader:
         connector: _ConnectorType,
         variants: dict[str, EnvironmentCredentials],
         *,
-        handle_prefix: str = "ddls:conn_env",
+        handle_prefix: str = 'ddls:conn_env',
     ) -> None:
         if not variants:
-            raise ValueError("variants must contain at least one auth mapping")
+            raise ValueError('variants must contain at least one auth mapping')
 
         allowed_auth = set(connector.definition.auth_methods)
         unknown = sorted(set(variants.keys()) - allowed_auth)
         if unknown:
             raise ValueError(
-                "environment credentials configured for unsupported auth methods: "
-                + ", ".join(unknown)
+                'environment credentials configured for unsupported auth methods: '
+                + ', '.join(unknown)
             )
 
         self._connector = connector
         self._variants = variants
-        self._handle_prefix = handle_prefix.rstrip("_")
+        self._handle_prefix = handle_prefix.rstrip('_')
 
     def supported_auth_types(self) -> list[str]:
         """Return auth types configured for this source."""
@@ -494,24 +516,29 @@ class EnvironmentCredentialLoader:
             raise ValueError(f"auth_type '{auth_type}' not configured for this source")
 
         mapping = self._variants[auth_type]
-        config_values = {name: self._read_env(value) for name, value in mapping.config.entries.items()}
+        config_values = {
+            name: self._read_env(value)
+            for name, value in mapping.config.entries.items()
+        }
         config_model = self._connector.config_model(**config_values)
 
         secret_fields = {
-            name: (value.cast, ...)
-            for name, value in mapping.secrets.entries.items()
+            name: (value.cast, ...) for name, value in mapping.secrets.entries.items()
         }
         AuthModel = create_model(  # type: ignore[call-arg]
-            _model_name(f"{self._connector.definition.kind}_{auth_type}", "Auth"),
+            _model_name(f'{self._connector.definition.kind}_{auth_type}', 'Auth'),
             __base__=BaseModel,
             type=(Literal[auth_type], auth_type),
             **secret_fields,
         )
-        secret_values = {name: self._read_env(value) for name, value in mapping.secrets.entries.items()}
+        secret_values = {
+            name: self._read_env(value)
+            for name, value in mapping.secrets.entries.items()
+        }
         auth_model = AuthModel(**secret_values)
 
         handle = ConnectorHandle(
-            id=f"{self._handle_prefix}_{self._connector.definition.kind}_{auth_type}",
+            id=f'{self._handle_prefix}_{self._connector.definition.kind}_{auth_type}',
             kind=self._connector.definition.kind,
             config=config_model.model_dump(),
             auth_type=auth_type,
@@ -521,15 +548,119 @@ class EnvironmentCredentialLoader:
         return ResolvedConnector(handle=handle, config=config_model, auth=auth_model)
 
     @staticmethod
-    def _read_env(binding: EnvironmentBinding) -> Any:
+    def _read_env(binding: Binding) -> Any:
         raw = os.getenv(binding.name)
-        if raw is None or raw == "":
+        if raw is None or raw == '':
             if binding.default is not _UNSET:
                 return binding.default
             if binding.optional:
                 return None
-            raise RuntimeError(f"Environment variable {binding.name} is not set")
+            raise RuntimeError(f'Environment variable {binding.name} is not set')
         if binding.cast is str:
             return raw
         return binding.cast(raw)
 
+
+# --- Credential: Binds actual credential values to Connection definitions ---
+
+
+class Credential:
+    """Bind actual credential values to a Connection definition.
+
+    MCP server authors use Connection to declare what credentials their server
+    needs. SDK users use Credential to provide the actual values at runtime.
+
+    The Credential class validates that all required keys from the Connection's
+    credentials are provided, failing fast with clear error messages.
+
+    Attributes:
+        connection: The Connection this credential binds to.
+        values: The actual credential values (keys match Connection.credentials entries).
+
+    Example:
+        >>> github = Connection("github", credentials=Credentials(token="GITHUB_TOKEN"))
+        >>> github_cred = Credential(github, token="ghp_xxx")
+        >>> # Use in SDK initialization:
+        >>> client = Dedalus(api_key="dsk_...", credentials=[github_cred])
+    """
+
+    __slots__ = ('_connection', '_values')
+
+    def __init__(self, connection: Connection, **values: Any) -> None:
+        """Create a credential binding for a connection.
+
+        Args:
+            connection: The Connection definition this credential satisfies.
+            **values: Keyword arguments mapping credential keys to values.
+                      Keys must match entries in connection.credentials.
+
+        Raises:
+            ValueError: If required keys from connection.credentials are missing.
+        """
+        # Compute required keys: not optional and no default
+        required_keys = {
+            key
+            for key, binding in connection.credentials.entries.items()
+            if not binding.optional and binding.default is _UNSET
+        }
+
+        provided_keys = set(values.keys())
+        missing = required_keys - provided_keys
+
+        if missing:
+            raise ValueError(
+                f"Missing credentials for '{connection.name}': {sorted(missing)}"
+            )
+
+        self._connection = connection
+        self._values = dict(values)
+
+    @property
+    def connection(self) -> Connection:
+        """The Connection this credential binds to."""
+        return self._connection
+
+    @property
+    def values(self) -> dict[str, Any]:
+        """The credential values (read-only copy)."""
+        return dict(self._values)
+
+    def values_for_encryption(self) -> dict[str, Any]:
+        """Return values for client-side encryption.
+
+        This is what gets encrypted and sent to the AS. Contains only
+        the credential values, no metadata.
+        """
+        return dict(self._values)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize for wire transport or debugging.
+
+        Note: This includes credential values. Use with caution.
+        """
+        return {
+            'connection_name': self._connection.name,
+            'values': dict(self._values),
+        }
+
+    def __repr__(self) -> str:
+        """String representation (hides credential values)."""
+        keys = list(self._values.keys())
+        return f'Credential({self._connection.name!r}, keys={keys})'
+
+    def __str__(self) -> str:
+        """String representation (hides credential values)."""
+        return repr(self)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Credential):
+            return NotImplemented
+        return (
+            self._connection.name == other._connection.name
+            and self._values == other._values
+        )
+
+    def __hash__(self) -> int:
+        # Values are mutable dicts, so we can't include them in hash
+        # Hash by connection name only
+        return hash(self._connection.name)

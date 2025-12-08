@@ -21,33 +21,33 @@ class TestMCPServerConnections:
 
     def test_single_connection(self):
         """MCPServer should accept single connection in list."""
-        from dedalus_mcp import Connection, EnvironmentBindings, MCPServer
+        from dedalus_mcp import Connection, Credentials, MCPServer
 
-        github = Connection("github", env=EnvironmentBindings(token="GITHUB_TOKEN"))
+        github = Connection('github', credentials=Credentials(token='GITHUB_TOKEN'))
 
-        server = MCPServer(name="github-tools", connections=[github])
+        server = MCPServer(name='github-tools', connections=[github])
 
-        assert "github" in server.connections
-        assert server.connections["github"] is github
+        assert 'github' in server.connections
+        assert server.connections['github'] is github
 
     def test_multiple_connections(self):
         """MCPServer should accept multiple connections."""
-        from dedalus_mcp import Connection, EnvironmentBindings, MCPServer
+        from dedalus_mcp import Connection, Credentials, MCPServer
 
-        github = Connection("github", env=EnvironmentBindings(token="GITHUB_TOKEN"))
-        openai = Connection("openai", env=EnvironmentBindings(api_key="OPENAI_API_KEY"))
+        github = Connection('github', credentials=Credentials(token='GITHUB_TOKEN'))
+        openai = Connection('openai', credentials=Credentials(api_key='OPENAI_API_KEY'))
 
-        server = MCPServer(name="multi-tools", connections=[github, openai])
+        server = MCPServer(name='multi-tools', connections=[github, openai])
 
         assert len(server.connections) == 2
-        assert server.connections["github"] is github
-        assert server.connections["openai"] is openai
+        assert server.connections['github'] is github
+        assert server.connections['openai'] is openai
 
     def test_empty_connections_allowed(self):
         """MCPServer should accept empty connections list."""
         from dedalus_mcp import MCPServer
 
-        server = MCPServer(name="no-connections", connections=[])
+        server = MCPServer(name='no-connections', connections=[])
 
         assert server.connections == {}
 
@@ -55,9 +55,9 @@ class TestMCPServerConnections:
         """MCPServer without connections param should have empty dict."""
         from dedalus_mcp import MCPServer
 
-        server = MCPServer(name="standalone")
+        server = MCPServer(name='standalone')
 
-        assert hasattr(server, "connections")
+        assert hasattr(server, 'connections')
         assert server.connections == {}
 
 
@@ -71,12 +71,12 @@ class TestMCPServerConnectionValidation:
 
     def test_duplicate_names_rejected(self):
         """MCPServer should reject duplicate connection names."""
-        from dedalus_mcp import Connection, EnvironmentBindings, MCPServer
+        from dedalus_mcp import Connection, Credentials, MCPServer
 
-        conn1 = Connection("api", env=EnvironmentBindings(key="KEY1"))
-        conn2 = Connection("api", env=EnvironmentBindings(key="KEY2"))
+        conn1 = Connection('api', credentials=Credentials(key='KEY1'))
+        conn2 = Connection('api', credentials=Credentials(key='KEY2'))
 
         with pytest.raises(ValueError) as exc:
-            MCPServer(name="dupe-names", connections=[conn1, conn2])
+            MCPServer(name='dupe-names', connections=[conn1, conn2])
 
-        assert "duplicate" in str(exc.value).lower()
+        assert 'duplicate' in str(exc.value).lower()

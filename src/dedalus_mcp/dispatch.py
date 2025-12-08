@@ -40,6 +40,9 @@ References:
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+import time
 from enum import Enum
 from typing import Any, Callable, Protocol, runtime_checkable
 
@@ -385,10 +388,15 @@ class EnclaveDispatchBackend:
     The Enclave securely manages credentials and executes operations on behalf
     of the MCP server.
 
+    Runner authentication uses HMAC signatures (not JWT) for identifying deployments.
+    The deployment_id and auth_secret are injected at deploy time via environment.
+
     Wire format (POST /dispatch):
         Authorization: DPoP {access_token}
         DPoP: {dpop_proof}
-        X-Runner-Token: {runner_token}
+        X-Dedalus-Timestamp: {unix_timestamp}
+        X-Dedalus-Deployment: {deployment_id}
+        X-Dedalus-Signature: {hmac_signature}
         Content-Type: application/json
 
         {
@@ -405,7 +413,8 @@ class EnclaveDispatchBackend:
         ...     enclave_url="https://enclave.dedalus.cloud",
         ...     access_token=token,
         ...     dpop_key=key,
-        ...     runner_token=runner_jwt,
+        ...     deployment_id="dep_01ABC",
+        ...     auth_secret=b"32-byte-secret...",
         ... )
         >>> response = await backend.dispatch(wire_request)
     """
@@ -415,7 +424,8 @@ class EnclaveDispatchBackend:
         enclave_url: str,
         access_token: str,
         dpop_key: Any | None = None,
-        runner_token: str | None = None,
+        deployment_id: str | None = None,
+        auth_secret: bytes | None = None,
         timeout: float = 30.0,
     ) -> None:
         """Initialize enclave backend.
@@ -424,13 +434,15 @@ class EnclaveDispatchBackend:
             enclave_url: Base URL of the Dispatch Gateway
             access_token: DPoP-bound user access token
             dpop_key: ES256 private key for DPoP proof generation
-            runner_token: Runner JWT for MCP server identity
+            deployment_id: Deployment ID for HMAC auth (from DEDALUS_DEPLOYMENT_ID)
+            auth_secret: 32-byte HMAC secret (from DEDALUS_AUTH_SECRET, base64)
             timeout: Request timeout in seconds
         """
         self._enclave_url = enclave_url.rstrip("/")
         self._access_token = access_token
         self._dpop_key = dpop_key
-        self._runner_token = runner_token
+        self._deployment_id = deployment_id
+        self._auth_secret = auth_secret
         self._timeout = timeout
 
     async def dispatch(self, request: DispatchWireRequest) -> DispatchResponse:
@@ -452,21 +464,7 @@ class EnclaveDispatchBackend:
 
         dispatch_url = f"{self._enclave_url}/dispatch"
 
-        # Build headers
-        headers = {"Content-Type": "application/json"}
-
-        # Add runner identity
-        if self._runner_token:
-            headers["X-Runner-Token"] = self._runner_token
-
-        # Add DPoP authorization
-        if self._dpop_key is not None:
-            headers["Authorization"] = f"DPoP {self._access_token}"
-            headers["DPoP"] = self._generate_dpop_proof(dispatch_url, "POST")
-        else:
-            headers["Authorization"] = f"Bearer {self._access_token}"
-
-        # Build wire format body
+        # Build wire format body first (needed for HMAC)
         body = {
             "connection_handle": request.connection_handle,
             "request": {
@@ -478,9 +476,28 @@ class EnclaveDispatchBackend:
             },
         }
 
+        # Serialize body for HMAC computation
+        import json
+        body_bytes = json.dumps(body, separators=(",", ":")).encode()
+
+        # Build headers
+        headers = {"Content-Type": "application/json"}
+
+        # Add HMAC runner authentication
+        if self._deployment_id and self._auth_secret:
+            hmac_headers = self._sign_request(body_bytes)
+            headers.update(hmac_headers)
+
+        # Add DPoP authorization
+        if self._dpop_key is not None:
+            headers["Authorization"] = f"DPoP {self._access_token}"
+            headers["DPoP"] = self._generate_dpop_proof(dispatch_url, "POST")
+        else:
+            headers["Authorization"] = f"Bearer {self._access_token}"
+
         try:
             async with httpx.AsyncClient(timeout=self._timeout) as client:
-                response = await client.post(dispatch_url, json=body, headers=headers)
+                response = await client.post(dispatch_url, content=body_bytes, headers=headers)
 
             if response.status_code == 401:
                 return DispatchResponse.fail(
@@ -542,6 +559,31 @@ class EnclaveDispatchBackend:
                 f"Unexpected error: {e}",
             )
 
+    def _sign_request(self, body: bytes) -> dict[str, str]:
+        """Generate HMAC signature headers for runner authentication.
+
+        Signature: HMAC-SHA256(auth_secret, "{timestamp}:{deployment_id}:{sha256(body)}")
+
+        Args:
+            body: Request body bytes
+
+        Returns:
+            Headers dict with X-Dedalus-Timestamp, X-Dedalus-Deployment, X-Dedalus-Signature
+        """
+        if not self._deployment_id or not self._auth_secret:
+            return {}
+
+        timestamp = str(int(time.time()))
+        body_hash = hashlib.sha256(body).hexdigest()
+        message = f"{timestamp}:{self._deployment_id}:{body_hash}".encode()
+        signature = hmac.new(self._auth_secret, message, hashlib.sha256).hexdigest()
+
+        return {
+            "X-Dedalus-Timestamp": timestamp,
+            "X-Dedalus-Deployment": self._deployment_id,
+            "X-Dedalus-Signature": signature,
+        }
+
     def _generate_dpop_proof(self, url: str, method: str) -> str:
         """Generate DPoP proof JWT for the request.
 
@@ -555,9 +597,6 @@ class EnclaveDispatchBackend:
         if self._dpop_key is None:
             return ""
 
-        import hashlib
-        import json
-        import time
         import uuid
 
         import jwt
@@ -594,24 +633,30 @@ def create_dispatch_backend_from_env() -> DispatchBackend:
 
     Environment variables (Dedalus Cloud):
         DEDALUS_DISPATCH_URL: Dispatch Gateway URL (internal, not public)
-        DEDALUS_RUNNER_TOKEN: Runner JWT minted by control plane at deploy
+        DEDALUS_DEPLOYMENT_ID: Deployment ID for HMAC auth
+        DEDALUS_AUTH_SECRET: Base64-encoded 32-byte HMAC secret
         DEDALUS_ACCESS_TOKEN: User's DPoP-bound access token (set per-request)
 
     Returns:
         Configured dispatch backend
     """
+    import base64
     import os
 
     dispatch_url = os.getenv("DEDALUS_DISPATCH_URL")
 
     if dispatch_url:
-        runner_token = os.getenv("DEDALUS_RUNNER_TOKEN")
+        deployment_id = os.getenv("DEDALUS_DEPLOYMENT_ID")
+        auth_secret_b64 = os.getenv("DEDALUS_AUTH_SECRET")
+        auth_secret = base64.b64decode(auth_secret_b64) if auth_secret_b64 else None
+
         # Access token and DPoP key are typically set per-request, not at init
         # This factory is for the runner identity; user auth is added later
         return EnclaveDispatchBackend(
             enclave_url=dispatch_url,
             access_token="",  # Set per-request via context
-            runner_token=runner_token,
+            deployment_id=deployment_id,
+            auth_secret=auth_secret,
         )
     else:
         return DirectDispatchBackend()
