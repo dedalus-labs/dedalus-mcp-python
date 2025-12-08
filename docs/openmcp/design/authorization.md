@@ -30,8 +30,8 @@ deployments unaffected. When enabled we model authorization as three cooperating
 2. **Token validation** – per-request middleware validates bearer tokens using a chain of validators:
    JWT verification with JWKS cache-aside (single-flight, TTL honoring `Cache-Control`) followed by
    an RFC 7662 introspection fallback. Validation enforces issuer/audience/resource (RFC 8707) and
-   JWT BCP (reject `alg=none`, enforce leeway, pin algorithms). Optional DPoP support can be layered
-   later.
+   JWT BCP (reject `alg=none`, enforce leeway, pin algorithms). DPoP support implemented in
+   `server/services/dpop.py`.
 3. **Client token lifecycle** – on `401` with `WWW-Authenticate`, the client runs discovery, optional
    dynamic client registration (RFC 7591), and an authorization-code-with-PKCE flow. Token storage
    implements single-flight refresh, monotonic expiry tracking, and circuit breakers around AS calls.
@@ -166,8 +166,8 @@ surface UX to the user. All error paths should emit structured logs (`auth.disco
 
 - How will hosted products capture OAuth redirect callbacks? (Likely per-app configuration; we expose a
   hook or callback interface.)
-- Do we require mTLS or DPoP support from the AS? (Out of scope initially; rely on HTTPS + token
-  claims.)
+- ~~Do we require mTLS or DPoP support from the AS?~~ **Resolved**: DPoP implemented in
+  `client/auth.py` and `server/services/dpop.py`. See `docs/openmcp/dpop.md`.
 - Should we expose a lightweight policy interface so server authors can map scopes to tool/resource
   availability? (Nice-to-have once core flow is stable.)
 
