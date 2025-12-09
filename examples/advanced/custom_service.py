@@ -20,7 +20,7 @@ When to use this pattern:
 - Custom telemetry or audit logging
 
 Reference:
-    - Service architecture: src/openmcp/server/services/
+    - Service architecture: src/dedalus_mcp/server/services/
     - Capability negotiation: https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle
 """
 

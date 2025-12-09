@@ -96,7 +96,7 @@ def test_new_feature():
     assert profile.supports(FeatureId.SOME_NEW_FEATURE)
 ```
 
-4. Update `src/openmcp/versioning.py`:
+4. Update `src/dedalus_mcp/versioning.py`:
    - Add `V_2025_09_01 = ProtocolVersion.parse("2025-09-01")`
    - Add migration with `SpecChange` entries
    - Add new `FeatureId` values if needed
@@ -116,5 +116,5 @@ uv run pytest tests/test_feature_registry.py -k drift
 
 ## See Also
 
-- [Versioning module](../../src/openmcp/versioning.py)
-- [Versioning guide](../../docs/openmcp/versioning.md)
+- [Versioning module](../../src/dedalus_mcp/versioning.py)
+- [Versioning guide](../../docs/dedalus_mcp/versioning.md)

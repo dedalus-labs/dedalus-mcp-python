@@ -78,7 +78,7 @@ async def test_resources_responses_match_schema(assert_schema) -> None:
 
         @resource("file:///schema.txt", name="Schema Notes", mime_type="text/plain")
         def schema_notes() -> str:
-            return "openmcp schema test"
+            return "dedalus_mcp schema test"
 
     session = DummySession("resources")
 

@@ -36,8 +36,8 @@ TIMESTAMP_COLOR: Final[str] = "\033[90m"  # Bright black (gray)
 LOGGER_COLOR: Final[str] = "\033[94m"     # Bright blue
 
 DEFAULT_LOGGER_NAME: Final[str] = "dedalus_mcp"
-ENV_LOG_LEVEL: Final[str] = "OPENMCP_LOG_LEVEL"
-ENV_LOG_JSON: Final[str] = "OPENMCP_LOG_JSON"
+ENV_LOG_LEVEL: Final[str] = "DEDALUS_MCP_LOG_LEVEL"
+ENV_LOG_JSON: Final[str] = "DEDALUS_MCP_LOG_JSON"
 ENV_NO_COLOR: Final[str] = "NO_COLOR"  # Standard env var for disabling colors
 DEFAULT_FORMAT: Final[str] = "%(asctime)s %(levelname)s [%(name)s] %(message)s"
 DEFAULT_DATEFMT: Final[str] = "%Y-%m-%d %H:%M:%S"
@@ -196,7 +196,7 @@ def _default_payload_transformer(payload: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
-def _has_openmcp_handler(root: logging.Logger) -> bool:
+def _has_dedalus_mcp_handler(root: logging.Logger) -> bool:
     return any(isinstance(handler, DedalusMCPHandler) for handler in root.handlers)
 
 
@@ -240,9 +240,9 @@ def setup_logger(
     """Configure the root logger.
 
     Args:
-        level: Override the log level. Falls back to ``OPENMCP_LOG_LEVEL`` then
+        level: Override the log level. Falls back to ``DEDALUS_MCP_LOG_LEVEL`` then
             ``logging.INFO``.
-        use_json: Enable JSON output. Defaults to ``OPENMCP_LOG_JSON`` when
+        use_json: Enable JSON output. Defaults to ``DEDALUS_MCP_LOG_JSON`` when
             ``None``.
         use_color: Enable colored output. Defaults to ``True`` unless ``NO_COLOR``
             env var is set or ``use_json=True``. Set explicitly to override.
@@ -264,7 +264,7 @@ def setup_logger(
 
     # Skip reconfig if Dedalus MCP has already attached its handler
     # unless caller explicitly requests a reset.
-    if _has_openmcp_handler(root) and not force:
+    if _has_dedalus_mcp_handler(root) and not force:
         return
 
     if force:
@@ -312,7 +312,7 @@ def get_logger(name: str | None = None) -> logging.Logger:
         ``logging.Logger`` configured with Dedalus MCP defaults.
     """
     root = logging.getLogger()
-    if not _has_openmcp_handler(root):
+    if not _has_dedalus_mcp_handler(root):
         setup_logger()
     return logging.getLogger(name or DEFAULT_LOGGER_NAME)
 

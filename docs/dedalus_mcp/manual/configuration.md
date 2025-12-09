@@ -97,8 +97,8 @@ See `docs/dedalus_mcp/design/authorization.md` for the forthcoming design.
 
 | Variable | behavior |
 | -------- | --------- |
-| `OPENMCP_LOG_LEVEL` | Overrides the default Python logging level (`INFO`). |
-| `OPENMCP_PROGRESS_LOG_LEVEL` | Sets the logger level for progress telemetry (`DEBUG` by default). |
+| `DEDALUS_MCP_LOG_LEVEL` | Overrides the default Python logging level (`INFO`). |
+| `DEDALUS_MCP_PROGRESS_LOG_LEVEL` | Sets the logger level for progress telemetry (`DEBUG` by default). |
 
 ## Defaults Summary
 

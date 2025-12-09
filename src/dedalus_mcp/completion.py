@@ -74,8 +74,8 @@ class CompletionSpec:
     fn: CompletionFunction
 
 
-_COMPLETION_ATTR = "__openmcp_completion__"
-_ACTIVE_SERVER: ContextVar[MCPServer | None] = ContextVar("_openmcp_completion_server", default=None)
+_COMPLETION_ATTR = "__dedalus_mcp_completion__"
+_ACTIVE_SERVER: ContextVar[MCPServer | None] = ContextVar("_dedalus_mcp_completion_server", default=None)
 
 
 def get_active_server() -> MCPServer | None:

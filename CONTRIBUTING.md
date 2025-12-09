@@ -8,13 +8,13 @@ Never made a PR before? Welcome! Here's how to contribute step-by-step.
 
 ### 1. Fork the repository
 
-Click the **Fork** button on the [Dedalus MCP repo](https://github.com/dedalus-labs/openmcp-python). This creates your own copy.
+Click the **Fork** button on the [Dedalus MCP repo](https://github.com/dedalus-labs/dedalus-mcp-python). This creates your own copy.
 
 ### 2. Clone your fork
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/openmcp-python.git
-cd openmcp-python
+git clone https://github.com/YOUR-USERNAME/dedalus-mcp-python.git
+cd dedalus-mcp-python
 ```
 
 ### 3. Set up the project
@@ -64,7 +64,7 @@ git push origin fix/my-first-contribution
 
 Go to your fork on GitHub. You'll see a banner to **Compare & pull request**. Click it!
 
-- **Base repository**: `dedalus-labs/openmcp-python`, branch `main`
+- **Base repository**: `dedalus-labs/dedalus-mcp-python`, branch `main`
 - **Head repository**: your fork, your branch
 - Write a clear title (this becomes the commit message when we merge)
 - Describe what you changed and why
@@ -97,7 +97,7 @@ See [RELEASE.md](RELEASE.md) for how your commits become releases.
 ```bash
 uv run ruff check .           # Lint
 uv run ruff format --check .  # Format check
-uv run mypy src/openmcp       # Type check
+uv run mypy src/dedalus_mcp       # Type check
 uv run pytest                 # Test
 ```
 
@@ -111,11 +111,11 @@ If you use AI tools (Copilot, Claude, Cursor), mention it in your PR. You must u
 
 When a new MCP protocol version is released, Dedalus MCP must be updated. Contributors can help by:
 
-1. **Update `FEATURE_REGISTRY`** in `src/openmcp/versioning.py`
+1. **Update `FEATURE_REGISTRY`** in `src/dedalus_mcp/versioning.py`
 2. **Add version tests** in `tests/protocol_versions/{version}/`
 3. **Copy the schema** to `tests/protocol_versions/{version}/schema.json`
 
-See [versioning.md](docs/openmcp/versioning.md) for details.
+See [versioning.md](docs/dedalus_mcp/versioning.md) for details.
 
 ## Links
 

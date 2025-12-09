@@ -137,7 +137,7 @@ def demonstrate_protocol():
     print(f"  isinstance(MinimalServer(), MCPServerProtocol) = {isinstance(MinimalServer(), MCPServerProtocol)}")
 
     print("\n✓ Protocol pattern allows SDK to accept Dedalus MCP servers")
-    print("  without importing openmcp at all!")
+    print("  without importing dedalus_mcp at all!")
 
 
 # --- Wire Format Demo --------------------------------------------------------

@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     from .server.resolver import ConnectionResolver
 
 
-_CURRENT_CONTEXT: ContextVar[Context | None] = ContextVar("openmcp_current_context", default=None)
+_CURRENT_CONTEXT: ContextVar[Context | None] = ContextVar("dedalus_mcp_current_context", default=None)
 RUNTIME_CONTEXT_KEY = "dedalus_mcp.runtime"
 
 

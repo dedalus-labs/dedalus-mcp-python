@@ -167,7 +167,7 @@ surface UX to the user. All error paths should emit structured logs (`auth.disco
 - How will hosted products capture OAuth redirect callbacks? (Likely per-app configuration; we expose a
   hook or callback interface.)
 - ~~Do we require mTLS or DPoP support from the AS?~~ **Resolved**: DPoP implemented in
-  `client/auth.py` and `server/services/dpop.py`. See `docs/openmcp/dpop.md`.
+  `client/auth.py` and `server/services/dpop.py`. See `docs/dedalus_mcp/dpop.md`.
 - Should we expose a lightweight policy interface so server authors can map scopes to tool/resource
   availability? (Nice-to-have once core flow is stable.)
 

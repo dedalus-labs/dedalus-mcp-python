@@ -101,4 +101,4 @@ MCP and related terminology used in this project.
 
 - [MCP Specification](https://spec.modelcontextprotocol.io/) — Official protocol spec
 - [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk) — Low-level SDK
-- [Dedalus MCP Documentation](docs/openmcp/) — Framework guides
+- [Dedalus MCP Documentation](docs/dedalus_mcp/) — Framework guides

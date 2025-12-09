@@ -34,9 +34,9 @@ Context objects are plain async helpers (`get_context().progress()`, `get_contex
 
 ## Why Dedalus MCP over FastMCP
 
-**Registration model.** FastMCP uses `@mcp.tool` where the function binds to that server at decoration time. This couples your code to a single server instance at import. Testing requires teardown. Multi-server scenarios require workarounds. Dedalus MCP's `@tool` decorator only attaches metadata. Registration happens when you call `server.collect(fn)`. Same function, multiple servers. No global state. Tests stay isolated. [Design rationale](docs/openmcp/ambient-registration.md).
+**Registration model.** FastMCP uses `@mcp.tool` where the function binds to that server at decoration time. This couples your code to a single server instance at import. Testing requires teardown. Multi-server scenarios require workarounds. Dedalus MCP's `@tool` decorator only attaches metadata. Registration happens when you call `server.collect(fn)`. Same function, multiple servers. No global state. Tests stay isolated. [Design rationale](docs/dedalus_mcp/ambient-registration.md).
 
-**Protocol versioning.** MCP has multiple spec versions with real behavioral differences. Dedalus MCP implements the Version Profile pattern: typed `ProtocolVersion` objects, capability dataclasses per version, `current_profile()` that tells you what the client actually negotiated. FastMCP inherits from the SDK and exposes none of this. You cannot determine which protocol version your handler is serving. [Version architecture](docs/openmcp/versioning.md).
+**Protocol versioning.** MCP has multiple spec versions with real behavioral differences. Dedalus MCP implements the Version Profile pattern: typed `ProtocolVersion` objects, capability dataclasses per version, `current_profile()` that tells you what the client actually negotiated. FastMCP inherits from the SDK and exposes none of this. You cannot determine which protocol version your handler is serving. [Version architecture](docs/dedalus_mcp/versioning.md).
 
 **Schema compliance.** Dedalus MCP validates responses against JSON schemas for each protocol version. When MCP ships breaking changes, our tests catch structural drift. FastMCP has no version-specific test infrastructure.
 
@@ -118,7 +118,7 @@ async def fetch(url: str) -> dict:
 # Both work transparently
 ```
 
-`tools/list`, `tools/call`, sync/async support, list change notifications, allow-lists, progress tracking. [`docs/openmcp/tools.md`](docs/openmcp/tools.md) | [`examples/hello_trip/server.py`](examples/hello_trip/server.py)
+`tools/list`, `tools/call`, sync/async support, list change notifications, allow-lists, progress tracking. [`docs/dedalus_mcp/tools.md`](docs/dedalus_mcp/tools.md) | [`examples/hello_trip/server.py`](examples/hello_trip/server.py)
 
 ### Resources
 
@@ -134,7 +134,7 @@ def logs(date: str, level: str) -> str:
 await server.notify_resource_updated("config://app/settings")  # Push to subscribers
 ```
 
-Static resources, URI templates, subscriptions. [`docs/openmcp/resources.md`](docs/openmcp/resources.md)
+Static resources, URI templates, subscriptions. [`docs/dedalus_mcp/resources.md`](docs/dedalus_mcp/resources.md)
 
 ### Prompts
 
@@ -144,7 +144,7 @@ def review(args: dict[str, str]) -> list[tuple[str, str]]:
     return [("assistant", f"You are a {args['language']} reviewer."), ("user", "Review code.")]
 ```
 
-Reusable templates, typed arguments. [`docs/openmcp/prompts.md`](docs/openmcp/prompts.md)
+Reusable templates, typed arguments. [`docs/dedalus_mcp/prompts.md`](docs/dedalus_mcp/prompts.md)
 
 ### Completion
 
@@ -154,7 +154,7 @@ async def review_completions(argument, ctx) -> list[str]:
     return ["Python", "JavaScript", "Rust"] if argument.name == "language" else []
 ```
 
-Argument autocompletion for prompts/resource templates. [`docs/openmcp/completions.md`](docs/openmcp/completions.md)
+Argument autocompletion for prompts/resource templates. [`docs/dedalus_mcp/completions.md`](docs/dedalus_mcp/completions.md)
 
 ### Progress & Logging
 
@@ -170,7 +170,7 @@ async def process(items: list[str]) -> dict:
     return {"count": len(items)}
 ```
 
-Token-based progress tracking (coalesced to prevent flooding), per-session log levels. [`docs/openmcp/progress.md`](docs/openmcp/progress.md)
+Token-based progress tracking (coalesced to prevent flooding), per-session log levels. [`docs/dedalus_mcp/progress.md`](docs/dedalus_mcp/progress.md)
 
 ### Sampling
 
@@ -187,7 +187,7 @@ async with MCPClient(r, w, capabilities=config) as client:
     pass  # Handles sampling/createMessage from server
 ```
 
-Servers request LLM completions via client. Concurrency semaphore, circuit breaker, timeouts. [`docs/openmcp/manual/client.md`](docs/openmcp/manual/client.md)
+Servers request LLM completions via client. Concurrency semaphore, circuit breaker, timeouts. [`docs/dedalus_mcp/manual/client.md`](docs/dedalus_mcp/manual/client.md)
 
 ### Roots
 
@@ -203,7 +203,7 @@ async def read_file(path: str) -> str:
     return Path(path).read_text()  # Path validated against roots
 ```
 
-Filesystem boundaries, `RootGuard` prevents path traversal, symlink resolution. [`docs/openmcp/manual/server.md`](docs/openmcp/manual/server.md)
+Filesystem boundaries, `RootGuard` prevents path traversal, symlink resolution. [`docs/dedalus_mcp/manual/server.md`](docs/dedalus_mcp/manual/server.md)
 
 ### Elicitation
 
@@ -214,7 +214,7 @@ async def elicitation_handler(ctx, params):
 config = ClientCapabilitiesConfig(elicitation=elicitation_handler)
 ```
 
-Servers request structured user input. Schema validation, timeouts, accept/decline/cancel actions. MCP 2025-06-18+. [`docs/openmcp/manual/client.md`](docs/openmcp/manual/client.md)
+Servers request structured user input. Schema validation, timeouts, accept/decline/cancel actions. MCP 2025-06-18+. [`docs/dedalus_mcp/manual/client.md`](docs/dedalus_mcp/manual/client.md)
 
 ## Transports
 
@@ -224,7 +224,7 @@ Servers request structured user input. Schema validation, timeouts, accept/decli
 
 **Custom**: `register_transport("name", factory)` then `await server.serve(transport="name")`.
 
-[`docs/openmcp/transports.md`](docs/openmcp/transports.md)
+[`docs/dedalus_mcp/transports.md`](docs/dedalus_mcp/transports.md)
 
 ## Authorization
 
@@ -324,7 +324,7 @@ server = MCPServer(
 server.set_authorization_provider(MyAuthProvider())
 ```
 
-RFC 9068 JWT profile, DPoP support, bearer token validation, scopes, WWW-Authenticate headers, metadata endpoint. No default provider because there's no secure default. You bring your IdP; we integrate. [`docs/openmcp/design/authorization.md`](docs/openmcp/design/authorization.md)
+RFC 9068 JWT profile, DPoP support, bearer token validation, scopes, WWW-Authenticate headers, metadata endpoint. No default provider because there's no secure default. You bring your IdP; we integrate. [`docs/dedalus_mcp/design/authorization.md`](docs/dedalus_mcp/design/authorization.md)
 
 ## Examples
 
@@ -343,14 +343,14 @@ Start with `hello_trip/`, then `full_demo/` for advanced patterns.
 | Document | Description |
 |----------|-------------|
 | [`examples/`](examples/) | **Start here**: Runnable examples for all features |
-| [`docs/openmcp/features.md`](docs/openmcp/features.md) | Complete feature matrix with compliance status |
-| [`docs/openmcp/manual/server.md`](docs/openmcp/manual/server.md) | Server configuration and capability services |
-| [`docs/openmcp/manual/client.md`](docs/openmcp/manual/client.md) | Client API and capability configuration |
-| [`docs/openmcp/manual/security.md`](docs/openmcp/manual/security.md) | Security safeguards and authorization |
-| [`docs/openmcp/versioning.md`](docs/openmcp/versioning.md) | Protocol versioning and compatibility |
+| [`docs/dedalus_mcp/features.md`](docs/dedalus_mcp/features.md) | Complete feature matrix with compliance status |
+| [`docs/dedalus_mcp/manual/server.md`](docs/dedalus_mcp/manual/server.md) | Server configuration and capability services |
+| [`docs/dedalus_mcp/manual/client.md`](docs/dedalus_mcp/manual/client.md) | Client API and capability configuration |
+| [`docs/dedalus_mcp/manual/security.md`](docs/dedalus_mcp/manual/security.md) | Security safeguards and authorization |
+| [`docs/dedalus_mcp/versioning.md`](docs/dedalus_mcp/versioning.md) | Protocol versioning and compatibility |
 | [`docs/mcp/spec/`](docs/mcp/spec/) | MCP protocol specification (receipts) |
 
-Quick reference: [`docs/openmcp/cookbook.md`](docs/openmcp/cookbook.md) has isolated code snippets for copy-paste.
+Quick reference: [`docs/dedalus_mcp/cookbook.md`](docs/dedalus_mcp/cookbook.md) has isolated code snippets for copy-paste.
 
 ## Testing
 
@@ -364,7 +364,7 @@ Covers: protocol lifecycle, registration, schema inference, subscriptions, pagin
 
 **MCP 2025-06-18**: 98% compliant. All mandatory features, all 9 optional capabilities (5 server, 4 client). 2% gap: authorization provider is plugin-based (framework exists, no default).
 
-[`docs/openmcp/features.md`](docs/openmcp/features.md) has the detailed matrix.
+[`docs/dedalus_mcp/features.md`](docs/dedalus_mcp/features.md) has the detailed matrix.
 
 ## Design
 
@@ -378,7 +378,7 @@ Covers: protocol lifecycle, registration, schema inference, subscriptions, pagin
 6. **SDK delegation**: Reuse reference SDK for JSON-RPC/transport
 7. **Dependency discipline**: Pydantic (schemas), anyio (async), starlette/uvicorn (HTTP). Optional extras stay out of the core.
 
-**Extend**: Add services in `src/openmcp/server/services/`, transports via `register_transport()`, auth via `AuthorizationProvider`.
+**Extend**: Add services in `src/dedalus_mcp/server/services/`, transports via `register_transport()`, auth via `AuthorizationProvider`.
 
 ## License
 

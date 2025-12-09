@@ -46,7 +46,7 @@ logger.info("No colors")
 ### Method 3: JSON Mode (Colors Disabled Automatically)
 
 ```bash
-export OPENMCP_LOG_JSON=1
+export DEDALUS_MCP_LOG_JSON=1
 python your_script.py
 ```
 
@@ -478,5 +478,5 @@ This keeps the core small (~300 lines) while letting you build exactly what you 
 ## See Also
 
 - `examples/advanced/custom_logging.py` - Working code examples
-- `src/openmcp/utils/logger.py` - Source code (simple, readable)
+- `src/dedalus_mcp/utils/logger.py` - Source code (simple, readable)
 - Python `logging` docs - Standard library reference

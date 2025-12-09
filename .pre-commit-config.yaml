@@ -20,7 +20,7 @@ repos:
         args: ["--ignore-missing-imports"]
         additional_dependencies:
           - pydantic>=2.0.0
-        files: ^src/openmcp/
+        files: ^src/dedalus_mcp/
         pass_filenames: false
 
   # General file hygiene

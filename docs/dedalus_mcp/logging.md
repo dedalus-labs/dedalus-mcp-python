@@ -33,7 +33,7 @@ async def do_work():
 ```
 
 - Spec receipts: [`server/utilities/logging`](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging)
-- Default behaviour relies solely on the Python standard library. Set `OPENMCP_LOG_LEVEL` or call `setup_logger(level="DEBUG")` to adjust verbosity.
+- Default behaviour relies solely on the Python standard library. Set `DEDALUS_MCP_LOG_LEVEL` or call `setup_logger(level="DEBUG")` to adjust verbosity.
 
 ## Minimalist by Default, Extensible by Design
 

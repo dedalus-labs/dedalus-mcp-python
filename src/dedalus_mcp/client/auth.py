@@ -24,7 +24,7 @@ The proof binds the token to the specific HTTP method and URL being requested.
 
 References:
     RFC 9449: OAuth 2.0 Demonstrating Proof of Possession (DPoP)
-    /dcs/apps/openmcp_as/dpop/dpop.go (Go implementation)
+    /dcs/apps/dedalus_mcp_as/dpop/dpop.go (Go implementation)
     /dcs/apps/enclave/dispatch-gateway/src/handlers.rs (validation)
 """
 
