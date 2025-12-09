@@ -19,7 +19,7 @@ When to use this pattern:
 - Integration with log aggregation systems (ELK, Splunk, Datadog)
 
 Reference:
-    - Logger utilities: src/openmcp/utils/logger.py
+    - Logger utilities: src/dedalus_mcp/utils/logger.py
 """
 
 from __future__ import annotations

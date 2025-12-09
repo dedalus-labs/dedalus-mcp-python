@@ -44,7 +44,7 @@ This section summarises the mitigations Dedalus MCP currently provides, along wi
 | Request rate limiting | ⏳ Planned | No built-in limiter yet. Recommended: front Dedalus MCP with a proxy (nginx/envoy) or add middleware. |
 | SSRF protection for outbound fetches | ⏳ Planned | When client-side discovery lands we will implement scheme/host allowlists. |
 | Structured audit logging | ✅ Partial | Logging hooks in place; guidance to route to SIEMs will be documented alongside authorization rollout. |
-| DPoP / mTLS support | ⏳ Deferred | Not required by MCP spec; revisit if server or AS mandates it. |
+| DPoP support | ✅ Complete | `DPoPAuth` in `client/auth.py`. Server-side validation in `server/services/dpop.py`. |
 | Token passthrough prevention | ✅ | Dedalus MCP never forwards client tokens to downstream services; all tooling runs locally. |
 | Session identifier entropy | ✅ (SDK) | Reference SDK generates random session IDs for Streamable HTTP; Dedalus MCP does not override. |
 

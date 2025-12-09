@@ -36,8 +36,8 @@ TIMESTAMP_COLOR: Final[str] = "\033[90m"  # Bright black (gray)
 LOGGER_COLOR: Final[str] = "\033[94m"     # Bright blue
 
 DEFAULT_LOGGER_NAME: Final[str] = "dedalus_mcp"
-ENV_LOG_LEVEL: Final[str] = "OPENMCP_LOG_LEVEL"
-ENV_LOG_JSON: Final[str] = "OPENMCP_LOG_JSON"
+ENV_LOG_LEVEL: Final[str] = "DEDALUS_MCP_LOG_LEVEL"
+ENV_LOG_JSON: Final[str] = "DEDALUS_MCP_LOG_JSON"
 ENV_NO_COLOR: Final[str] = "NO_COLOR"  # Standard env var for disabling colors
 DEFAULT_FORMAT: Final[str] = "%(asctime)s %(levelname)s [%(name)s] %(message)s"
 DEFAULT_DATEFMT: Final[str] = "%Y-%m-%d %H:%M:%S"
@@ -137,7 +137,7 @@ class PlainFormatter(logging.Formatter):
         return _append_duration_suffix(result, record, colored=False)
 
 
-class Dedalus MCPHandler(logging.StreamHandler):  # type: ignore[type-arg]
+class DedalusMCPHandler(logging.StreamHandler):  # type: ignore[type-arg]
     """StreamHandler subclass managed by Dedalus MCP.
 
     Subclass this to customize behavior or override formatters.
@@ -196,8 +196,8 @@ def _default_payload_transformer(payload: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
-def _has_openmcp_handler(root: logging.Logger) -> bool:
-    return any(isinstance(handler, Dedalus MCPHandler) for handler in root.handlers)
+def _has_dedalus_mcp_handler(root: logging.Logger) -> bool:
+    return any(isinstance(handler, DedalusMCPHandler) for handler in root.handlers)
 
 
 def _read_bool_env(key: str) -> bool:
@@ -240,9 +240,9 @@ def setup_logger(
     """Configure the root logger.
 
     Args:
-        level: Override the log level. Falls back to ``OPENMCP_LOG_LEVEL`` then
+        level: Override the log level. Falls back to ``DEDALUS_MCP_LOG_LEVEL`` then
             ``logging.INFO``.
-        use_json: Enable JSON output. Defaults to ``OPENMCP_LOG_JSON`` when
+        use_json: Enable JSON output. Defaults to ``DEDALUS_MCP_LOG_JSON`` when
             ``None``.
         use_color: Enable colored output. Defaults to ``True`` unless ``NO_COLOR``
             env var is set or ``use_json=True``. Set explicitly to override.
@@ -264,12 +264,12 @@ def setup_logger(
 
     # Skip reconfig if Dedalus MCP has already attached its handler
     # unless caller explicitly requests a reset.
-    if _has_openmcp_handler(root) and not force:
+    if _has_dedalus_mcp_handler(root) and not force:
         return
 
     if force:
         for handler in list(root.handlers):
-            if isinstance(handler, Dedalus MCPHandler):
+            if isinstance(handler, DedalusMCPHandler):
                 root.removeHandler(handler)
                 handler.close()
 
@@ -286,7 +286,7 @@ def setup_logger(
     else:
         resolved_use_color = not resolved_use_json
 
-    handler = Dedalus MCPHandler()
+    handler = DedalusMCPHandler()
     handler.setLevel(resolved_level)
 
     formatter: logging.Formatter
@@ -312,14 +312,14 @@ def get_logger(name: str | None = None) -> logging.Logger:
         ``logging.Logger`` configured with Dedalus MCP defaults.
     """
     root = logging.getLogger()
-    if not _has_openmcp_handler(root):
+    if not _has_dedalus_mcp_handler(root):
         setup_logger()
     return logging.getLogger(name or DEFAULT_LOGGER_NAME)
 
 __all__ = [
     "DEFAULT_LOGGER_NAME",
     "ColoredFormatter",
-    "Dedalus MCPHandler",
+    "DedalusMCPHandler",
     "PlainFormatter",
     "StructuredJSONFormatter",
     "get_logger",

@@ -10,7 +10,7 @@ access tokens issued by the Go Authorization Server that lives in the
 Quick start::
 
     # 1. Start the authorization server (from the mcp-knox repo)
-    $ cd ~/Desktop/dedalus-labs/codebase/mcp-knox/openmcp-authorization-server
+    $ cd ~/Desktop/dedalus-labs/codebase/mcp-knox/dedalus-mcp-authorization-server
     $ go run ./cmd/serve
 
     # 2. Bootstrap or register a public client (once per session).  The memory
@@ -31,7 +31,7 @@ Quick start::
     $ export MCP_REQUIRED_SCOPES="mcp:tools:call"
 
     # 4. Start the MCP Resource Server
-    $ cd ~/Desktop/dedalus-labs/codebase/openmcp
+    $ cd ~/Desktop/dedalus-labs/codebase/dedalus-mcp
     $ uv run python examples/auth/02_as/server.py
 
 The matching ``client.py`` walks through the authorization-code + PKCE flow and

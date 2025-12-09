@@ -166,7 +166,7 @@ from dedalus_mcp.utils import helper
 | Type | Convention | Example |
 |------|------------|---------|
 | Module | `snake_case` | `resource_template.py` |
-| Package | `snake_case` | `openmcp/server/` |
+| Package | `snake_case` | `dedalus_mcp/server/` |
 | Class | `PascalCase` | `MCPServer`, `ToolService` |
 | Exception | `PascalCase` + `Error` | `ResourceNotFoundError` |
 | Function | `snake_case` | `get_context()`, `register_tool()` |
@@ -191,7 +191,7 @@ from dedalus_mcp.utils import helper
 Required for all public APIs. We use [mypy](https://mypy.readthedocs.io/) for static type checking (migrating to [ty](https://github.com/astral-sh/ty) when it reaches beta):
 
 ```bash
-uv run mypy src/openmcp
+uv run mypy src/dedalus_mcp
 ```
 
 ```python
@@ -331,7 +331,7 @@ def fetch_all(urls: list[str]) -> list[Response]:
 Tests live in `tests/` mirroring `src/` structure:
 
 ```
-src/openmcp/server/core.py
+src/dedalus_mcp/server/core.py
 tests/test_server.py  # or tests/server/test_core.py
 ```
 

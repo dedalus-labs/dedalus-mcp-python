@@ -110,7 +110,7 @@ See `logging_customization_guide.md` for detailed examples of each.
 ## Standard Conventions
 
 - **`NO_COLOR`** - Respects the [NO_COLOR](https://no-color.org/) standard
-- **Environment variables** - `OPENMCP_LOG_LEVEL`, `OPENMCP_LOG_JSON`, `NO_COLOR`
+- **Environment variables** - `DEDALUS_MCP_LOG_LEVEL`, `DEDALUS_MCP_LOG_JSON`, `NO_COLOR`
 - **Extension over configuration** - Subclass classes instead of adding config flags
 
 ## When to Use What
@@ -126,6 +126,6 @@ See `logging_customization_guide.md` for detailed examples of each.
 
 ## See Also
 
-- `src/openmcp/utils/logger.py` - Source (simple, readable)
+- `src/dedalus_mcp/utils/logger.py` - Source (simple, readable)
 - Python `logging` docs - Standard library reference
 - [NO_COLOR](https://no-color.org/) - Standard for disabling colors

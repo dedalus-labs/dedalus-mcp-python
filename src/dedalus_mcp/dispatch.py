@@ -3,8 +3,8 @@
 
 """Dispatch backend for privileged operations.
 
-This module provides the interface for tools to execute privileged operations
-through connection handles. Two backend implementations are provided:
+This module provides the interface for tools to execute authenticated HTTP
+requests through connection handles. Two backend implementations are provided:
 
 - `DirectDispatchBackend`: OSS mode - calls downstream APIs directly using
   credentials loaded from environment variables or local configuration.
@@ -12,32 +12,41 @@ through connection handles. Two backend implementations are provided:
 - `EnclaveDispatchBackend`: Production mode - forwards requests to the
   Dedalus Enclave with DPoP-bound access tokens for secure credential isolation.
 
+Security model:
+    MCP server code specifies *what to call* (method, path, body).
+    The enclave handles *credentials* and executes the request.
+    Credentials never leave the enclave - only HTTP responses are returned.
+
 The dispatch flow:
-1. Tool calls `ctx.dispatch(handle, intent, arguments)`
-2. Connection gate validates handle against JWT's `ddls:connections` claim
-3. Backend executes the operation (locally or via Enclave)
-4. Result returned to tool
+1. Tool calls `ctx.dispatch(connection, HttpRequest(...))`
+2. Framework resolves connection name to handle
+3. Connection gate validates handle against JWT's `ddls:connections` claim
+4. Backend executes the HTTP request (locally or via Enclave)
+5. HttpResponse returned to tool
 
 Example:
-    >>> # In a tool function
-    >>> async def create_github_issue(ctx: Context, title: str) -> dict:
-    ...     result = await ctx.dispatch(
-    ...         connection_handle="ddls:conn:01ABC-github",
-    ...         intent="github:create_issue",
-    ...         arguments={"title": title, "body": "Auto-created"},
-    ...     )
-    ...     return result.data
+    >>> @server.tool()
+    >>> async def create_issue(ctx: Context, title: str) -> dict:
+    ...     response = await ctx.dispatch(HttpRequest(
+    ...         method=HttpMethod.POST,
+    ...         path="/repos/owner/repo/issues",
+    ...         body={"title": title, "body": "Auto-created"},
+    ...     ))
+    ...     return response.body
 
 References:
-    /dcs/apps/enclave/IMPLEMENTATION_SPEC.md (wire format)
+    /dcs/docs/design/dispatch-interface.md (security model)
 """
 
 from __future__ import annotations
 
-import re
+import hashlib
+import hmac
+import time
+from enum import Enum
 from typing import Any, Callable, Protocol, runtime_checkable
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .utils import get_logger
 
@@ -45,22 +54,149 @@ _logger = get_logger("dedalus_mcp.dispatch")
 
 
 # =============================================================================
-# Data Models
+# HTTP Types (New Dispatch Model)
 # =============================================================================
 
 
-class DispatchRequest(BaseModel):
-    """Request to dispatch a privileged operation.
+class HttpMethod(str, Enum):
+    """HTTP methods supported by dispatch."""
+
+    GET = "GET"
+    POST = "POST"
+    PUT = "PUT"
+    PATCH = "PATCH"
+    DELETE = "DELETE"
+
+
+class HttpRequest(BaseModel):
+    """HTTP request to execute against downstream API.
 
     Attributes:
-        connection_handle: Identifier for the connection to use (e.g., "ddls:conn:01ABC-github")
-        intent: Operation identifier (e.g., "github:create_issue")
-        arguments: Operation-specific arguments
+        method: HTTP method (GET, POST, PUT, PATCH, DELETE)
+        path: Request path including query string (e.g., "/repos/owner/repo/issues?state=open")
+        body: Request body - dict/list serialized as JSON, str sent as-is
+        headers: Additional headers (cannot override Authorization)
+        timeout_ms: Request timeout; falls back to connection default if None
     """
 
-    connection_handle: str = Field(..., min_length=1, description="Connection handle identifier")
-    intent: str = Field(..., min_length=1, description="Operation intent identifier")
-    arguments: dict[str, Any] = Field(default_factory=dict, description="Operation arguments")
+    model_config = ConfigDict(extra="forbid")
+
+    method: HttpMethod
+    path: str = Field(..., min_length=1, description="Path with optional query string")
+    body: dict[str, Any] | list[Any] | str | None = None
+    headers: dict[str, str] | None = None
+    timeout_ms: int | None = Field(default=None, ge=1000, le=300_000)
+
+    @field_validator("path")
+    @classmethod
+    def validate_path(cls, v: str) -> str:
+        """Validate path starts with /."""
+        if not v.startswith("/"):
+            raise ValueError("path must start with '/'")
+        return v
+
+    @field_validator("headers")
+    @classmethod
+    def validate_headers(cls, v: dict[str, str] | None) -> dict[str, str] | None:
+        """Ensure Authorization cannot be overridden."""
+        if v is None:
+            return v
+        forbidden = {"authorization", "x-runner-token", "dpop"}
+        for key in v:
+            if key.lower() in forbidden:
+                raise ValueError(f"header '{key}' cannot be set via dispatch")
+        return v
+
+
+class HttpResponse(BaseModel):
+    """HTTP response from downstream API.
+
+    Attributes:
+        status: HTTP status code (100-599)
+        headers: Response headers
+        body: Response body - parsed JSON if applicable, else raw string
+    """
+
+    status: int = Field(..., ge=100, le=599)
+    headers: dict[str, str] = Field(default_factory=dict)
+    body: dict[str, Any] | list[Any] | str | None = None
+
+
+class DispatchErrorCode(str, Enum):
+    """Error codes for dispatch failures.
+
+    These represent infrastructure failures - NOT HTTP 4xx/5xx from downstream.
+    A downstream 404 is still success=True with response.status=404.
+    """
+
+    CONNECTION_NOT_FOUND = "connection_not_found"
+    CONNECTION_REVOKED = "connection_revoked"
+    DECRYPTION_FAILED = "decryption_failed"
+    DOWNSTREAM_TIMEOUT = "downstream_timeout"
+    DOWNSTREAM_UNREACHABLE = "downstream_unreachable"
+    DOWNSTREAM_TLS_ERROR = "downstream_tls_error"
+
+
+class DispatchError(BaseModel):
+    """Infrastructure error from dispatch.
+
+    Attributes:
+        code: Structured error code for programmatic handling
+        message: Human-readable error description
+        retryable: Whether the operation may succeed on retry
+    """
+
+    code: DispatchErrorCode
+    message: str
+    retryable: bool = False
+
+
+class DispatchResponse(BaseModel):
+    """Response from ctx.dispatch().
+
+    success=True: Got a response from downstream (even HTTP 4xx/5xx).
+    success=False: Infrastructure failure (couldn't reach downstream).
+
+    Attributes:
+        success: Whether we got an HTTP response from downstream
+        response: HTTP response if success=True
+        error: Structured error if success=False
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    success: bool
+    response: HttpResponse | None = None
+    error: DispatchError | None = None
+
+    @classmethod
+    def ok(cls, response: HttpResponse) -> "DispatchResponse":
+        """Factory for successful dispatch."""
+        return cls(success=True, response=response)
+
+    @classmethod
+    def fail(cls, code: DispatchErrorCode, message: str, *, retryable: bool = False) -> "DispatchResponse":
+        """Factory for failed dispatch."""
+        return cls(success=False, error=DispatchError(code=code, message=message, retryable=retryable))
+
+
+# =============================================================================
+# Wire Format (Internal)
+# =============================================================================
+
+
+class DispatchWireRequest(BaseModel):
+    """Wire format sent to gateway/enclave.
+
+    This is the internal format - users interact with HttpRequest.
+
+    Attributes:
+        connection_handle: Resolved handle (e.g., "ddls:conn:abc123")
+        request: The HTTP request to execute
+    """
+
+    connection_handle: str = Field(..., min_length=1)
+    request: HttpRequest
 
     @field_validator("connection_handle")
     @classmethod
@@ -69,20 +205,6 @@ class DispatchRequest(BaseModel):
         if not v.startswith("ddls:conn"):
             raise ValueError("connection_handle must start with 'ddls:conn'")
         return v
-
-
-class DispatchResult(BaseModel):
-    """Result of a dispatched operation.
-
-    Attributes:
-        success: Whether the operation succeeded
-        data: Result data if successful
-        error: Error message if failed
-    """
-
-    success: bool
-    data: dict[str, Any] | None = None
-    error: str | None = None
 
 
 # =============================================================================
@@ -94,18 +216,18 @@ class DispatchResult(BaseModel):
 class DispatchBackend(Protocol):
     """Protocol for dispatch backend implementations.
 
-    Backends handle the actual execution of privileged operations, either
+    Backends handle execution of authenticated HTTP requests, either
     locally (DirectDispatchBackend) or via the Enclave (EnclaveDispatchBackend).
     """
 
-    async def dispatch(self, request: DispatchRequest) -> DispatchResult:
-        """Execute a privileged operation.
+    async def dispatch(self, request: DispatchWireRequest) -> DispatchResponse:
+        """Execute an authenticated HTTP request.
 
         Args:
-            request: The dispatch request containing handle, intent, and arguments
+            request: Wire request with connection handle and HTTP request
 
         Returns:
-            DispatchResult with success/failure and data/error
+            DispatchResponse with HTTP response or error
         """
         ...
 
@@ -115,16 +237,15 @@ class DispatchBackend(Protocol):
 # =============================================================================
 
 
-# Type for driver execute functions
-DriverExecutor = Callable[[str, dict[str, Any]], Any]
+# Type for credential resolver: handle → (base_url, auth_header_value)
+CredentialResolver = Callable[[str], tuple[str, str]]
 
 
 class DirectDispatchBackend:
     """Dispatch backend for OSS mode with local credentials.
 
-    This backend executes operations directly by delegating to registered
-    drivers. Credentials are loaded from environment variables or local
-    configuration rather than going through the Enclave.
+    This backend executes HTTP requests directly using credentials resolved
+    from environment variables or local configuration.
 
     Useful for:
     - Local development without Enclave access
@@ -132,86 +253,127 @@ class DirectDispatchBackend:
     - Testing and CI environments
 
     Example:
-        >>> backend = DirectDispatchBackend()
-        >>> backend.register_driver("github", github_driver.execute)
-        >>> result = await backend.dispatch(request)
+        >>> def resolve_creds(handle: str) -> tuple[str, str]:
+        ...     # Return (base_url, "Bearer <token>")
+        ...     return ("https://api.github.com", f"Bearer {os.getenv('GITHUB_TOKEN')}")
+        >>> backend = DirectDispatchBackend(credential_resolver=resolve_creds)
+        >>> response = await backend.dispatch(wire_request)
     """
 
-    def __init__(self) -> None:
-        self._drivers: dict[str, DriverExecutor] = {}
-
-    def register_driver(self, provider: str, executor: DriverExecutor) -> None:
-        """Register a driver for a provider.
+    def __init__(self, credential_resolver: CredentialResolver | None = None) -> None:
+        """Initialize direct dispatch backend.
 
         Args:
-            provider: Provider identifier (e.g., "github", "slack")
-            executor: Async function that executes intents for this provider
+            credential_resolver: Function that resolves connection handle to
+                (base_url, auth_header_value). If None, dispatch will fail.
         """
-        self._drivers[provider] = executor
-        _logger.debug("driver registered", extra={"event": "dispatch.driver.registered", "provider": provider})
+        self._resolver = credential_resolver
 
-    async def dispatch(self, request: DispatchRequest) -> DispatchResult:
-        """Execute operation using registered driver.
+    async def dispatch(self, request: DispatchWireRequest) -> DispatchResponse:
+        """Execute HTTP request with resolved credentials.
 
         Args:
-            request: Dispatch request
+            request: Wire request with connection handle and HTTP request
 
         Returns:
-            DispatchResult with operation outcome
+            DispatchResponse with HTTP response or error
         """
-        # Extract provider from intent (e.g., "github:create_issue" -> "github")
-        provider = self._extract_provider(request.intent)
-
-        if provider not in self._drivers:
-            available = list(self._drivers.keys())
-            error_msg = f"no driver registered for provider '{provider}'. Available: {available}"
-            _logger.warning(
-                "dispatch failed - unknown driver",
-                extra={"event": "dispatch.driver.unknown", "provider": provider, "intent": request.intent},
+        if self._resolver is None:
+            return DispatchResponse.fail(
+                DispatchErrorCode.CONNECTION_NOT_FOUND,
+                "No credential resolver configured for direct dispatch",
             )
-            return DispatchResult(success=False, error=error_msg)
-
-        driver = self._drivers[provider]
 
         try:
-            # Call the driver
-            import asyncio
-            import inspect
+            base_url, auth_header = self._resolver(request.connection_handle)
+        except Exception as e:
+            _logger.warning(
+                "credential resolution failed",
+                extra={"event": "dispatch.resolve.error", "handle": request.connection_handle, "error": str(e)},
+            )
+            return DispatchResponse.fail(
+                DispatchErrorCode.CONNECTION_NOT_FOUND,
+                f"Failed to resolve credentials: {e}",
+            )
 
-            if inspect.iscoroutinefunction(driver):
-                result = await driver(request.intent, request.arguments)
-            else:
-                # Run sync driver in thread pool
-                result = await asyncio.get_event_loop().run_in_executor(
-                    None, lambda: driver(request.intent, request.arguments)
+        try:
+            import httpx
+        except ImportError:
+            return DispatchResponse.fail(
+                DispatchErrorCode.DOWNSTREAM_UNREACHABLE,
+                "httpx not installed; required for HTTP dispatch",
+            )
+
+        # Build full URL
+        url = f"{base_url.rstrip('/')}{request.request.path}"
+
+        # Build headers
+        headers: dict[str, str] = {"Authorization": auth_header}
+        if request.request.headers:
+            headers.update(request.request.headers)
+
+        # Determine timeout
+        timeout = (request.request.timeout_ms or 30_000) / 1000.0
+
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                response = await client.request(
+                    method=request.request.method.value,
+                    url=url,
+                    headers=headers,
+                    json=request.request.body if isinstance(request.request.body, (dict, list)) else None,
+                    content=request.request.body if isinstance(request.request.body, str) else None,
                 )
+
+            # Parse response body
+            body: dict[str, Any] | list[Any] | str | None = None
+            content_type = response.headers.get("content-type", "")
+            if "application/json" in content_type:
+                try:
+                    body = response.json()
+                except Exception:
+                    body = response.text
+            elif response.text:
+                body = response.text
+
+            http_response = HttpResponse(
+                status=response.status_code,
+                headers=dict(response.headers),
+                body=body,
+            )
 
             _logger.debug(
                 "dispatch succeeded",
-                extra={"event": "dispatch.success", "provider": provider, "intent": request.intent},
-            )
-
-            return DispatchResult(success=True, data=result if isinstance(result, dict) else {"result": result})
-
-        except Exception as e:
-            error_msg = f"driver execution failed: {e}"
-            _logger.warning(
-                "dispatch failed - driver exception",
                 extra={
-                    "event": "dispatch.driver.error",
-                    "provider": provider,
-                    "intent": request.intent,
-                    "error": str(e),
+                    "event": "dispatch.success",
+                    "handle": request.connection_handle,
+                    "status": response.status_code,
                 },
             )
-            return DispatchResult(success=False, error=error_msg)
 
-    @staticmethod
-    def _extract_provider(intent: str) -> str:
-        """Extract provider from intent string."""
-        if ":" in intent:
-            return intent.split(":")[0]
-        return intent
+            return DispatchResponse.ok(http_response)
+
+        except httpx.TimeoutException:
+            return DispatchResponse.fail(
+                DispatchErrorCode.DOWNSTREAM_TIMEOUT,
+                f"Request timed out after {timeout}s",
+                retryable=True,
+            )
+        except httpx.ConnectError as e:
+            return DispatchResponse.fail(
+                DispatchErrorCode.DOWNSTREAM_UNREACHABLE,
+                f"Could not connect to downstream: {e}",
+                retryable=True,
+            )
+        except Exception as e:
+            _logger.exception(
+                "unexpected dispatch error",
+                extra={"event": "dispatch.error", "handle": request.connection_handle, "error": str(e)},
+            )
+            return DispatchResponse.fail(
+                DispatchErrorCode.DOWNSTREAM_UNREACHABLE,
+                f"Unexpected error: {e}",
+            )
 
 
 # =============================================================================
@@ -222,30 +384,39 @@ class DirectDispatchBackend:
 class EnclaveDispatchBackend:
     """Dispatch backend that forwards to the Dedalus Enclave.
 
-    This backend sends operations to the Enclave with DPoP-bound access tokens.
+    This backend sends HTTP requests to the Enclave with DPoP-bound access tokens.
     The Enclave securely manages credentials and executes operations on behalf
     of the MCP server.
+
+    Runner authentication uses HMAC signatures (not JWT) for identifying deployments.
+    The deployment_id and auth_secret are injected at deploy time via environment.
 
     Wire format (POST /dispatch):
         Authorization: DPoP {access_token}
         DPoP: {dpop_proof}
-        X-Runner-Token: {runner_token}
+        X-Dedalus-Timestamp: {unix_timestamp}
+        X-Dedalus-Deployment: {deployment_id}
+        X-Dedalus-Signature: {hmac_signature}
         Content-Type: application/json
 
         {
-            "connection_handle": "ddls:conn:01ABC-github",
-            "intent": "github:create_issue",
-            "arguments": {...}
+            "connection_handle": "ddls:conn:abc123",
+            "request": {
+                "method": "POST",
+                "path": "/repos/owner/repo/issues",
+                "body": {"title": "Bug"}
+            }
         }
 
     Example:
         >>> backend = EnclaveDispatchBackend(
         ...     enclave_url="https://enclave.dedalus.cloud",
         ...     access_token=token,
-        ...     dpop_key=key,  # ES256 private key for DPoP proofs
-        ...     runner_token=runner_jwt,
+        ...     dpop_key=key,
+        ...     deployment_id="dep_01ABC",
+        ...     auth_secret=b"32-byte-secret...",
         ... )
-        >>> result = await backend.dispatch(request)
+        >>> response = await backend.dispatch(wire_request)
     """
 
     def __init__(
@@ -253,7 +424,8 @@ class EnclaveDispatchBackend:
         enclave_url: str,
         access_token: str,
         dpop_key: Any | None = None,
-        runner_token: str | None = None,
+        deployment_id: str | None = None,
+        auth_secret: bytes | None = None,
         timeout: float = 30.0,
     ) -> None:
         """Initialize enclave backend.
@@ -262,80 +434,155 @@ class EnclaveDispatchBackend:
             enclave_url: Base URL of the Dispatch Gateway
             access_token: DPoP-bound user access token
             dpop_key: ES256 private key for DPoP proof generation
-            runner_token: Runner JWT for MCP server identity
+            deployment_id: Deployment ID for HMAC auth (from DEDALUS_DEPLOYMENT_ID)
+            auth_secret: 32-byte HMAC secret (from DEDALUS_AUTH_SECRET, base64)
             timeout: Request timeout in seconds
         """
         self._enclave_url = enclave_url.rstrip("/")
         self._access_token = access_token
         self._dpop_key = dpop_key
-        self._runner_token = runner_token
+        self._deployment_id = deployment_id
+        self._auth_secret = auth_secret
         self._timeout = timeout
 
-    async def dispatch(self, request: DispatchRequest) -> DispatchResult:
-        """Forward operation to Enclave.
+    async def dispatch(self, request: DispatchWireRequest) -> DispatchResponse:
+        """Forward HTTP request to Enclave.
 
         Args:
-            request: Dispatch request
+            request: Wire request with connection handle and HTTP request
 
         Returns:
-            DispatchResult with Enclave response
+            DispatchResponse with HTTP response or error
         """
         try:
             import httpx
         except ImportError:
-            return DispatchResult(success=False, error="httpx not installed; required for Enclave dispatch")
+            return DispatchResponse.fail(
+                DispatchErrorCode.DOWNSTREAM_UNREACHABLE,
+                "httpx not installed; required for Enclave dispatch",
+            )
 
         dispatch_url = f"{self._enclave_url}/dispatch"
+
+        # Build wire format body first (needed for HMAC)
+        body = {
+            "connection_handle": request.connection_handle,
+            "request": {
+                "method": request.request.method.value,
+                "path": request.request.path,
+                "body": request.request.body,
+                "headers": request.request.headers,
+                "timeout_ms": request.request.timeout_ms,
+            },
+        }
+
+        # Serialize body for HMAC computation
+        import json
+        body_bytes = json.dumps(body, separators=(",", ":")).encode()
 
         # Build headers
         headers = {"Content-Type": "application/json"}
 
-        # Add runner identity
-        if self._runner_token:
-            headers["X-Runner-Token"] = self._runner_token
+        # Add HMAC runner authentication
+        if self._deployment_id and self._auth_secret:
+            hmac_headers = self._sign_request(body_bytes)
+            headers.update(hmac_headers)
 
         # Add DPoP authorization
         if self._dpop_key is not None:
             headers["Authorization"] = f"DPoP {self._access_token}"
             headers["DPoP"] = self._generate_dpop_proof(dispatch_url, "POST")
         else:
-            # Fallback to bearer (not recommended in production)
             headers["Authorization"] = f"Bearer {self._access_token}"
-
-        # Build request body
-        body = {
-            "connection_handle": request.connection_handle,
-            "intent": request.intent,
-            "arguments": request.arguments,
-        }
 
         try:
             async with httpx.AsyncClient(timeout=self._timeout) as client:
-                response = await client.post(dispatch_url, json=body, headers=headers)
+                response = await client.post(dispatch_url, content=body_bytes, headers=headers)
 
             if response.status_code == 401:
-                return DispatchResult(success=False, error=f"authentication failed (401): {response.text}")
+                return DispatchResponse.fail(
+                    DispatchErrorCode.CONNECTION_REVOKED,
+                    f"Authentication failed (401): {response.text}",
+                )
 
             if response.status_code == 403:
-                return DispatchResult(success=False, error=f"authorization failed (403): {response.text}")
+                return DispatchResponse.fail(
+                    DispatchErrorCode.CONNECTION_NOT_FOUND,
+                    f"Authorization failed (403): {response.text}",
+                )
 
             if response.status_code >= 400:
-                return DispatchResult(success=False, error=f"enclave error ({response.status_code}): {response.text}")
+                return DispatchResponse.fail(
+                    DispatchErrorCode.DOWNSTREAM_UNREACHABLE,
+                    f"Enclave error ({response.status_code}): {response.text}",
+                )
 
             data = response.json()
 
-            # Enclave returns {success: bool, data?: {...}, error?: string}
-            return DispatchResult(success=data.get("success", True), data=data.get("data"), error=data.get("error"))
+            # Enclave returns DispatchResponse format
+            if data.get("success"):
+                http_resp = data.get("response", {})
+                return DispatchResponse.ok(
+                    HttpResponse(
+                        status=http_resp.get("status", 200),
+                        headers=http_resp.get("headers", {}),
+                        body=http_resp.get("body"),
+                    )
+                )
+            else:
+                error_data = data.get("error", {})
+                return DispatchResponse.fail(
+                    DispatchErrorCode(error_data.get("code", "downstream_unreachable")),
+                    error_data.get("message", "Unknown error"),
+                    retryable=error_data.get("retryable", False),
+                )
 
         except httpx.TimeoutException:
-            return DispatchResult(success=False, error="enclave request timed out")
+            return DispatchResponse.fail(
+                DispatchErrorCode.DOWNSTREAM_TIMEOUT,
+                "Enclave request timed out",
+                retryable=True,
+            )
         except httpx.RequestError as e:
-            return DispatchResult(success=False, error=f"enclave request failed: {e}")
+            return DispatchResponse.fail(
+                DispatchErrorCode.DOWNSTREAM_UNREACHABLE,
+                f"Enclave request failed: {e}",
+                retryable=True,
+            )
         except Exception as e:
             _logger.exception(
-                "unexpected enclave dispatch error", extra={"event": "dispatch.enclave.error", "error": str(e)}
+                "unexpected enclave dispatch error",
+                extra={"event": "dispatch.enclave.error", "error": str(e)},
             )
-            return DispatchResult(success=False, error=f"unexpected error: {e}")
+            return DispatchResponse.fail(
+                DispatchErrorCode.DOWNSTREAM_UNREACHABLE,
+                f"Unexpected error: {e}",
+            )
+
+    def _sign_request(self, body: bytes) -> dict[str, str]:
+        """Generate HMAC signature headers for runner authentication.
+
+        Signature: HMAC-SHA256(auth_secret, "{timestamp}:{deployment_id}:{sha256(body)}")
+
+        Args:
+            body: Request body bytes
+
+        Returns:
+            Headers dict with X-Dedalus-Timestamp, X-Dedalus-Deployment, X-Dedalus-Signature
+        """
+        if not self._deployment_id or not self._auth_secret:
+            return {}
+
+        timestamp = str(int(time.time()))
+        body_hash = hashlib.sha256(body).hexdigest()
+        message = f"{timestamp}:{self._deployment_id}:{body_hash}".encode()
+        signature = hmac.new(self._auth_secret, message, hashlib.sha256).hexdigest()
+
+        return {
+            "X-Dedalus-Timestamp": timestamp,
+            "X-Dedalus-Deployment": self._deployment_id,
+            "X-Dedalus-Signature": signature,
+        }
 
     def _generate_dpop_proof(self, url: str, method: str) -> str:
         """Generate DPoP proof JWT for the request.
@@ -350,9 +597,6 @@ class EnclaveDispatchBackend:
         if self._dpop_key is None:
             return ""
 
-        import hashlib
-        import json
-        import time
         import uuid
 
         import jwt
@@ -389,34 +633,49 @@ def create_dispatch_backend_from_env() -> DispatchBackend:
 
     Environment variables (Dedalus Cloud):
         DEDALUS_DISPATCH_URL: Dispatch Gateway URL (internal, not public)
-        DEDALUS_RUNNER_TOKEN: Runner JWT minted by control plane at deploy
+        DEDALUS_DEPLOYMENT_ID: Deployment ID for HMAC auth
+        DEDALUS_AUTH_SECRET: Base64-encoded 32-byte HMAC secret
         DEDALUS_ACCESS_TOKEN: User's DPoP-bound access token (set per-request)
 
     Returns:
         Configured dispatch backend
     """
+    import base64
     import os
 
     dispatch_url = os.getenv("DEDALUS_DISPATCH_URL")
 
     if dispatch_url:
-        runner_token = os.getenv("DEDALUS_RUNNER_TOKEN")
+        deployment_id = os.getenv("DEDALUS_DEPLOYMENT_ID")
+        auth_secret_b64 = os.getenv("DEDALUS_AUTH_SECRET")
+        auth_secret = base64.b64decode(auth_secret_b64) if auth_secret_b64 else None
+
         # Access token and DPoP key are typically set per-request, not at init
         # This factory is for the runner identity; user auth is added later
         return EnclaveDispatchBackend(
             enclave_url=dispatch_url,
             access_token="",  # Set per-request via context
-            runner_token=runner_token,
+            deployment_id=deployment_id,
+            auth_secret=auth_secret,
         )
     else:
         return DirectDispatchBackend()
 
 
 __all__ = [
-    "DispatchRequest",
-    "DispatchResult",
+    # HTTP types
+    "HttpMethod",
+    "HttpRequest",
+    "HttpResponse",
+    # Dispatch types
+    "DispatchErrorCode",
+    "DispatchError",
+    "DispatchResponse",
+    "DispatchWireRequest",
+    # Backend protocol and implementations
     "DispatchBackend",
     "DirectDispatchBackend",
     "EnclaveDispatchBackend",
+    "CredentialResolver",
     "create_dispatch_backend_from_env",
 ]

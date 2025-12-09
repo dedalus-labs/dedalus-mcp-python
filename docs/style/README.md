@@ -101,7 +101,7 @@ Ruff provides 800+ built-in rules with native re-implementations of popular plug
 [mypy](https://mypy.readthedocs.io/) is currently our static type checker. It catches type errors at development time rather than runtime.
 
 ```bash
-uv run mypy src/openmcp
+uv run mypy src/dedalus_mcp
 ```
 
 **Future: ty.** We're watching [ty](https://github.com/astral-sh/ty), Astral's Rust-based type checker. It completes our all-Astral toolchain (uv + ruff + ty) and promises the same 10-100x speed improvements. We'll adopt ty at beta and drop mypy at GA.
@@ -112,7 +112,7 @@ uv run mypy src/openmcp
 # Full check before commit
 uv run ruff check . --fix
 uv run ruff format .
-uv run mypy src/openmcp
+uv run mypy src/dedalus_mcp
 uv run pytest
 ```
 

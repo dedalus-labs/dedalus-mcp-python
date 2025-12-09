@@ -7,7 +7,7 @@
 Start here:
 
 - [README](README.md) — Quick start and installation
-- [Getting Started](docs/openmcp/getting-started.md) — First MCP server tutorial
+- [Getting Started](docs/dedalus_mcp/getting-started.md) — First MCP server tutorial
 - [Glossary](GLOSSARY.md) — MCP terminology
 - [Examples](examples/) — Working code examples
 
@@ -15,18 +15,18 @@ Start here:
 
 **Before opening an issue:**
 
-1. Search [existing issues](https://github.com/dedalus-labs/openmcp-python/issues)
-2. Check the [discussions](https://github.com/dedalus-labs/openmcp-python/discussions) (if enabled)
+1. Search [existing issues](https://github.com/dedalus-labs/dedalus-mcp-python/issues)
+2. Check the [discussions](https://github.com/dedalus-labs/dedalus-mcp-python/discussions) (if enabled)
 3. Review the [MCP specification](https://spec.modelcontextprotocol.io/) if your question is protocol-related
 
 **Good places to ask:**
 
-- [GitHub Discussions](https://github.com/dedalus-labs/openmcp-python/discussions) — General questions, ideas
-- [GitHub Issues](https://github.com/dedalus-labs/openmcp-python/issues) — Bugs, concrete feature requests
+- [GitHub Discussions](https://github.com/dedalus-labs/dedalus-mcp-python/discussions) — General questions, ideas
+- [GitHub Issues](https://github.com/dedalus-labs/dedalus-mcp-python/issues) — Bugs, concrete feature requests
 
 ### Bugs
 
-Found a bug? [Open an issue](https://github.com/dedalus-labs/openmcp-python/issues/new?template=bug_report.yml).
+Found a bug? [Open an issue](https://github.com/dedalus-labs/dedalus-mcp-python/issues/new?template=bug_report.yml).
 
 Include:
 

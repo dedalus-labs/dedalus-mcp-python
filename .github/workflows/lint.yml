@@ -36,10 +36,10 @@ jobs:
               run: uv run ruff format --check .
 
             - name: Run mypy
-              run: uv run mypy src/openmcp --ignore-missing-imports
+              run: uv run mypy src/dedalus_mcp --ignore-missing-imports
 
             - name: Dead code check (vulture)
-              run: uv run vulture src/openmcp/ --min-confidence 80
+              run: uv run vulture src/dedalus_mcp/ --min-confidence 80
               continue-on-error: true
 
             - name: Dependency check (deptry)

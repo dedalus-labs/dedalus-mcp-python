@@ -61,8 +61,8 @@ class ResourceTemplateSpec:
         )
 
 
-_TEMPLATE_ATTR = "__openmcp_resource_template__"
-_ACTIVE_SERVER: ContextVar[MCPServer | None] = ContextVar("_openmcp_resource_template_server", default=None)
+_TEMPLATE_ATTR = "__dedalus_mcp_resource_template__"
+_ACTIVE_SERVER: ContextVar[MCPServer | None] = ContextVar("_dedalus_mcp_resource_template_server", default=None)
 
 
 def get_active_server() -> MCPServer | None:

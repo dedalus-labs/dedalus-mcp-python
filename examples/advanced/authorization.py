@@ -20,7 +20,7 @@ When to use this pattern:
 - API access control and rate limiting
 
 Reference:
-    - Authorization config: src/openmcp/server/authorization.py
+    - Authorization config: src/dedalus_mcp/server/authorization.py
     - OAuth 2.1: https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-11
 """
 

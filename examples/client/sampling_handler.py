@@ -20,7 +20,7 @@ When to use this pattern:
 - Testing tool logic that depends on model responses
 
 Spec: https://modelcontextprotocol.io/specification/2025-06-18/client/sampling
-See also: docs/openmcp/sampling.md
+See also: docs/dedalus_mcp/sampling.md
 
 Run with:
     export ANTHROPIC_API_KEY=your-key

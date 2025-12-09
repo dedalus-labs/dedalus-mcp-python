@@ -42,8 +42,8 @@ class ResourceSpec:
     mime_type: str | None = None
 
 
-_RESOURCE_ATTR = "__openmcp_resource__"
-_ACTIVE_SERVER: ContextVar[MCPServer | None] = ContextVar("_openmcp_resource_server", default=None)
+_RESOURCE_ATTR = "__dedalus_mcp_resource__"
+_ACTIVE_SERVER: ContextVar[MCPServer | None] = ContextVar("_dedalus_mcp_resource_server", default=None)
 
 
 def get_active_server() -> MCPServer | None:
