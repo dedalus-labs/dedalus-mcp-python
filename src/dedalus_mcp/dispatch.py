@@ -95,18 +95,6 @@ class HttpRequest(BaseModel):
             raise ValueError("path must start with '/'")
         return v
 
-    @field_validator("headers")
-    @classmethod
-    def validate_headers(cls, v: dict[str, str] | None) -> dict[str, str] | None:
-        """Ensure Authorization cannot be overridden."""
-        if v is None:
-            return v
-        forbidden = {"authorization", "x-runner-token", "dpop"}
-        for key in v:
-            if key.lower() in forbidden:
-                raise ValueError(f"header '{key}' cannot be set via dispatch")
-        return v
-
 
 class HttpResponse(BaseModel):
     """HTTP response from downstream API.
