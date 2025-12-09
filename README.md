@@ -326,6 +326,39 @@ server.set_authorization_provider(MyAuthProvider())
 
 RFC 9068 JWT profile, DPoP support, bearer token validation, scopes, WWW-Authenticate headers, metadata endpoint. No default provider because there's no secure default. You bring your IdP; we integrate. [`docs/dedalus_mcp/design/authorization.md`](docs/dedalus_mcp/design/authorization.md)
 
+### Typed Connectors (Advanced)
+
+For database drivers, SDK clients, or vault-based credential management:
+
+```python
+from dedalus_mcp.server.connectors import define, EnvironmentCredentialLoader, EnvironmentCredentials, Credentials
+
+# Define typed schema
+PostgresConn = define(
+    kind="postgres",
+    params={"host": str, "port": int, "database": str},
+    auth=["password"],
+)
+
+# Map environment variables
+loader = EnvironmentCredentialLoader(
+    connector=PostgresConn,
+    variants={
+        "password": EnvironmentCredentials(
+            config=Credentials(host="POSTGRES_HOST", port="POSTGRES_PORT", database="POSTGRES_DB"),
+            secrets=Credentials(username="POSTGRES_USER", password="POSTGRES_PASSWORD"),
+        ),
+    },
+)
+
+# Load and validate (returns typed Pydantic models)
+resolved = loader.load("password")
+# resolved.config.host: str, resolved.config.port: int (auto-cast)
+# resolved.auth.username: str, resolved.auth.password: str
+```
+
+Provides compile-time type safety and runtime validation. Use `Connection` for simple HTTP APIs; use `define()` when you need typed models or driver integration. [`examples/advanced/typed_connectors.py`](examples/advanced/typed_connectors.py)
+
 ## Examples
 
 [`examples/`](examples/) contains runnable demos:
@@ -335,6 +368,7 @@ RFC 9068 JWT profile, DPoP support, bearer token validation, scopes, WWW-Authent
 - [`progress_logging.py`](examples/progress_logging.py) — Context API, progress
 - [`cancellation.py`](examples/cancellation.py) — Request cancellation
 - [`advanced/feature_flag_server.py`](examples/advanced/feature_flag_server.py) — Dynamic tool registry with guardrails
+- [`advanced/typed_connectors.py`](examples/advanced/typed_connectors.py) — Typed connector pattern with define()
 
 Start with `hello_trip/`, then `full_demo/` for advanced patterns.
 

@@ -183,6 +183,10 @@ class MCPServer(Server[Any, Any]):
                 if conn.name in self._connections:
                     raise ValueError(f"Duplicate connection name: '{conn.name}'")
                 self._connections[conn.name] = conn
+
+        # Dispatch backend and connection handles (initialized in _build_runtime_payload)
+        self._dispatch_backend: Any = None
+        self._connection_handles: dict[str, str] = {}
         super().__init__(
             name, version=version, instructions=instructions, website_url=website_url, icons=icons, lifespan=lifespan
         )
@@ -851,7 +855,85 @@ class MCPServer(Server[Any, Any]):
         return payload
 
     def _build_runtime_payload(self) -> dict[str, Any]:
-        return {"server": self, "resolver": self._connection_resolver}
+        """Build runtime context payload with dispatch backend and connection handles.
+
+        Initializes dispatch backend lazily on first call (during lifespan startup).
+        """
+        # Initialize dispatch backend and connection handles if needed
+        if self._dispatch_backend is None and self._connections:
+            self._initialize_dispatch_backend()
+
+        return {
+            "server": self,
+            "resolver": self._connection_resolver,
+            "dispatch_backend": self._dispatch_backend,
+            "connection_handles": self._connection_handles,
+        }
+
+    def _initialize_dispatch_backend(self) -> None:
+        """Initialize dispatch backend from environment and connections.
+
+        Creates DirectDispatchBackend (OSS mode) or EnclaveDispatchBackend (production)
+        based on DEDALUS_DISPATCH_URL environment variable.
+        """
+        import os
+
+        from ..dispatch import DirectDispatchBackend, create_dispatch_backend_from_env
+
+        # Build connection handles map: {name: "ddls:conn:{name}"}
+        self._connection_handles = {name: f'ddls:conn:{name}' for name in self._connections}
+
+        # Get backend from environment (checks DEDALUS_DISPATCH_URL)
+        backend = create_dispatch_backend_from_env()
+
+        # For DirectDispatchBackend, configure credential resolver
+        if isinstance(backend, DirectDispatchBackend):
+
+            def credential_resolver(handle: str) -> tuple[str, str]:
+                """Resolve connection handle to (base_url, auth_header)."""
+                # Extract connection name from handle (ddls:conn:{name})
+                if not handle.startswith('ddls:conn:'):
+                    raise ValueError(f'Invalid handle format: {handle}')
+                conn_name = handle[len('ddls:conn:') :]
+
+                conn = self._connections.get(conn_name)
+                if conn is None:
+                    raise ValueError(f"Connection '{conn_name}' not found")
+
+                # Read credentials from environment using Binding entries
+                creds: dict[str, str] = {}
+                for field_name, binding in conn.credentials.entries.items():
+                    raw = os.getenv(binding.name)
+                    if raw is None or raw == '':
+                        if binding.optional:
+                            continue
+                        raise RuntimeError(f'Environment variable {binding.name} is not set')
+                    creds[field_name] = raw
+
+                # Build auth header from credentials
+                auth_value = ''
+                for key, value in creds.items():
+                    if key in ('token', 'access_token'):
+                        auth_value = f'Bearer {value}'
+                        break
+                    elif key in ('key', 'apikey', 'api_key', 'service_role_key'):
+                        auth_value = f'Bearer {value}'
+                        break
+                    else:
+                        # Fallback: use first credential as Bearer token
+                        auth_value = f'Bearer {value}'
+                        break
+
+                return (conn.base_url or '', auth_value)
+
+            # Replace backend with one that has credential resolver
+            backend = DirectDispatchBackend(credential_resolver=credential_resolver)
+
+        self._dispatch_backend = backend
+        self._logger.debug(
+            'dispatch backend initialized',
+            extra={'event': 'dispatch.init', 'backend_type': type(backend).__name__},
+        )
 
     # TODO: Quality check on this impl.
     async def _handle_request(

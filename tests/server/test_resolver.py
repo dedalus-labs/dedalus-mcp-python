@@ -857,3 +857,89 @@ async def test_end_to_end_user_credential_flow(
     assert call["call"]["handle"] == "ddls:conn_e2e_user"
     assert call["call"]["driver_type"] == "supabase"
     assert call["call"]["operation"]["type"] == "rpc"
+
+
+@pytest.mark.asyncio
+async def test_invalid_auth_type():
+    """Test resolver with invalid auth_type."""
+    from dedalus_mcp.server.resolver import ConnectionMetadata, ConnectionResolver, ResolverConfig, ResolverError
+
+    class MockVault:
+        async def get_connection(self, handle: str) -> ConnectionMetadata:
+            return ConnectionMetadata(
+                handle=handle,
+                driver_type="postgres",
+                auth_type="invalid_type",  # Not 'org' or 'user'
+            )
+
+    config = ResolverConfig(vault_enabled=True)
+    vault = MockVault()
+    resolver = ConnectionResolver(config=config, vault=vault)
+
+    auth_context = type("AuthContext", (), {"claims": {"ddls:connectors": ["ddls:conn_test"]}})()
+    request_context = {"dedalus_mcp.auth": auth_context}
+
+    with pytest.raises(ResolverError, match="invalid auth type"):
+        await resolver.resolve_client("ddls:conn_test", request_context)
+
+
+@pytest.mark.asyncio
+async def test_driver_client_creation_failure():
+    """Test driver client creation failure is logged and re-raised."""
+    from dedalus_mcp.server.resolver import ConnectionMetadata, ConnectionResolver, ResolverConfig
+
+    class MockVault:
+        async def get_connection(self, handle: str) -> ConnectionMetadata:
+            return ConnectionMetadata(handle=handle, driver_type="postgres", auth_type="org")
+
+        async def decrypt_secret(self, handle: str) -> str:
+            return "secret_value"
+
+    class FailingDriver:
+        async def create_client(self, secret: str, params: dict | None = None):
+            raise RuntimeError("Client creation failed")
+
+    config = ResolverConfig(vault_enabled=True, audit_log=True)
+    vault = MockVault()
+    resolver = ConnectionResolver(config=config, vault=vault)
+    resolver.register_driver("postgres", FailingDriver())
+
+    auth_context = type("AuthContext", (), {"claims": {"ddls:connectors": ["ddls:conn_test"]}})()
+    request_context = {"dedalus_mcp.auth": auth_context}
+
+    with pytest.raises(RuntimeError, match="Client creation failed"):
+        await resolver.resolve_client("ddls:conn_test", request_context)
+
+
+@pytest.mark.asyncio
+async def test_backend_execution_failure():
+    """Test backend execution failure is caught and wrapped in BackendError."""
+    from dedalus_mcp.server.resolver import (
+        BackendError,
+        ConnectionMetadata,
+        ConnectionResolver,
+        ResolverConfig,
+    )
+
+    class MockVault:
+        async def get_connection(self, handle: str) -> ConnectionMetadata:
+            return ConnectionMetadata(handle=handle, driver_type="rest", auth_type="user")
+
+    class FailingBackend:
+        async def execute_with_credential(self, encrypted_cred: dict, upstream_call: dict):
+            raise RuntimeError("Backend execution error")
+
+    config = ResolverConfig(vault_enabled=True, backend_enabled=True)
+    vault = MockVault()
+    backend = FailingBackend()
+    resolver = ConnectionResolver(config=config, vault=vault, backend=backend)
+
+    auth_context = type(
+        "AuthContext",
+        (),
+        {"claims": {"ddls:connectors": ["ddls:conn_test"], "ddls:credential": {"encrypted": "data"}}},
+    )()
+    request_context = {"dedalus_mcp.auth": auth_context}
+
+    with pytest.raises(BackendError, match="backend execution failed"):
+        await resolver.resolve_client("ddls:conn_test", request_context)
