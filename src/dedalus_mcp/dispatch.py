@@ -646,8 +646,8 @@ def create_dispatch_backend_from_env() -> DispatchBackend:
             deployment_id=deployment_id,
             auth_secret=auth_secret,
         )
-    else:
-        return DirectDispatchBackend()
+
+    return DirectDispatchBackend()
 
 
 __all__ = [
