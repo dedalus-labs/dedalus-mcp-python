@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.2.0...v0.2.1) (2025-12-09)
+
+
+### Bug Fixes
+
+* lint warning ([14bb8d9](https://github.com/dedalus-labs/dedalus-mcp-python/commit/14bb8d9e8872937cca97ab88629c2294210630d4))
+* lint warning ([d3768f7](https://github.com/dedalus-labs/dedalus-mcp-python/commit/d3768f7b5c9f82adaa100adeca95f08defd9d621))
+
 ## [0.2.0](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.1.0...v0.2.0) (2025-12-04)
 
 
