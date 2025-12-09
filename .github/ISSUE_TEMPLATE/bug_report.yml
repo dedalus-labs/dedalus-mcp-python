@@ -58,8 +58,8 @@ body:
   - type: input
     id: version
     attributes:
-      label: OpenMCP Version
-      description: What version of OpenMCP are you using?
+      label: Dedalus MCP Version
+      description: What version of Dedalus MCP are you using?
       placeholder: "1.0.0"
     validations:
       required: true

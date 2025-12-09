@@ -101,7 +101,7 @@ Validation checks: signature, `typ`/`alg` headers, JWK presence (no private key 
 |-----------|------|
 | `dedalus_mcp.client.auth.DPoPAuth` | Client-side proof generation |
 | `dedalus_mcp.server.services.dpop.DPoPValidator` | Server-side proof validation |
-| `apps/openmcp_as/dpop/dpop.go` | AS validation (Go) |
+| `apps/dedalus_mcp_as/dpop/dpop.go` | AS validation (Go) |
 
 ## What DPoP Does Not Protect
 

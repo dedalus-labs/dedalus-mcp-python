@@ -22,7 +22,7 @@ Installing `dedalus_mcp[opt]` adds:
 Check if uvloop is active:
 
 ```bash
-export OPENMCP_LOG_LEVEL=DEBUG
+export DEDALUS_MCP_LOG_LEVEL=DEBUG
 python your_server.py
 ```
 

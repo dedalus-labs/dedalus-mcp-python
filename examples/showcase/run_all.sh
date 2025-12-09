@@ -13,7 +13,7 @@ cleanup() {
 trap cleanup EXIT
 
 echo "========================================="
-echo "OpenMCP Showcase Integration Tests"
+echo "Dedalus MCP Showcase Integration Tests"
 echo "========================================="
 echo ""
 

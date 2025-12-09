@@ -19,8 +19,8 @@ When to use this pattern:
 - Custom protocols (WebSocket, gRPC, named pipes)
 
 Reference:
-    - Transport base: src/openmcp/server/transports/base.py
-    - Built-in transports: src/openmcp/server/transports/{stdio,streamable_http}.py
+    - Transport base: src/dedalus_mcp/server/transports/base.py
+    - Built-in transports: src/dedalus_mcp/server/transports/{stdio,streamable_http}.py
 """
 
 from __future__ import annotations

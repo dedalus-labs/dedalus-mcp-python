@@ -111,7 +111,7 @@ uv run python examples/client/full_capabilities.py
 
 ## See Also
 
-- [Sampling documentation](../../docs/openmcp/sampling.md)
-- [Elicitation documentation](../../docs/openmcp/elicitation.md)
-- [Roots documentation](../../docs/openmcp/roots.md)
+- [Sampling documentation](../../docs/dedalus_mcp/sampling.md)
+- [Elicitation documentation](../../docs/dedalus_mcp/elicitation.md)
+- [Roots documentation](../../docs/dedalus_mcp/roots.md)
 - [Full demo client](../full_demo/simple_client.py)

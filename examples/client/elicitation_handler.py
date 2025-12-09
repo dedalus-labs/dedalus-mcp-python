@@ -20,7 +20,7 @@ When to use this pattern:
 - Permission elevation requests
 
 Spec: https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation
-See also: docs/openmcp/elicitation.md
+See also: docs/dedalus_mcp/elicitation.md
 
 Run with:
     uv run python examples/client/elicitation_handler.py

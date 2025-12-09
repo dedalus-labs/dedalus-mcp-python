@@ -20,7 +20,7 @@ When to use this pattern:
 - Multi-tenant deployments with per-tenant tool sets
 
 Reference:
-    - Ambient registration: docs/openmcp/ambient-registration.md
+    - Ambient registration: docs/dedalus_mcp/ambient-registration.md
     - Tools capability: https://modelcontextprotocol.io/specification/2025-06-18/server/tools
 """
 

@@ -32,7 +32,7 @@ Drop-in replacement for asyncio's event loop, implemented in Cython. Provides:
 
 ```python
 import os
-os.environ["OPENMCP_LOG_LEVEL"] = "DEBUG"
+os.environ["DEDALUS_MCP_LOG_LEVEL"] = "DEBUG"
 
 from dedalus_mcp import MCPServer
 

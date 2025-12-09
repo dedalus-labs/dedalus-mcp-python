@@ -15,71 +15,93 @@ from __future__ import annotations
 import asyncio
 import os
 
+from pydantic import BaseModel
+
 from dedalus_mcp import HttpMethod, HttpRequest, MCPServer, get_context, tool
 from dedalus_mcp.auth import Connection, Credential, Credentials
 
-# ---------------------------------------------------------------------------
-# 1. Define connections (what credentials are needed)
-# ---------------------------------------------------------------------------
 
-github = Connection(
-    'github',
-    credentials=Credentials(token='GITHUB_TOKEN'),
-    base_url='https://api.github.com',
-)
+# --- Response Models ---------------------------------------------------------
 
-# ---------------------------------------------------------------------------
-# 2. Define server and tools
-# ---------------------------------------------------------------------------
+class UserProfile(BaseModel):
+    """GitHub user profile response."""
 
-server = MCPServer(name='github-tools', connections=[github])
+    login: str
+    name: str | None = None
 
 
-@tool(description='Get authenticated user profile')
-async def whoami() -> dict:
+class Repository(BaseModel):
+    """GitHub repository summary."""
+
+    name: str
+    stars: int
+
+
+class ErrorResponse(BaseModel):
+    """Error response wrapper."""
+
+    msg: str
+
+
+# --- Define connections (what credentials are needed) ------------------------
+
+github = Connection("github", credentials=Credentials(token="GITHUB_TOKEN"), base_url="https://api.github.com")
+
+# --- Define server and tools -------------------------------------------------
+
+server = MCPServer(name="github-tools", connections=[github])
+
+
+@tool(description="Get authenticated user profile")
+async def whoami() -> UserProfile | ErrorResponse:
     ctx = get_context()
-    response = await ctx.dispatch(HttpRequest(method=HttpMethod.GET, path='/user'))
+
+    request = HttpRequest(method=HttpMethod.GET, path="/user")
+    response = await ctx.dispatch(request=request)
+
     if response.success:
         u = response.response.body
-        return {'login': u.get('login'), 'name': u.get('name')}
-    return {'error': response.error.message}
+        return UserProfile(login=u.get("login", ""), name=u.get("name"))
+
+    msg = response.error.message if response.error else "Unknown error"
+    return ErrorResponse(msg=msg)
 
 
-@tool(description='List user repositories')
-async def list_repos(per_page: int = 5) -> list:
+@tool(description="List user repositories")
+async def list_repos(per_page: int = 5) -> list[Repository]:
     ctx = get_context()
-    response = await ctx.dispatch(
-        HttpRequest(
-            method=HttpMethod.GET, path=f'/user/repos?per_page={per_page}&sort=updated'
-        )
+
+    request = HttpRequest(
+        method=HttpMethod.GET,
+        path=f"/user/repos?per_page={per_page}&sort=updated",
     )
+    response = await ctx.dispatch(request=request)
+
     if response.success:
         return [
-            {'name': r.get('name'), 'stars': r.get('stargazers_count')}
+            Repository(name=r.get("name", ""), stars=r.get("stargazers_count", 0))
             for r in response.response.body
         ]
+
     return []
 
 
 server.collect(whoami, list_repos)
 
-# ---------------------------------------------------------------------------
-# 3. SDK initialization
-# ---------------------------------------------------------------------------
+# --- SDK initialization -------------------------------------------------------
 
-
-async def main():
-    token = os.environ.get('GITHUB_TOKEN')
+async def main() -> None:
+    token = os.environ.get("GITHUB_TOKEN")
     if not token:
-        print('Set GITHUB_TOKEN and re-run')
+        print("Set GITHUB_TOKEN and re-run")
         return
 
     # Bind credential values to connection
     github_cred = Credential(github, token=token)
 
-    print(f'Server: {server.name}')
-    print(f'Tools: {server.tool_names}')
-    print(f'Connections: {list(server.connections.keys())}')
+    print(f"Server: {server.name}")
+    print(f"Tools: {server.tool_names}")
+    print(f"Connections: {list(server.connections.keys())}")
 
     # ---------------------------------------------------------------------------
     # Full flow (when AS/Enclave are running):
@@ -98,8 +120,8 @@ async def main():
     #   )
     # ---------------------------------------------------------------------------
 
-    print('\nReady for AS/Enclave integration')
+    print("\nReady for AS/Enclave integration")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())

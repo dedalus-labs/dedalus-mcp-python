@@ -10,7 +10,7 @@ the MCP specification). ``lambda_http_client`` mirrors
 the reference SDK implementation but deliberately avoids registering a
 server-push GET stream so that it works with stateless environments such as AWS
 Lambda.  The behavior aligns with the "POST-only" pattern noted in the spec's
-server guidance and our notes in ``docs/openmcp/transports.md``.
+server guidance and our notes in ``docs/dedalus_mcp/transports.md``.
 """
 
 from __future__ import annotations
@@ -56,7 +56,7 @@ async def lambda_http_client(
     ``streamablehttp_client`` implementation while replacing the
     ``start_get_stream`` callback with a no-op.  This keeps each JSON-RPC request
     self-contained (``initialize`` -> operation -> optional ``session/close``) and
-    matches the stateless guidance in ``docs/openmcp/transports.md``.
+    matches the stateless guidance in ``docs/dedalus_mcp/transports.md``.
 
     Yields:
         Tuple of ``(read_stream, write_stream, get_session_id)`` compatible with

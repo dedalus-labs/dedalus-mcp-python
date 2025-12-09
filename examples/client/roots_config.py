@@ -20,7 +20,7 @@ When to use this pattern:
 - Production systems enforcing principle of least privilege
 
 Spec: https://modelcontextprotocol.io/specification/2025-06-18/client/roots
-See also: docs/openmcp/roots.md
+See also: docs/dedalus_mcp/roots.md
 
 Run with:
     uv run python examples/client/roots_config.py

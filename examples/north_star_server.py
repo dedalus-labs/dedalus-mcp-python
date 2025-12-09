@@ -1,14 +1,14 @@
 # Copyright (c) 2025 Dedalus Labs, Inc.
 # SPDX-License-Identifier: MIT
 
-"""Minimal OpenMCP server example."""
+"""Minimal Dedalus MCP server example."""
 
 from __future__ import annotations
 
 import argparse
 import asyncio
 from dotenv import load_dotenv
-from openmcp import MCPServer, tool
+from dedalus_mcp import MCPServer, tool
 
 load_dotenv()
 
@@ -38,7 +38,7 @@ server.collect(add, multiply, get_weather)
 
 
 async def run_server():
-    """Start the OpenMCP server."""
+    """Start the Dedalus MCP server."""
     print("Serving on http://127.0.0.1:8000/mcp")
     await server.serve()
 
@@ -47,7 +47,7 @@ async def run_server():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run the OpenMCP server")
+    parser = argparse.ArgumentParser(description="Run the Dedalus MCP server")
     parser.add_argument("--server", action="store_true", help="Start server")
     args = parser.parse_args()
 

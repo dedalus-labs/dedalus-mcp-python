@@ -163,7 +163,7 @@ verbosity via `dedalus_mcp.utils.logger.setup_logger()`.
 
 ### Logging
 
-- Uses the shared `dedalus_mcp.utils.get_logger` helper. Configure via environment (`OPENMCP_LOG_LEVEL`) or
+- Uses the shared `dedalus_mcp.utils.get_logger` helper. Configure via environment (`DEDALUS_MCP_LOG_LEVEL`) or
   replace the `NotificationSink` to integrate external observability stacks.
 
 ## Putting It Together

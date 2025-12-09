@@ -41,7 +41,7 @@ def _capture_logging(level: int, *, use_json: bool, **kwargs: Any) -> list[str]:
 
 
 def test_setup_logger_plain_stdout(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("OPENMCP_LOG_JSON", "0")
+    monkeypatch.setenv("DEDALUS_MCP_LOG_JSON", "0")
     setup_logger(force=True)
     log = get_logger("dedalus_mcp.test")
 
@@ -57,7 +57,7 @@ def test_setup_logger_plain_stdout(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_setup_logger_json_with_custom_serializer(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("OPENMCP_LOG_JSON", "1")
+    monkeypatch.setenv("DEDALUS_MCP_LOG_JSON", "1")
 
     lines = _capture_logging(
         logging.INFO,

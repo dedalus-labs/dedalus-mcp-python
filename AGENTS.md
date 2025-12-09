@@ -8,9 +8,9 @@ Dedalus MCP implements the Model Context Protocol. Spec-faithful, minimal surfac
 |------|-------|
 | MCP spec | `internals/references/modelcontextprotocol/` |
 | Reference SDK | `internals/references/python-sdk/` |
-| Server core | `src/openmcp/server/core.py` |
-| Versioning | `src/openmcp/versioning.py` |
-| Types | `src/openmcp/types/` |
+| Server core | `src/dedalus_mcp/server/core.py` |
+| Versioning | `src/dedalus_mcp/versioning.py` |
+| Types | `src/dedalus_mcp/types/` |
 | Tests | `tests/` |
 
 ## Before You Code
@@ -28,7 +28,7 @@ Dedalus MCP implements the Model Context Protocol. Spec-faithful, minimal surfac
 
 **The workflow:**
 
-1. **Create or update an execspec** — For any significant work, maintain a local `EXECSPEC-{topic}.md` in `docs/openmcp/`. This is your working document: what you're building, what invariants must hold, what's done, what's next.
+1. **Create or update an execspec** — For any significant work, maintain a local `EXECSPEC-{topic}.md` in `docs/dedalus_mcp/`. This is your working document: what you're building, what invariants must hold, what's done, what's next.
 
 2. **Write a failing test** — Before implementing, write a test that captures an invariant from your execspec. The test should fail because the feature doesn't exist yet.
 
@@ -59,7 +59,7 @@ Implement client-side elicitation per MCP 2025-06-18.
 
 **Why this matters:** Tests are executable documentation. When you write `test_elicit_raises_without_capability()`, you're stating a contract. Future changes that break this contract will fail loudly. The execspec keeps you honest—it's easy to lose sight of the goal mid-implementation.
 
-See `docs/openmcp/EXECSPEC*.md` for examples of how we track larger features.
+See `docs/dedalus_mcp/EXECSPEC*.md` for examples of how we track larger features.
 
 ## Core Rules
 
@@ -122,7 +122,7 @@ Dedalus MCP is a **temporal inscription of the MCP spec**—it respects that the
 - Does it exist in earlier versions? If so, where did it originate?
 - Is this a version-specific change, or does it span multiple versions?
 
-Protocol versions are tracked in `src/openmcp/versioning.py`. Check `docs/openmcp/version-matrix.md` to see what exists where.
+Protocol versions are tracked in `src/dedalus_mcp/versioning.py`. Check `docs/dedalus_mcp/version-matrix.md` to see what exists where.
 
 **When adding version-specific behavior:**
 
@@ -168,8 +168,8 @@ Each test should focus on one protocol behavior. Name tests after what they veri
 ## File Organization
 
 - One concept per file
-- Services in `src/openmcp/server/services/`
-- Types re-exported from `src/openmcp/types/`
+- Services in `src/dedalus_mcp/server/services/`
+- Types re-exported from `src/dedalus_mcp/types/`
 - Examples in `examples/`
 
 ## Transports

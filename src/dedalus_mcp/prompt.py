@@ -54,8 +54,8 @@ class PromptSpec:
     meta: Mapping[str, Any] | None = None
 
 
-_PROMPT_ATTR = "__openmcp_prompt__"
-_ACTIVE_SERVER: ContextVar[MCPServer | None] = ContextVar("_openmcp_prompt_server", default=None)
+_PROMPT_ATTR = "__dedalus_mcp_prompt__"
+_ACTIVE_SERVER: ContextVar[MCPServer | None] = ContextVar("_dedalus_mcp_prompt_server", default=None)
 
 
 def get_active_server() -> MCPServer | None:

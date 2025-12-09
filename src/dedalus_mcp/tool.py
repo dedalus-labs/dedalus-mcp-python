@@ -56,8 +56,8 @@ class ToolSpec:
     icons: list[Any] | None = None
 
 
-_TOOL_ATTR = "__openmcp_tool__"
-_ACTIVE_SERVER: ContextVar[MCPServer | None] = ContextVar("_openmcp_active_server", default=None)
+_TOOL_ATTR = "__dedalus_mcp_tool__"
+_ACTIVE_SERVER: ContextVar[MCPServer | None] = ContextVar("_dedalus_mcp_active_server", default=None)
 
 
 def get_active_server() -> MCPServer | None:

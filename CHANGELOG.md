@@ -7,12 +7,12 @@
 
 * nov 30 changes ([5da68a0](https://github.com/dedalus-labs/dedalus-mcp-python/commit/5da68a06b01c96d672c4fe245a849abd03d67eb6))
 
-## [0.1.0](https://github.com/dedalus-labs/openmcp-python/compare/v0.0.1...v0.1.0) (2025-12-04)
+## [0.1.0](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.0.1...v0.1.0) (2025-12-04)
 
 
 ### Features
 
-* nov 30 changes ([5da68a0](https://github.com/dedalus-labs/openmcp-python/commit/5da68a06b01c96d672c4fe245a849abd03d67eb6))
+* nov 30 changes ([5da68a0](https://github.com/dedalus-labs/dedalus-mcp-python/commit/5da68a06b01c96d672c4fe245a849abd03d67eb6))
 
 ## Changelog
 

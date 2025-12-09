@@ -45,7 +45,7 @@ body:
     id: scope
     attributes:
       label: Scope
-      description: What part of OpenMCP does this affect?
+      description: What part of Dedalus MCP does this affect?
       options:
         - Server
         - Client

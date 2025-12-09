@@ -42,10 +42,10 @@ You don't need to do anything else. The automation handles versioning, changelog
 
 ## Package Versions vs. Protocol Versions
 
-Dedalus MCP package versions (e.g., `1.2.3`) are independent of MCP protocol versions (e.g., `2025-06-18`). A single package version can support multiple protocol versions. See [versioning.md](docs/openmcp/versioning.md) for details.
+Dedalus MCP package versions (e.g., `1.2.3`) are independent of MCP protocol versions (e.g., `2025-06-18`). A single package version can support multiple protocol versions. See [versioning.md](docs/dedalus_mcp/versioning.md) for details.
 
 ## Questions?
 
 - [CONTRIBUTING.md](CONTRIBUTING.md) — how to submit PRs
 - [Conventional Commits](docs/conventional-commits.md) — commit message format
-- [GitHub Discussions](https://github.com/dedalus-labs/openmcp-python/discussions) — ask questions
+- [GitHub Discussions](https://github.com/dedalus-labs/dedalus-mcp-python/discussions) — ask questions
