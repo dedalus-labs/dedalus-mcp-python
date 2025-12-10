@@ -1095,8 +1095,8 @@ class MCPServer(Server[Any, Any]):
         transport: str | None = None,
         validate: bool = True,
         verbose: bool = True,
-        host: str = "127.0.0.1",
-        port: int = 8000,
+        host: str = "0.0.0.0",
+        port: int | None = None,
         path: str = "/mcp",
         log_level: str = "info",
         stateless: bool = False,
@@ -1104,6 +1104,12 @@ class MCPServer(Server[Any, Any]):
         uvicorn_options: Mapping[str, Any] | None = None,
         **transport_kwargs: Any,
     ) -> None:
+        import os
+
+        # Resolve port: param > PORT env > 8080 (Lambda adapter default)
+        if port is None:
+            port = int(os.environ.get("PORT", 8080))
+
         selected = (transport or self._default_transport).lower()
         self._runtime_started = True
 
@@ -1140,8 +1146,8 @@ class MCPServer(Server[Any, Any]):
 
     async def serve_streamable_http(
         self,
-        host: str = "127.0.0.1",
-        port: int = 8000,
+        host: str = "0.0.0.0",
+        port: int | None = None,
         path: str = "/mcp",
         log_level: str = "info",
         *,
@@ -1149,6 +1155,12 @@ class MCPServer(Server[Any, Any]):
         announce: bool = True,
         **uvicorn_options: Any,
     ) -> None:
+        import os
+
+        # Resolve port: param > PORT env > 8080 (Lambda adapter default)
+        if port is None:
+            port = int(os.environ.get("PORT", 8080))
+
         if validate:
             self.validate()
         transport = self._transport_for_name("streamable-http")
