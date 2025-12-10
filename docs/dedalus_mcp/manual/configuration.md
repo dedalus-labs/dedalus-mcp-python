@@ -36,9 +36,11 @@ validation rules, and behavioral notes.
 
 | Field | Default | behavior |
 | ----- | ------- | --------- |
-| `enable_dns_rebinding_protection` | `True` | Rejects Host headers that do not match allowed list. |
-| `allowed_hosts` | `["127.0.0.1:*", "localhost:*"]` | Additional allowed host:port pairs. |
-| `allowed_origins` | empty | Origins accepted for browser clients. |
+| `enable_dns_rebinding_protection` | `False` | When `True`, rejects Host headers that do not match allowed list. |
+| `allowed_hosts` | `[]` (all allowed) | Host:port patterns to allow (e.g., `["localhost:*", "example.com:443"]`). |
+| `allowed_origins` | `[]` (all allowed) | Origins accepted for browser clients. |
+
+Security settings can also be configured via environment variables (see below).
 
 ### Ping Service Thresholds
 
@@ -99,6 +101,9 @@ See `docs/dedalus_mcp/design/authorization.md` for the forthcoming design.
 | -------- | --------- |
 | `DEDALUS_MCP_LOG_LEVEL` | Overrides the default Python logging level (`INFO`). |
 | `DEDALUS_MCP_PROGRESS_LOG_LEVEL` | Sets the logger level for progress telemetry (`DEBUG` by default). |
+| `MCP_DNS_REBINDING_PROTECTION` | Set to `"true"` to enable Host header validation. |
+| `MCP_ALLOWED_HOSTS` | Comma-separated host patterns (e.g., `"localhost:*,example.com:443"`). |
+| `MCP_ALLOWED_ORIGINS` | Comma-separated allowed origins (e.g., `"https://example.com"`). |
 
 ## Defaults Summary
 

@@ -43,9 +43,40 @@ def test_default_http_security_settings() -> None:
     server = MCPServer("security-defaults")
     settings = server._http_security_settings  # internal detail, intentional  # noqa: SLF001
 
+    # Defaults are permissive for OSS flexibility
+    assert settings.enable_dns_rebinding_protection is False
+    assert settings.allowed_hosts == []
+    assert settings.allowed_origins == []
+
+
+def test_http_security_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("MCP_DNS_REBINDING_PROTECTION", "true")
+    monkeypatch.setenv("MCP_ALLOWED_HOSTS", "localhost:*, example.com:443")
+    monkeypatch.setenv("MCP_ALLOWED_ORIGINS", "https://example.com, https://other.com")
+
+    server = MCPServer("security-env")
+    settings = server._http_security_settings  # noqa: SLF001
+
     assert settings.enable_dns_rebinding_protection is True
-    assert "127.0.0.1:*" in settings.allowed_hosts
-    assert "https://as.dedaluslabs.ai" in settings.allowed_origins
+    assert settings.allowed_hosts == ["localhost:*", "example.com:443"]
+    assert settings.allowed_origins == ["https://example.com", "https://other.com"]
+
+
+def test_http_security_params_override_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Set env vars
+    monkeypatch.setenv("MCP_DNS_REBINDING_PROTECTION", "true")
+    monkeypatch.setenv("MCP_ALLOWED_HOSTS", "env-host:8080")
+
+    # Params should override env
+    settings = MCPServer._default_http_security_settings(  # noqa: SLF001
+        enable_dns_rebinding_protection=False,
+        allowed_hosts=["param-host:443"],
+    )
+
+    assert settings.enable_dns_rebinding_protection is False
+    assert settings.allowed_hosts == ["param-host:443"]
+    # allowed_origins not passed, should fall back to env (which is empty)
+    assert settings.allowed_origins == []
 
 
 def test_http_security_override() -> None:

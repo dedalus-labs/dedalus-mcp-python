@@ -66,13 +66,6 @@ class InvalidConnectionHandleError(ConnectionHandleError):
 def parse_connections_claim(claims: dict[str, Any]) -> set[str]:
     """Parse the ddls:connections claim from JWT claims.
 
-    The claim can be:
-    - A list of connection handle strings
-    - A single connection handle string
-    - Missing (treated as empty set)
-
-    Non-string entries in a list are filtered out.
-
     Args:
         claims: JWT claims dictionary
 
@@ -84,14 +77,13 @@ def parse_connections_claim(claims: dict[str, Any]) -> set[str]:
     if raw is None:
         return set()
 
-    if isinstance(raw, str):
-        return {raw}
-
     if isinstance(raw, list):
-        # Filter to only valid strings
-        return {item for item in raw if isinstance(item, str)}
+        handles: set[str] = set()
+        for item in raw:
+            if isinstance(item, dict) and "id" in item:
+                handles.add(item["id"])
+        return handles
 
-    # Unknown type, treat as empty
     _logger.warning(
         "unexpected ddls:connections claim type",
         extra={"event": "connection_gate.claim.invalid_type", "type": type(raw).__name__},
