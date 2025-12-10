@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.2](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.2.1...v0.2.2) (2025-12-10)
+
+
+### Bug Fixes
+
+* more permissive security settings ([66fe39f](https://github.com/dedalus-labs/dedalus-mcp-python/commit/66fe39f06f82a93315683dec970b5ad8d36b982d))
+* more permissive security settings ([f533b56](https://github.com/dedalus-labs/dedalus-mcp-python/commit/f533b56da9c083f2621d8333c514aa091cdb1cd5))
+
 ## [0.2.1](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.2.0...v0.2.1) (2025-12-09)
 
 
