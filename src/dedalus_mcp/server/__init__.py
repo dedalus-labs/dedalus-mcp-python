@@ -9,6 +9,9 @@ the framework primitives that host applications are expected to import.
 
 from __future__ import annotations
 
+from mcp.server.transport_security import TransportSecuritySettings
+
+from .authorization import AuthorizationConfig
 from .core import MCPServer, NotificationFlags, ServerValidationError, TransportLiteral
 from .execution_plan import ExecutionPlan, build_plan_from_claims
 
@@ -18,6 +21,8 @@ __all__ = [
     "NotificationFlags",
     "ServerValidationError",
     "TransportLiteral",
+    "TransportSecuritySettings",
+    "AuthorizationConfig",
     "ExecutionPlan",
     "build_plan_from_claims",
 ]
