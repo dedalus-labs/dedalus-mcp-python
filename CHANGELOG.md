@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.3](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.2.2...v0.2.3) (2025-12-10)
+
+
+### Bug Fixes
+
+* port ([1974d73](https://github.com/dedalus-labs/dedalus-mcp-python/commit/1974d73d4796c3c45114f71c8304c03bbd94cf9c))
+* port ([7878f43](https://github.com/dedalus-labs/dedalus-mcp-python/commit/7878f435f29576e7bb45fb4d60801707720759ce))
+
 ## [0.2.2](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.2.1...v0.2.2) (2025-12-10)
 
 
