@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.4](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.2.3...v0.2.4) (2025-12-10)
+
+
+### Bug Fixes
+
+* exported parameter settings ([41324ed](https://github.com/dedalus-labs/dedalus-mcp-python/commit/41324ed02bd2bdda46143e3b7f6ed621aa7a5e06))
+* exported parameter settings ([01e5c5f](https://github.com/dedalus-labs/dedalus-mcp-python/commit/01e5c5f3ceeae48751b39bc9379817ee930d002c))
+
 ## [0.2.3](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.2.2...v0.2.3) (2025-12-10)
 
 
