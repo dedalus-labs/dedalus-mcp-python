@@ -299,7 +299,7 @@ class Context:
             raise RuntimeError("Dispatch backend not configured")
 
         # Resolve connection target to handle
-        connections: dict[str, str] = runtime.get("connection_handles", {})
+        connections = self._get_connection_handles(runtime)
 
         if connection_target is None:
             # Single-connection server: use the only connection
@@ -364,6 +364,22 @@ class Context:
         if operation is not None:
             payload["operation"] = dict(operation)
         return payload
+
+    def _get_connection_handles(self, runtime: Mapping[str, Any]) -> dict[str, str]:
+        """Get connection name to handle mapping from JWT claims or runtime config."""
+        auth_context = self.auth_context
+        if auth_context is not None:
+            claims = getattr(auth_context, "claims", {})
+            ddls_connections = claims.get("ddls:connections", [])
+            if ddls_connections:
+                handles: dict[str, str] = {}
+                for entry in ddls_connections:
+                    if isinstance(entry, Mapping) and "name" in entry and "id" in entry:
+                        handles[entry["name"]] = entry["id"]
+                if handles:
+                    return handles
+
+        return dict(runtime.get("connection_handles", {}))
 
 
 def _activate_request_context() -> Token[Context | None]:
