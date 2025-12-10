@@ -1016,12 +1016,42 @@ class MCPServer(Server[Any, Any]):
     # //////////////////////////////////////////////////////////////////
 
     @staticmethod
-    def _default_http_security_settings() -> TransportSecuritySettings:
-        """Return conservative defaults for streamable HTTP security."""
+    def _default_http_security_settings(
+        *,
+        enable_dns_rebinding_protection: bool | None = None,
+        allowed_hosts: list[str] | None = None,
+        allowed_origins: list[str] | None = None,
+    ) -> TransportSecuritySettings:
+        """Return security settings for streamable HTTP transport.
+
+        Parameters take precedence over environment variables, which take
+        precedence over permissive defaults.
+
+        Args:
+            enable_dns_rebinding_protection: Validate Host headers. Env: MCP_DNS_REBINDING_PROTECTION
+            allowed_hosts: Host:port patterns (e.g., ["localhost:*"]). Env: MCP_ALLOWED_HOSTS
+            allowed_origins: Allowed origins for CORS. Env: MCP_ALLOWED_ORIGINS
+        """
+        import os
+
+        # Resolve enable_dns_rebinding_protection: param > env > False
+        if enable_dns_rebinding_protection is None:
+            enable_dns_rebinding_protection = os.environ.get("MCP_DNS_REBINDING_PROTECTION", "").lower() == "true"
+
+        # Resolve allowed_hosts: param > env > []
+        if allowed_hosts is None:
+            env_val = os.environ.get("MCP_ALLOWED_HOSTS", "")
+            allowed_hosts = [h.strip() for h in env_val.split(",") if h.strip()] if env_val else []
+
+        # Resolve allowed_origins: param > env > []
+        if allowed_origins is None:
+            env_val = os.environ.get("MCP_ALLOWED_ORIGINS", "")
+            allowed_origins = [o.strip() for o in env_val.split(",") if o.strip()] if env_val else []
+
         return TransportSecuritySettings(
-            enable_dns_rebinding_protection=True,
-            allowed_hosts=["127.0.0.1:*", "localhost:*"],
-            allowed_origins=["https://as.dedaluslabs.ai"],
+            enable_dns_rebinding_protection=enable_dns_rebinding_protection,
+            allowed_hosts=allowed_hosts,
+            allowed_origins=allowed_origins,
         )
 
     def register_transport(self, name: str, factory: TransportFactory, *, aliases: Iterable[str] | None = None) -> None:
