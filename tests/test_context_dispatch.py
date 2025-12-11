@@ -12,7 +12,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from dedalus_mcp.context import Context
-from dedalus_mcp.dispatch import DirectDispatchBackend
+from dedalus_mcp.dispatch import DirectDispatchBackend, DispatchResponse, HttpMethod, HttpRequest
 from dedalus_mcp.server.authorization import AuthorizationContext
 from dedalus_mcp.server.services.connection_gate import (
     ConnectionHandleNotAuthorizedError,
@@ -34,13 +34,16 @@ class TestContextDispatch:
 
     @pytest.fixture
     def backend(self):
-        """Create a DirectDispatchBackend with a mock driver."""
-        backend = DirectDispatchBackend()
+        """Create a DirectDispatchBackend with a mock resolver."""
+        def mock_resolver(handle: str) -> tuple[str, str]:
+            # Return (base_url, auth_header) for test connections
+            if "github" in handle:
+                return ("https://api.github.com", "Bearer mock_github_token")
+            elif "slack" in handle:
+                return ("https://slack.com/api", "Bearer mock_slack_token")
+            return ("https://example.com", "Bearer mock_token")
 
-        async def mock_github_driver(intent: str, arguments: dict) -> dict:
-            return {'intent': intent, 'args': arguments, 'status': 'ok'}
-
-        backend.register_driver('github', mock_github_driver)
+        backend = DirectDispatchBackend(credential_resolver=mock_resolver)
         return backend
 
     @pytest.fixture
@@ -49,61 +52,128 @@ class TestContextDispatch:
         return AuthorizationContext(
             subject='user123',
             scopes=['mcp:tools:call'],
-            claims={'ddls:connections': ['ddls:conn:01ABC-github']},
+            claims={'ddls:connections': [
+                {'id': 'ddls:conn:01ABC-github', 'name': 'github'}
+            ]},
         )
 
     @pytest.fixture
     def context_with_backend(self, backend, auth_context_with_handle):
         """Context with dispatch backend configured."""
         mock_request_ctx = MockRequestContext(
-            lifespan_context={'dedalus_mcp.runtime': {'dispatch_backend': backend}}
+            lifespan_context={'dedalus_mcp.runtime': {
+                'dispatch_backend': backend,
+                'connection_handles': {'github': 'ddls:conn:01ABC-github'}
+            }}
         )
         mock_request = MagicMock()
         mock_request.scope = {'dedalus_mcp.auth': auth_context_with_handle}
         mock_request_ctx.request = mock_request
 
         ctx = Context(
-            _request_context=mock_request_ctx, runtime={'dispatch_backend': backend}
+            _request_context=mock_request_ctx,
+            runtime={
+                'dispatch_backend': backend,
+                'connection_handles': {'github': 'ddls:conn:01ABC-github'}
+            }
         )
         return ctx
 
     @pytest.mark.asyncio
     async def test_dispatch_authorized_handle_succeeds(self, context_with_backend):
         """Dispatch with authorized handle should succeed."""
-        result = await context_with_backend.dispatch(
-            connection_handle='ddls:conn:01ABC-github',
-            intent='github:create_issue',
-            arguments={'title': 'Test'},
-        )
+        request = HttpRequest(method=HttpMethod.GET, path="/user")
+
+        result = await context_with_backend.dispatch('github', request)
 
         assert result.success is True
-        assert result.data['intent'] == 'github:create_issue'
-        assert result.data['args'] == {'title': 'Test'}
 
     @pytest.mark.asyncio
     async def test_dispatch_unauthorized_handle_rejected(self, context_with_backend):
         """Dispatch with unauthorized handle should be rejected."""
+        request = HttpRequest(method=HttpMethod.POST, path="/api/chat.postMessage")
+
         with pytest.raises(ConnectionHandleNotAuthorizedError) as exc_info:
-            await context_with_backend.dispatch(
-                connection_handle='ddls:conn:99XYZ-slack',  # Not authorized
-                intent='slack:post_message',
-                arguments={},
-            )
+            await context_with_backend.dispatch('ddls:conn:99XYZ-slack', request)
 
         assert 'ddls:conn:99XYZ-slack' in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_dispatch_extracts_jwt_from_bearer_header(self, backend, auth_context_with_handle):
+        """Dispatch should extract JWT from Bearer Authorization header."""
+        mock_request_ctx = MockRequestContext(
+            lifespan_context={'dedalus_mcp.runtime': {
+                'dispatch_backend': backend,
+                'connection_handles': {'github': 'ddls:conn:01ABC-github'}
+            }}
+        )
+        mock_request = MagicMock()
+        mock_request.scope = {
+            'dedalus_mcp.auth': auth_context_with_handle,
+            'headers': [(b"authorization", b"Bearer test_jwt_token_abc123")]
+        }
+        mock_request_ctx.request = mock_request
+
+        ctx = Context(
+            _request_context=mock_request_ctx,
+            runtime={'dispatch_backend': backend, 'connection_handles': {'github': 'ddls:conn:01ABC-github'}}
+        )
+        request = HttpRequest(method=HttpMethod.GET, path="/user")
+
+        result = await ctx.dispatch('github', request)
+
+        assert result.success is True
+
+    @pytest.mark.asyncio
+    async def test_dispatch_extracts_jwt_from_dpop_header(self, backend, auth_context_with_handle):
+        """Dispatch should extract JWT from DPoP Authorization header."""
+        mock_request_ctx = MockRequestContext(
+            lifespan_context={'dedalus_mcp.runtime': {'dispatch_backend': backend}}
+        )
+        mock_request = MagicMock()
+        mock_request.scope = {
+            'dedalus_mcp.auth': auth_context_with_handle,
+            'headers': [(b"authorization", b"DPoP test_jwt_token_xyz789")]
+        }
+        mock_request_ctx.request = mock_request
+
+        ctx = Context(_request_context=mock_request_ctx, runtime={'dispatch_backend': backend})
+        request = HttpRequest(method=HttpMethod.GET, path="/repos")
+
+        result = await ctx.dispatch('ddls:conn:01ABC-github', request)
+
+        assert result.success is True
+
+    @pytest.mark.asyncio
+    async def test_dispatch_dedalus_cloud_missing_jwt_raises(self, backend, auth_context_with_handle, monkeypatch):
+        """Dedalus Cloud dispatch without Authorization header should error."""
+        monkeypatch.setenv("DEDALUS_DISPATCH_URL", "https://preview.enclave.dedaluslabs.ai")
+
+        mock_request_ctx = MockRequestContext(
+            lifespan_context={'dedalus_mcp.runtime': {'dispatch_backend': backend}}
+        )
+        mock_request = MagicMock()
+        mock_request.scope = {
+            'dedalus_mcp.auth': auth_context_with_handle,
+            'headers': []  # No Authorization header
+        }
+        mock_request_ctx.request = mock_request
+
+        ctx = Context(_request_context=mock_request_ctx, runtime={'dispatch_backend': backend})
+        request = HttpRequest(method=HttpMethod.GET, path="/user")
+
+        with pytest.raises(RuntimeError, match='Expected Authorization header'):
+            await ctx.dispatch('ddls:conn:01ABC-github', request)
 
     @pytest.mark.asyncio
     async def test_dispatch_no_backend_raises(self):
         """Dispatch without configured backend should raise."""
         mock_request_ctx = MockRequestContext()
         ctx = Context(_request_context=mock_request_ctx, runtime=None)
+        request = HttpRequest(method=HttpMethod.POST, path="/repos")
 
         with pytest.raises(RuntimeError, match='Dispatch backend not configured'):
-            await ctx.dispatch(
-                connection_handle='ddls:conn:01ABC-github',
-                intent='github:create_issue',
-                arguments={},
-            )
+            await ctx.dispatch('ddls:conn:01ABC-github', request)
 
     @pytest.mark.asyncio
     async def test_dispatch_no_auth_context_skips_gate(self, backend):
@@ -116,22 +186,9 @@ class TestContextDispatch:
         ctx = Context(
             _request_context=mock_request_ctx, runtime={'dispatch_backend': backend}
         )
+        request = HttpRequest(method=HttpMethod.POST, path="/repos")
 
         # Should succeed without gate check
-        result = await ctx.dispatch(
-            connection_handle='ddls:conn:01ABC-github',
-            intent='github:create_issue',
-            arguments={'title': 'Test'},
-        )
+        result = await ctx.dispatch('ddls:conn:01ABC-github', request)
 
         assert result.success is True
-
-    @pytest.mark.asyncio
-    async def test_dispatch_default_empty_arguments(self, context_with_backend):
-        """Dispatch should default to empty arguments dict."""
-        result = await context_with_backend.dispatch(
-            connection_handle='ddls:conn:01ABC-github', intent='github:list_repos'
-        )
-
-        assert result.success is True
-        assert result.data['args'] == {}
