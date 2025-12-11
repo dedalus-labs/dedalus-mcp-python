@@ -181,10 +181,12 @@ class DispatchWireRequest(BaseModel):
     Attributes:
         connection_handle: Resolved handle (e.g., "ddls:conn:abc123")
         request: The HTTP request to execute
+        authorization: Optional JWT from MCP server request context for dispatch auth
     """
 
     connection_handle: str = Field(..., min_length=1)
     request: HttpRequest
+    authorization: str | None = None
 
     @field_validator("connection_handle")
     @classmethod
@@ -476,12 +478,21 @@ class EnclaveDispatchBackend:
             hmac_headers = self._sign_request(body_bytes)
             headers.update(hmac_headers)
 
-        # Add DPoP authorization
-        if self._dpop_key is not None:
-            headers["Authorization"] = f"DPoP {self._access_token}"
-            headers["DPoP"] = self._generate_dpop_proof(dispatch_url, "POST")
+        # Use per-request auth if provided, otherwise fall back to init token
+        access_token = request.authorization or self._access_token
+
+        # Add authorization headers (only if token present)
+        if access_token:
+            if self._dpop_key is not None:
+                headers["Authorization"] = f"DPoP {access_token}"
+                headers["DPoP"] = self._generate_dpop_proof(dispatch_url, "POST")
+            else:
+                headers["Authorization"] = f"Bearer {access_token}"
         else:
-            headers["Authorization"] = f"Bearer {self._access_token}"
+            _logger.warning(
+                "no access token available for dispatch",
+                extra={"event": "dispatch.no_token", "handle": request.connection_handle},
+            )
 
         try:
             async with httpx.AsyncClient(timeout=self._timeout) as client:
@@ -627,6 +638,9 @@ def create_dispatch_backend_from_env() -> DispatchBackend:
 
     Returns:
         Configured dispatch backend
+
+    Raises:
+        RuntimeError: If running in Lambda without DEDALUS_DISPATCH_URL configured
     """
     import base64
     import os
@@ -638,6 +652,11 @@ def create_dispatch_backend_from_env() -> DispatchBackend:
         auth_secret_b64 = os.getenv("DEDALUS_AUTH_SECRET")
         auth_secret = base64.b64decode(auth_secret_b64) if auth_secret_b64 else None
 
+        _logger.info(
+            "dispatch backend configured",
+            extra={"event": "dispatch.init", "backend": "enclave", "url": dispatch_url},
+        )
+
         # Access token and DPoP key are typically set per-request, not at init
         # This factory is for the runner identity; user auth is added later
         return EnclaveDispatchBackend(
@@ -647,6 +666,23 @@ def create_dispatch_backend_from_env() -> DispatchBackend:
             auth_secret=auth_secret,
         )
 
+    # Detect managed deployment - missing DEDALUS_DISPATCH_URL is a config error
+    is_managed = os.getenv("AWS_LAMBDA_FUNCTION_NAME") or os.getenv("AWS_EXECUTION_ENV")
+    if is_managed:
+        _logger.error(
+            "DEDALUS_DISPATCH_URL not set in managed environment. "
+            "Dispatch to external services will fail.",
+            extra={"event": "dispatch.init.error", "backend": "none"},
+        )
+        raise RuntimeError(
+            "DEDALUS_DISPATCH_URL required in managed deployments. "
+            "Verify deployment configuration injects dispatch credentials."
+        )
+
+    _logger.debug(
+        "dispatch backend configured",
+        extra={"event": "dispatch.init", "backend": "direct"},
+    )
     return DirectDispatchBackend()
 
 
