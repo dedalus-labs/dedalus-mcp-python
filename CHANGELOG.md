@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.5](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.2.4...v0.2.5) (2025-12-11)
+
+
+### Bug Fixes
+
+* headers parsing ([800dabc](https://github.com/dedalus-labs/dedalus-mcp-python/commit/800dabc764109014580e1d3359f7ce4ca6d8b8d3))
+* headers parsing ([08d7cf0](https://github.com/dedalus-labs/dedalus-mcp-python/commit/08d7cf065189dc8a7be59f402d45b2b72e5b0bc1))
+
 ## [0.2.4](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.2.3...v0.2.4) (2025-12-10)
 
 
