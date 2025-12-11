@@ -17,6 +17,7 @@ Implements context integration for MCP capabilities:
 
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncIterator, Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar, Token
@@ -328,11 +329,22 @@ class Context:
             gate = ConnectionHandleGate.from_claims(claims)
             gate.check(connection_handle)
 
-        # Extract JWT from request scope (set by authorization middleware)
+        # Extract JWT from ASGI headers
+        from .server.authorization import parse_authorization_token  # Local import avoids cycle
+
         authorization_token = None
         scope = self._request_scope()
         if isinstance(scope, Mapping):
-            authorization_token = scope.get("dedalus_mcp.access_token")
+            headers = scope.get("headers", [])
+            for name, value in headers:
+                if name == b"authorization":
+                    authorization_token = parse_authorization_token(value.decode("latin1"))
+                    break
+
+        # Dedalus-hosted MCP servers require Authorization tokens
+        if os.getenv("DEDALUS_DISPATCH_URL") and not authorization_token:
+            msg = "Expected Authorization header in request headers but got none"
+            raise RuntimeError(msg)
 
         # Build and execute wire request
         wire_request = DispatchWireRequest(

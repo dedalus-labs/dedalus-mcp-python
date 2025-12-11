@@ -48,6 +48,7 @@ from .resource_template import (
     resource_template,
 )
 from .server import MCPServer
+from .server.authorization import AuthorizationConfig
 from .server.connectors import (
     Binding,
     Connection,
@@ -55,6 +56,7 @@ from .server.connectors import (
     Credentials,
 )
 from .server.dependencies import register_injectable_type
+from .server.services.jwt_validator import JWTValidator, JWTValidatorConfig
 from .tool import ToolSpec, extract_tool_spec, tool
 
 if TYPE_CHECKING:
@@ -107,6 +109,10 @@ __all__ = [
     'MCPClient',
     'Context',
     'get_context',
+    # Authorization
+    'AuthorizationConfig',
+    'JWTValidator',
+    'JWTValidatorConfig',
     # Connections
     'Binding',
     'Connection',
