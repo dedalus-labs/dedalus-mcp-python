@@ -132,7 +132,6 @@ class Context:
     @property
     def auth_context(self) -> Any | None:
         """Return the authorization context populated by transports, if present."""
-
         scope = self._request_scope()
         if isinstance(scope, Mapping):
             return scope.get("dedalus_mcp.auth")
@@ -141,7 +140,6 @@ class Context:
     @property
     def resolver(self) -> "ConnectionResolver" | None:
         """Return the configured connection resolver for this server, if any."""
-
         runtime = self.runtime
         if not isinstance(runtime, Mapping):
             return None
@@ -330,8 +328,18 @@ class Context:
             gate = ConnectionHandleGate.from_claims(claims)
             gate.check(connection_handle)
 
+        # Extract JWT from request scope (set by authorization middleware)
+        authorization_token = None
+        scope = self._request_scope()
+        if isinstance(scope, Mapping):
+            authorization_token = scope.get("dedalus_mcp.access_token")
+
         # Build and execute wire request
-        wire_request = DispatchWireRequest(connection_handle=connection_handle, request=http_request)
+        wire_request = DispatchWireRequest(
+            connection_handle=connection_handle,
+            request=http_request,
+            authorization=authorization_token,
+        )
 
         return await backend.dispatch(wire_request)
 
