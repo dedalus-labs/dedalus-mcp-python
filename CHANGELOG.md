@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.6](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.2.5...v0.2.6) (2025-12-11)
+
+
+### Bug Fixes
+
+* dispatch double slug error ([6a21d3c](https://github.com/dedalus-labs/dedalus-mcp-python/commit/6a21d3c39e7182fe5c665c25e0d013a98f0a25f6))
+
 ## [0.2.5](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.2.4...v0.2.5) (2025-12-11)
 
 
