@@ -452,7 +452,7 @@ class EnclaveDispatchBackend:
                 "httpx not installed; required for Enclave dispatch",
             )
 
-        dispatch_url = f"{self._enclave_url}/dispatch"
+        dispatch_url = f"{self._enclave_url}"
 
         # Build wire format body first (needed for HMAC)
         body = {

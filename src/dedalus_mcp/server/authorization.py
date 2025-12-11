@@ -176,7 +176,6 @@ class AuthorizationManager:
                         await manager._validate_dpop_proof(request, dpop_proof, token, context.claims)
 
                     request.scope["dedalus_mcp.auth"] = context
-                    request.scope["dedalus_mcp.access_token"] = token
                     return await call_next(request)
                 except AuthorizationError as exc:
                     manager._logger.warning(
