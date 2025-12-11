@@ -68,6 +68,27 @@ class AuthorizationError(Exception):
     """Raised when token validation fails."""
 
 
+def parse_authorization_token(auth_header: str) -> str | None:
+    """Extract token from Authorization header (Bearer or DPoP scheme).
+
+    Args:
+        auth_header: Authorization header value (e.g., "Bearer token" or "DPoP token")
+
+    Returns:
+        Token string, or None if header format is invalid
+    """
+    if not auth_header:
+        return None
+
+    auth_lower = auth_header.lower()
+    if auth_lower.startswith("bearer "):
+        return auth_header[7:].strip()
+    if auth_lower.startswith("dpop "):
+        return auth_header[5:].strip()
+
+    return None
+
+
 class AuthorizationProvider(Protocol):
     async def validate(self, token: str) -> AuthorizationContext:
         """Validate a bearer token and return the associated context."""
@@ -155,6 +176,7 @@ class AuthorizationManager:
                         await manager._validate_dpop_proof(request, dpop_proof, token, context.claims)
 
                     request.scope["dedalus_mcp.auth"] = context
+                    request.scope["dedalus_mcp.access_token"] = token
                     return await call_next(request)
                 except AuthorizationError as exc:
                     manager._logger.warning(
