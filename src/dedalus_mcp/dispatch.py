@@ -20,9 +20,10 @@ Security model:
 The dispatch flow:
 1. Tool calls `ctx.dispatch(connection, HttpRequest(...))`
 2. Framework resolves connection name to handle
-3. Connection gate validates handle against JWT's `ddls:connections` claim
-4. Backend executes the HTTP request (locally or via Enclave)
-5. HttpResponse returned to tool
+3. Handle format validated locally
+4. Gateway validates authorization against org's connections at runtime
+5. Backend executes the HTTP request (locally or via Enclave)
+6. HttpResponse returned to tool
 
 Example:
     >>> @server.tool()
@@ -43,7 +44,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import time
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Any, Callable, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -58,7 +59,7 @@ _logger = get_logger("dedalus_mcp.dispatch")
 # =============================================================================
 
 
-class HttpMethod(str, Enum):
+class HttpMethod(StrEnum):
     """HTTP methods supported by dispatch."""
 
     GET = "GET"
@@ -93,6 +94,20 @@ class HttpRequest(BaseModel):
         """Validate path starts with /."""
         if not v.startswith("/"):
             raise ValueError("path must start with '/'")
+        return v
+
+    @field_validator("headers")
+    @classmethod
+    def validate_headers(cls, v: dict[str, str] | None) -> dict[str, str] | None:
+        """Reject headers that must be set by the dispatch backend."""
+        if v is None:
+            return None
+
+        forbidden = {"authorization", "dpop"}
+        bad = [name for name in v if name.lower() in forbidden]
+        if bad:
+            raise ValueError(f"headers must not include reserved header(s): {', '.join(sorted(bad))}")
+
         return v
 
 
@@ -452,7 +467,7 @@ class EnclaveDispatchBackend:
                 "httpx not installed; required for Enclave dispatch",
             )
 
-        dispatch_url = f"{self._enclave_url}"
+        dispatch_url = f"{self._enclave_url.rstrip('/')}/dispatch"
 
         # Build wire format body first (needed for HMAC)
         body = {
@@ -596,32 +611,14 @@ class EnclaveDispatchBackend:
         if self._dpop_key is None:
             return ""
 
-        import uuid
+        from dedalus_mcp.dpop import generate_dpop_proof
 
-        import jwt
-
-        # Extract public key as JWK
-        public_key = self._dpop_key.public_key()
-        public_numbers = public_key.public_numbers()
-
-        def b64url_encode(data: bytes) -> str:
-            import base64
-
-            return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
-
-        x_bytes = public_numbers.x.to_bytes(32, byteorder="big")
-        y_bytes = public_numbers.y.to_bytes(32, byteorder="big")
-
-        jwk = {"kty": "EC", "crv": "P-256", "x": b64url_encode(x_bytes), "y": b64url_encode(y_bytes)}
-
-        header = {"typ": "dpop+jwt", "alg": "ES256", "jwk": jwk}
-
-        # Compute ath (access token hash)
-        ath = b64url_encode(hashlib.sha256(self._access_token.encode()).digest())
-
-        payload = {"jti": str(uuid.uuid4()), "htm": method, "htu": url, "iat": int(time.time()), "ath": ath}
-
-        return jwt.encode(payload, self._dpop_key, algorithm="ES256", headers=header)
+        return generate_dpop_proof(
+            private_key=self._dpop_key,
+            method=method,
+            url=url,
+            access_token=self._access_token,
+        )
 
 
 def create_dispatch_backend_from_env() -> DispatchBackend:

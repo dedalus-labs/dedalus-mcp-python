@@ -52,8 +52,8 @@ from .server.authorization import AuthorizationConfig
 from .server.connectors import (
     Binding,
     Connection,
-    Credential,
-    Credentials,
+    SecretKeys,
+    SecretValues,
 )
 from .server.dependencies import register_injectable_type
 from .server.services.jwt_validator import JWTValidator, JWTValidatorConfig
@@ -116,8 +116,8 @@ __all__ = [
     # Connections
     'Binding',
     'Connection',
-    'Credential',
-    'Credentials',
+    'SecretKeys',
+    'SecretValues',
     # Dispatch
     'HttpMethod',
     'HttpRequest',

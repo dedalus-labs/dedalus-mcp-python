@@ -253,7 +253,7 @@ class Context:
         Raises:
             RuntimeError: If dispatch backend or connections not configured
             ValueError: If target required but not provided
-            ConnectionHandleNotAuthorizedError: If handle not in JWT claims
+            InvalidConnectionHandleError: If handle format is invalid
 
         Example:
             >>> response = await ctx.dispatch(HttpRequest(
@@ -271,7 +271,7 @@ class Context:
             HttpRequest,
         )
         from .server.connectors import Connection
-        from .server.services.connection_gate import ConnectionHandleGate
+        from .server.services.connection_gate import validate_handle_format
 
         # Handle overloaded signature: dispatch(HttpRequest) or dispatch(target, HttpRequest)
         if request is None:
@@ -322,24 +322,35 @@ class Context:
         else:
             raise TypeError(f"target must be Connection, str, or None; got {type(connection_target).__name__}")
 
-        # Gate check: verify handle is authorized in JWT claims
-        auth_context = self.auth_context
-        if auth_context is not None:
-            claims = getattr(auth_context, "claims", {})
-            gate = ConnectionHandleGate.from_claims(claims)
-            gate.check(connection_handle)
+        # Validate handle format (authorization is done by gateway at runtime)
+        validate_handle_format(connection_handle)
 
         # Extract JWT from ASGI headers
-        from .server.authorization import parse_authorization_token  # Local import avoids cycle
+        from .server.authorization import parse_authorization_token
+        from .utils import get_logger
 
+        _ctx_logger = get_logger("dedalus_mcp.context")
         authorization_token = None
         scope = self._request_scope()
+
         if isinstance(scope, Mapping):
             headers = scope.get("headers", [])
+
             for name, value in headers:
                 if name == b"authorization":
-                    authorization_token = parse_authorization_token(value.decode("latin1"))
+                    raw_value = value.decode("latin1")
+                    _ctx_logger.debug(f"Extracting auth from ASGI scope: {raw_value[:40]}...")
+                    authorization_token = parse_authorization_token(raw_value)
+                    if authorization_token:
+                        _ctx_logger.debug("Successfully parsed authorization token for dispatch")
+                    else:
+                        _ctx_logger.warning(f"Failed to parse Authorization header format: {raw_value[:60]}")
                     break
+
+            if not authorization_token:
+                # Log all header names for debugging missing auth
+                header_names = [n.decode() if isinstance(n, bytes) else str(n) for n, _ in headers[:10]]
+                _ctx_logger.warning(f"No Authorization header in ASGI scope. Available headers: {', '.join(header_names)}")
 
         # Dedalus-hosted MCP servers require Authorization tokens
         if os.getenv("DEDALUS_DISPATCH_URL") and not authorization_token:
@@ -386,19 +397,11 @@ class Context:
         return payload
 
     def _get_connection_handles(self, runtime: Mapping[str, Any]) -> dict[str, str]:
-        """Get connection name to handle mapping from JWT claims or runtime config."""
-        auth_context = self.auth_context
-        if auth_context is not None:
-            claims = getattr(auth_context, "claims", {})
-            ddls_connections = claims.get("ddls:connections", [])
-            if ddls_connections:
-                handles: dict[str, str] = {}
-                for entry in ddls_connections:
-                    if isinstance(entry, Mapping) and "name" in entry and "id" in entry:
-                        handles[entry["name"]] = entry["id"]
-                if handles:
-                    return handles
+        """Get connection name to handle mapping from runtime config.
 
+        Note: Authorization is handled by the gateway at runtime via Admin API.
+        The runtime config provides the name->handle mapping for dispatch routing.
+        """
         return dict(runtime.get("connection_handles", {}))
 
 
