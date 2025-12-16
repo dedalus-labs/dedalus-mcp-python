@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.7](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.2.6...v0.2.7) (2025-12-16)
+
+
+### Bug Fixes
+
+* typed Connections schema ([8f46863](https://github.com/dedalus-labs/dedalus-mcp-python/commit/8f468632c68fc3aa3e1f992da493ccf2349ee8b2))
+* typed Connections schema ([ed28a0e](https://github.com/dedalus-labs/dedalus-mcp-python/commit/ed28a0eb04e805343af30a43d49ce5f7b193733f))
+
 ## [0.2.6](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.2.5...v0.2.6) (2025-12-11)
 
 
