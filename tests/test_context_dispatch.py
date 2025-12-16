@@ -37,13 +37,13 @@ class TestContextDispatch:
     @pytest.fixture
     def backend(self):
         """Create a DirectDispatchBackend with a mock resolver."""
-        def mock_resolver(handle: str) -> tuple[str, str]:
-            # Return (base_url, auth_header) for test connections
+        def mock_resolver(handle: str) -> tuple[str, str, str]:
+            # Return (base_url, header_name, header_value) for test connections
             if "github" in handle:
-                return ("https://api.github.com", "Bearer mock_github_token")
+                return ("https://api.github.com", "Authorization", "Bearer mock_github_token")
             elif "slack" in handle:
-                return ("https://slack.com/api", "Bearer mock_slack_token")
-            return ("https://example.com", "Bearer mock_token")
+                return ("https://slack.com/api", "Authorization", "Bearer mock_slack_token")
+            return ("https://example.com", "Authorization", "Bearer mock_token")
 
         backend = DirectDispatchBackend(credential_resolver=mock_resolver)
         return backend
@@ -191,7 +191,7 @@ class TestContextDispatch:
         )
         request = HttpRequest(method=HttpMethod.GET, path="/user")
 
-        with pytest.raises(RuntimeError, match='Expected Authorization header'):
+        with pytest.raises(RuntimeError, match='DEDALUS_DISPATCH_URL is set'):
             await ctx.dispatch('github', request)
 
     @pytest.mark.asyncio

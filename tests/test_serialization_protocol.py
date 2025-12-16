@@ -3,7 +3,7 @@
 
 """Tests for serialization protocol compatibility between dedalus_mcp and SDK.
 
-These tests verify that Connection and Credential objects serialize to JSON-compatible
+These tests verify that Connection and SecretValues objects serialize to JSON-compatible
 formats that can be consumed by any SDK implementing the protocol, including:
 - The Stainless-generated dedalus-sdk-python
 - Third-party libraries implementing the same wire format
@@ -16,7 +16,7 @@ from typing import Any, Protocol, runtime_checkable
 
 import pytest
 
-from dedalus_mcp import Binding, Connection, Credential, Credentials
+from dedalus_mcp import Binding, Connection, SecretValues, SecretKeys
 
 
 # --- Protocol definitions (what the SDK expects) ---
@@ -39,8 +39,8 @@ class ConnectionProtocol(Protocol):
 
 
 @runtime_checkable
-class CredentialProtocol(Protocol):
-    """Protocol for Credential-like objects."""
+class SecretValuesProtocol(Protocol):
+    """Protocol for SecretValues-like objects."""
 
     @property
     def connection(self) -> ConnectionProtocol: ...
@@ -60,7 +60,7 @@ class TestConnectionProtocol:
         """Connection class implements ConnectionProtocol."""
         conn = Connection(
             'github',
-            credentials=Credentials(token='GITHUB_TOKEN'),
+            secrets=SecretKeys(token='GITHUB_TOKEN'),
             base_url='https://api.github.com',
         )
         assert isinstance(conn, ConnectionProtocol)
@@ -69,7 +69,7 @@ class TestConnectionProtocol:
         """Connection.to_dict() produces JSON-serializable output."""
         conn = Connection(
             'github',
-            credentials=Credentials(
+            secrets=SecretKeys(
                 token='GITHUB_TOKEN', org=Binding('GITHUB_ORG', optional=True)
             ),
             base_url='https://api.github.com',
@@ -85,12 +85,12 @@ class TestConnectionProtocol:
         assert parsed['name'] == 'github'
         assert parsed['base_url'] == 'https://api.github.com'
         assert parsed['timeout_ms'] == 60000
-        assert 'credentials' in parsed
-        assert parsed['credentials']['token'] == 'GITHUB_TOKEN'
+        assert 'secrets' in parsed
+        assert parsed['secrets']['token'] == 'GITHUB_TOKEN'
 
     def test_connection_to_dict_omits_defaults(self) -> None:
         """to_dict() omits default values for compact wire format."""
-        conn = Connection('github', credentials=Credentials(token='TOKEN'))
+        conn = Connection('github', secrets=SecretKeys(token='TOKEN'))
 
         data = conn.to_dict()
 
@@ -98,20 +98,20 @@ class TestConnectionProtocol:
         assert 'timeout_ms' not in data  # 30000 is default
 
 
-class TestCredentialProtocol:
-    """Test that Credential satisfies the protocol."""
+class TestSecretValuesProtocolTests:
+    """Test that SecretValues satisfies the protocol."""
 
-    def test_credential_satisfies_protocol(self) -> None:
-        """Credential class implements CredentialProtocol."""
-        conn = Connection('github', credentials=Credentials(token='TOKEN'))
-        cred = Credential(conn, token='ghp_xxx')
+    def test_secret_values_satisfies_protocol(self) -> None:
+        """SecretValues class implements SecretValuesProtocol."""
+        conn = Connection('github', secrets=SecretKeys(token='TOKEN'))
+        cred = SecretValues(conn, token='ghp_xxx')
 
-        assert isinstance(cred, CredentialProtocol)
+        assert isinstance(cred, SecretValuesProtocol)
 
-    def test_credential_to_dict_is_json_serializable(self) -> None:
-        """Credential.to_dict() produces JSON-serializable output."""
-        conn = Connection('github', credentials=Credentials(token='TOKEN'))
-        cred = Credential(conn, token='ghp_xxx')
+    def test_secret_values_to_dict_is_json_serializable(self) -> None:
+        """SecretValues.to_dict() produces JSON-serializable output."""
+        conn = Connection('github', secrets=SecretKeys(token='TOKEN'))
+        cred = SecretValues(conn, token='ghp_xxx')
 
         data = cred.to_dict()
 
@@ -123,15 +123,19 @@ class TestCredentialProtocol:
 
     def test_values_for_encryption_is_json_serializable(self) -> None:
         """values_for_encryption() produces JSON-serializable output."""
-        conn = Connection('api', credentials=Credentials(key='KEY', secret='SECRET'))
-        cred = Credential(conn, key='k123', secret='s456')
+        conn = Connection('api', secrets=SecretKeys(key='KEY'))
+        cred = SecretValues(conn, key='k123')
 
         data = cred.values_for_encryption()
 
         json_str = json.dumps(data)
         parsed = json.loads(json_str)
 
-        assert parsed == {'key': 'k123', 'secret': 's456'}
+        # Now returns CredentialEnvelope format
+        assert parsed['type'] == 'api_key'
+        assert parsed['api_key'] == 'k123'
+        assert parsed['header_name'] == 'Authorization'
+        assert parsed['header_template'] == 'Bearer {api_key}'
 
 
 class TestWireFormatRoundTrip:
@@ -141,7 +145,7 @@ class TestWireFormatRoundTrip:
         """Connection survives JSON round-trip."""
         conn = Connection(
             'openai',
-            credentials=Credentials(
+            secrets=SecretKeys(
                 api_key='OPENAI_API_KEY',
                 org_id=Binding('OPENAI_ORG', default='default_org'),
             ),
@@ -156,13 +160,13 @@ class TestWireFormatRoundTrip:
         assert parsed['name'] == 'openai'
         assert parsed['base_url'] == 'https://api.openai.com/v1'
         assert parsed['timeout_ms'] == 120000
-        assert parsed['credentials']['api_key'] == 'OPENAI_API_KEY'
-        assert parsed['credentials']['org_id']['default'] == 'default_org'
+        assert parsed['secrets']['api_key'] == 'OPENAI_API_KEY'
+        assert parsed['secrets']['org_id']['default'] == 'default_org'
 
     def test_multiple_connections_serialize(self) -> None:
         """Multiple connections serialize to array."""
-        github = Connection('github', credentials=Credentials(token='TOKEN'))
-        openai = Connection('openai', credentials=Credentials(api_key='KEY'))
+        github = Connection('github', secrets=SecretKeys(token='TOKEN'))
+        openai = Connection('openai', secrets=SecretKeys(api_key='KEY'))
 
         wire = json.dumps([c.to_dict() for c in [github, openai]])
         parsed = json.loads(wire)
@@ -171,14 +175,14 @@ class TestWireFormatRoundTrip:
         assert parsed[0]['name'] == 'github'
         assert parsed[1]['name'] == 'openai'
 
-    def test_credentials_list_serialize(self) -> None:
-        """Credentials list serializes for SDK consumption."""
-        github = Connection('github', credentials=Credentials(token='TOKEN'))
-        openai = Connection('openai', credentials=Credentials(api_key='KEY'))
+    def test_secret_values_list_serialize(self) -> None:
+        """SecretValues list serializes for SDK consumption."""
+        github = Connection('github', secrets=SecretKeys(token='TOKEN'))
+        openai = Connection('openai', secrets=SecretKeys(api_key='KEY'))
 
         creds = [
-            Credential(github, token='ghp_xxx'),
-            Credential(openai, api_key='sk_xxx'),
+            SecretValues(github, token='ghp_xxx'),
+            SecretValues(openai, api_key='sk_xxx'),
         ]
 
         wire = json.dumps([c.to_dict() for c in creds])
@@ -215,7 +219,7 @@ class TestDuckTypingCompatibility:
                 return 30000
 
             @property
-            def credentials(self) -> Any:
+            def secrets(self) -> Any:
                 return None
 
             def to_dict(self) -> dict[str, Any]:
@@ -231,11 +235,11 @@ class TestDuckTypingCompatibility:
         parsed = json.loads(wire)
         assert parsed['name'] == 'custom'
 
-    def test_custom_credential_like_object(self) -> None:
-        """Custom Credential-like objects work."""
-        conn = Connection('github', credentials=Credentials(token='TOKEN'))
+    def test_custom_secret_values_like_object(self) -> None:
+        """Custom SecretValues-like objects work."""
+        conn = Connection('github', secrets=SecretKeys(token='TOKEN'))
 
-        class CustomCredential:
+        class CustomSecretValues:
             def __init__(self, connection: Any, **values: Any) -> None:
                 self._connection = connection
                 self._values = values
@@ -257,10 +261,10 @@ class TestDuckTypingCompatibility:
             def values_for_encryption(self) -> dict[str, Any]:
                 return dict(self._values)
 
-        custom = CustomCredential(conn, token='xxx')
+        custom = CustomSecretValues(conn, token='xxx')
 
         # Satisfies protocol
-        assert isinstance(custom, CredentialProtocol)
+        assert isinstance(custom, SecretValuesProtocol)
 
         # Serializes
         wire = json.dumps(custom.to_dict())
@@ -275,11 +279,11 @@ class TestSDKIntegrationFormat:
         """Connection produces payload format for POST /connections."""
         conn = Connection(
             'github',
-            credentials=Credentials(token='GITHUB_TOKEN'),
+            secrets=SecretKeys(token='GITHUB_TOKEN'),
             base_url='https://api.github.com',
             timeout_ms=30000,
         )
-        cred = Credential(conn, token='ghp_actual_secret')
+        cred = SecretValues(conn, token='ghp_actual_secret')
 
         # This is what SDK sends to AS
         payload = {
@@ -294,25 +298,28 @@ class TestSDKIntegrationFormat:
         assert payload['base_url'] == 'https://api.github.com'
         assert payload['timeout_ms'] == 30000
 
-        # Plaintext for encryption
-        plaintext = json.dumps(cred.values_for_encryption())
-        assert plaintext == '{"token": "ghp_actual_secret"}'
+        # Plaintext for encryption - now returns CredentialEnvelope format
+        envelope = cred.values_for_encryption()
+        assert envelope['type'] == 'api_key'
+        assert envelope['api_key'] == 'ghp_actual_secret'
+        assert envelope['header_name'] == 'Authorization'
+        assert envelope['header_template'] == 'Bearer {api_key}'
 
     def test_multiple_connections_provisioning(self) -> None:
         """Multiple connections/credentials produce correct provisioning batch."""
         github = Connection(
             'github',
-            credentials=Credentials(token='TOKEN'),
+            secrets=SecretKeys(token='TOKEN'),
             base_url='https://api.github.com',
         )
         openai = Connection(
             'openai',
-            credentials=Credentials(api_key='KEY'),
+            secrets=SecretKeys(api_key='KEY'),
             base_url='https://api.openai.com/v1',
         )
 
-        github_cred = Credential(github, token='ghp_xxx')
-        openai_cred = Credential(openai, api_key='sk_xxx')
+        github_cred = SecretValues(github, token='ghp_xxx')
+        openai_cred = SecretValues(openai, api_key='sk_xxx')
 
         # SDK would iterate and provision each
         provisions = []
@@ -328,6 +335,6 @@ class TestSDKIntegrationFormat:
 
         assert len(provisions) == 2
         assert provisions[0]['name'] == 'github'
-        assert provisions[0]['plaintext_for_encryption'] == {'token': 'ghp_xxx'}
+        assert provisions[0]['plaintext_for_encryption']['api_key'] == 'ghp_xxx'
         assert provisions[1]['name'] == 'openai'
-        assert provisions[1]['plaintext_for_encryption'] == {'api_key': 'sk_xxx'}
+        assert provisions[1]['plaintext_for_encryption']['api_key'] == 'sk_xxx'

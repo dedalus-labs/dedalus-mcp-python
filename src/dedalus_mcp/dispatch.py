@@ -242,8 +242,8 @@ class DispatchBackend(Protocol):
 # =============================================================================
 
 
-# Type for credential resolver: handle → (base_url, auth_header_value)
-CredentialResolver = Callable[[str], tuple[str, str]]
+# Type for credential resolver: handle → (base_url, header_name, header_value)
+CredentialResolver = Callable[[str], tuple[str, str, str]]
 
 
 class DirectDispatchBackend:
@@ -258,9 +258,9 @@ class DirectDispatchBackend:
     - Testing and CI environments
 
     Example:
-        >>> def resolve_creds(handle: str) -> tuple[str, str]:
-        ...     # Return (base_url, "Bearer <token>")
-        ...     return ("https://api.github.com", f"Bearer {os.getenv('GITHUB_TOKEN')}")
+        >>> def resolve_creds(handle: str) -> tuple[str, str, str]:
+        ...     # Return (base_url, header_name, header_value)
+        ...     return ("https://api.github.com", "Authorization", f"Bearer {os.getenv('GITHUB_TOKEN')}")
         >>> backend = DirectDispatchBackend(credential_resolver=resolve_creds)
         >>> response = await backend.dispatch(wire_request)
     """
@@ -270,7 +270,7 @@ class DirectDispatchBackend:
 
         Args:
             credential_resolver: Function that resolves connection handle to
-                (base_url, auth_header_value). If None, dispatch will fail.
+                (base_url, header_name, header_value). If None, dispatch will fail.
         """
         self._resolver = credential_resolver
 
@@ -290,7 +290,7 @@ class DirectDispatchBackend:
             )
 
         try:
-            base_url, auth_header = self._resolver(request.connection_handle)
+            base_url, header_name, header_value = self._resolver(request.connection_handle)
         except Exception as e:
             _logger.warning(
                 "credential resolution failed",
@@ -313,7 +313,7 @@ class DirectDispatchBackend:
         url = f"{base_url.rstrip('/')}{request.request.path}"
 
         # Build headers
-        headers: dict[str, str] = {"Authorization": auth_header}
+        headers: dict[str, str] = {header_name: header_value}
         if request.request.headers:
             headers.update(request.request.headers)
 

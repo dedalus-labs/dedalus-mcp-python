@@ -10,7 +10,7 @@ import pytest
 from pydantic import BaseModel
 
 from dedalus_mcp.server.connectors import (
-    Credentials,
+    SecretKeys,
     EnvironmentCredentialLoader,
     EnvironmentCredentials,
     define,
@@ -109,8 +109,8 @@ class TestHTTPAPIDriver:
             connector,
             variants={
                 'service_credential': EnvironmentCredentials(
-                    config=Credentials(base_url='GENERIC_API_BASE_URL'),
-                    secrets=Credentials(secret='GENERIC_SERVICE_KEY'),
+                    config=SecretKeys(base_url='GENERIC_API_BASE_URL'),
+                    secrets=SecretKeys(secret='GENERIC_SERVICE_KEY'),
                 )
             },
         )
