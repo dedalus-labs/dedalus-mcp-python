@@ -889,8 +889,8 @@ class MCPServer(Server[Any, Any]):
         # For DirectDispatchBackend, configure credential resolver
         if isinstance(backend, DirectDispatchBackend):
 
-            def credential_resolver(handle: str) -> tuple[str, str]:
-                """Resolve connection handle to (base_url, auth_header)."""
+            def credential_resolver(handle: str) -> tuple[str, str, str]:
+                """Resolve connection handle to (base_url, header_name, header_value)."""
                 # Extract connection name from handle (ddls:conn:{name})
                 if not handle.startswith('ddls:conn:'):
                     raise ValueError(f'Invalid handle format: {handle}')
@@ -902,7 +902,7 @@ class MCPServer(Server[Any, Any]):
 
                 # Read credentials from environment using Binding entries
                 creds: dict[str, str] = {}
-                for field_name, binding in conn.credentials.entries.items():
+                for field_name, binding in conn.secrets.entries.items():
                     raw = os.getenv(binding.name)
                     if raw is None or raw == '':
                         if binding.optional:
@@ -910,21 +910,21 @@ class MCPServer(Server[Any, Any]):
                         raise RuntimeError(f'Environment variable {binding.name} is not set')
                     creds[field_name] = raw
 
-                # Build auth header from credentials
-                auth_value = ''
+                # Extract the credential value (api_key for format string)
+                api_key = ''
                 for key, value in creds.items():
-                    if key in ('token', 'access_token'):
-                        auth_value = f'Bearer {value}'
-                        break
-                    elif key in ('key', 'apikey', 'api_key', 'service_role_key'):
-                        auth_value = f'Bearer {value}'
+                    if key in ('token', 'access_token', 'key', 'apikey', 'api_key', 'service_role_key'):
+                        api_key = value
                         break
                     else:
-                        # Fallback: use first credential as Bearer token
-                        auth_value = f'Bearer {value}'
+                        # Fallback: use first credential value
+                        api_key = value
                         break
 
-                return (conn.base_url or '', auth_value)
+                # Format header value using connection's auth_header_format
+                header_value = conn.auth_header_format.format(api_key=api_key)
+
+                return (conn.base_url or '', conn.auth_header_name, header_value)
 
             # Replace backend with one that has credential resolver
             backend = DirectDispatchBackend(credential_resolver=credential_resolver)

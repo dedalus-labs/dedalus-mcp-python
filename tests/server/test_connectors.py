@@ -11,7 +11,7 @@ from dedalus_mcp.server.connectors import (
     Binding,
     ConnectorDefinition,
     ConnectorHandle,
-    Credentials,
+    SecretKeys,
     EnvironmentCredentialLoader,
     EnvironmentCredentials,
     define,
@@ -473,12 +473,12 @@ class TestEnvironmentCredentialLoader:
             connector,
             variants={
                 'service_credential': EnvironmentCredentials(
-                    config=Credentials(base_url='GENERIC_BASE_URL'),
-                    secrets=Credentials(secret='GENERIC_SERVICE_KEY'),
+                    config=SecretKeys(base_url='GENERIC_BASE_URL'),
+                    secrets=SecretKeys(secret='GENERIC_SERVICE_KEY'),
                 ),
                 'user_token': EnvironmentCredentials(
-                    config=Credentials(base_url='GENERIC_BASE_URL'),
-                    secrets=Credentials(secret='GENERIC_USER_TOKEN'),
+                    config=SecretKeys(base_url='GENERIC_BASE_URL'),
+                    secrets=SecretKeys(secret='GENERIC_USER_TOKEN'),
                 ),
             },
         )
@@ -496,12 +496,12 @@ class TestEnvironmentCredentialLoader:
             connector,
             variants={
                 'service_credential': EnvironmentCredentials(
-                    config=Credentials(base_url='GENERIC_BASE_URL'),
-                    secrets=Credentials(secret='GENERIC_SERVICE_KEY'),
+                    config=SecretKeys(base_url='GENERIC_BASE_URL'),
+                    secrets=SecretKeys(secret='GENERIC_SERVICE_KEY'),
                 ),
                 'user_token': EnvironmentCredentials(
-                    config=Credentials(base_url='GENERIC_BASE_URL'),
-                    secrets=Credentials(secret='GENERIC_USER_TOKEN'),
+                    config=SecretKeys(base_url='GENERIC_BASE_URL'),
+                    secrets=SecretKeys(secret='GENERIC_USER_TOKEN'),
                 ),
             },
         )
@@ -535,8 +535,8 @@ class TestEnvironmentCredentialLoader:
             connector,
             variants={
                 'service_credential': EnvironmentCredentials(
-                    config=Credentials(base_url='GENERIC_BASE_URL'),
-                    secrets=Credentials(secret='GENERIC_SERVICE_KEY'),
+                    config=SecretKeys(base_url='GENERIC_BASE_URL'),
+                    secrets=SecretKeys(secret='GENERIC_SERVICE_KEY'),
                 )
             },
         )
@@ -557,8 +557,8 @@ class TestEnvironmentCredentialLoader:
             connector,
             variants={
                 'service_credential': EnvironmentCredentials(
-                    config=Credentials(base_url='GENERIC_BASE_URL'),
-                    secrets=Credentials(secret='GENERIC_SERVICE_KEY'),
+                    config=SecretKeys(base_url='GENERIC_BASE_URL'),
+                    secrets=SecretKeys(secret='GENERIC_SERVICE_KEY'),
                 )
             },
         )
@@ -570,12 +570,12 @@ class TestEnvironmentCredentialLoader:
             loader.load('user_token')
 
 
-class TestCredentialsSerialization:
-    """Tests for Credentials.to_dict() wire serialization."""
+class TestSecretKeysSerialization:
+    """Tests for SecretKeys.to_dict() wire serialization."""
 
     def test_simple_string_bindings(self) -> None:
         """Simple string bindings serialize to name mapping."""
-        creds = Credentials(api_key='OPENAI_API_KEY', org_id='OPENAI_ORG_ID')
+        creds = SecretKeys(api_key='OPENAI_API_KEY', org_id='OPENAI_ORG_ID')
 
         result = creds.to_dict()
 
@@ -586,7 +586,7 @@ class TestCredentialsSerialization:
 
     def test_binding_with_default(self) -> None:
         """Binding with default value includes it in serialization."""
-        creds = Credentials(
+        creds = SecretKeys(
             api_key='OPENAI_API_KEY',
             base_url=Binding('OPENAI_BASE_URL', default='https://api.openai.com/v1'),
         )
@@ -601,7 +601,7 @@ class TestCredentialsSerialization:
 
     def test_binding_with_optional(self) -> None:
         """Optional binding includes flag in serialization."""
-        creds = Credentials(
+        creds = SecretKeys(
             api_key='OPENAI_API_KEY',
             org_id=Binding('OPENAI_ORG_ID', optional=True),
         )
@@ -616,7 +616,7 @@ class TestCredentialsSerialization:
 
     def test_binding_with_cast(self) -> None:
         """Binding with cast type includes it in serialization."""
-        creds = Credentials(timeout=Binding('TIMEOUT_SECONDS', cast=int, default=30))
+        creds = SecretKeys(timeout=Binding('TIMEOUT_SECONDS', cast=int, default=30))
 
         result = creds.to_dict()
 
@@ -626,17 +626,17 @@ class TestCredentialsSerialization:
             'default': 30,
         }
 
-    def test_empty_credentials(self) -> None:
-        """Empty credentials serialize to empty dict."""
-        creds = Credentials()
+    def test_empty_secret_keys(self) -> None:
+        """Empty SecretKeys serialize to empty dict."""
+        creds = SecretKeys()
 
         result = creds.to_dict()
 
         assert result == {}
 
-    def test_complex_credentials(self) -> None:
-        """Complex credentials with mixed options."""
-        creds = Credentials(
+    def test_complex_secret_keys(self) -> None:
+        """Complex SecretKeys with mixed options."""
+        creds = SecretKeys(
             api_key='OPENAI_API_KEY',
             base_url=Binding('OPENAI_BASE_URL', default='https://api.openai.com/v1'),
             org_id=Binding('OPENAI_ORG_ID', optional=True),
@@ -654,7 +654,7 @@ class TestCredentialsSerialization:
         """Wire format round-trips through JSON."""
         import json
 
-        creds = Credentials(
+        creds = SecretKeys(
             api_key='OPENAI_API_KEY',
             timeout=Binding('TIMEOUT', cast=int, default=30),
         )

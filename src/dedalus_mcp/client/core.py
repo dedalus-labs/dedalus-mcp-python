@@ -256,7 +256,14 @@ class MCPClient:
                 client_info=client._client_info,
             )
             client._session = await exit_stack.enter_async_context(session)
-            client.initialize_result = await client._session.initialize()
+            try:
+                client.initialize_result = await client._session.initialize()
+            except Exception as e:
+                err = str(e).lower()
+                if "session terminated" in err or "connection" in err:
+                    msg = "Failed to connect to the MCP server"
+                    raise ConnectionError(msg) from e
+                raise
 
             # Transfer ownership of exit_stack - don't close it here
             exit_stack = None  # type: ignore[assignment]
