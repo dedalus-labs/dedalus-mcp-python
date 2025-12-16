@@ -384,16 +384,14 @@ class TestHttpRequestValidation:
             HttpRequest(method=HttpMethod.GET, path="user")
 
     def test_headers_allowed(self):
-        """All headers should be allowed (framework handles auth injection)."""
+        """Non-auth headers are allowed."""
         from dedalus_mcp.dispatch import HttpMethod, HttpRequest
 
-        # Authorization header is allowed - will be overridden by credential resolver
         req = HttpRequest(
             method=HttpMethod.GET,
             path="/user",
-            headers={"Authorization": "Bearer manual", "apikey": "key123", "Accept": "application/json"},
+            headers={"apikey": "key123", "Accept": "application/json"},
         )
-        assert req.headers["Authorization"] == "Bearer manual"
         assert req.headers["apikey"] == "key123"
 
 
@@ -1033,19 +1031,17 @@ class TestDispatchIntegration:
     """Integration tests for dispatch flow."""
 
     @pytest.mark.asyncio
-    async def test_dispatch_with_connection_gate(self):
-        """Dispatch should check connection gate before forwarding."""
+    async def test_dispatch_validates_handle_format(self):
+        """Dispatch should validate handle format before forwarding."""
         from dedalus_mcp.server.services.connection_gate import (
-            ConnectionHandleGate,
-            ConnectionHandleNotAuthorizedError,
+            InvalidConnectionHandleError,
+            validate_handle_format,
         )
 
-        gate = ConnectionHandleGate(authorized_handles={"ddls:conn:github"})
+        # Valid handles should pass format check
+        validate_handle_format("ddls:conn:github")  # No raise
+        validate_handle_format("ddls:conn_env_supabase_key")  # No raise
 
-        # Authorized handle should work
-        gate.check("ddls:conn:github")  # No raise
-
-        # Unauthorized should fail before dispatch
-        with pytest.raises(ConnectionHandleNotAuthorizedError):
-            gate.check("ddls:conn:unauthorized-handle")
-
+        # Invalid format should fail before dispatch
+        with pytest.raises(InvalidConnectionHandleError):
+            validate_handle_format("invalid-handle-format")

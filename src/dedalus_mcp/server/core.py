@@ -1095,7 +1095,7 @@ class MCPServer(Server[Any, Any]):
         transport: str | None = None,
         validate: bool = True,
         verbose: bool = True,
-        host: str = "0.0.0.0",
+        host: str = "127.0.0.1",
         port: int | None = None,
         path: str = "/mcp",
         log_level: str = "info",
@@ -1106,9 +1106,9 @@ class MCPServer(Server[Any, Any]):
     ) -> None:
         import os
 
-        # Resolve port: param > PORT env > 8080 (Lambda adapter default)
+        # Resolve port: param > PORT env > 8000 (local-friendly default)
         if port is None:
-            port = int(os.environ.get("PORT", 8080))
+            port = int(os.environ.get("PORT", 8000))
 
         selected = (transport or self._default_transport).lower()
         self._runtime_started = True

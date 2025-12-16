@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Literal, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, TypeVar, cast
 
 from pydantic import BaseModel, create_model
 
@@ -26,6 +26,46 @@ if TYPE_CHECKING:
     from .drivers import Driver
 
 _UNSET = object()
+
+
+# =============================================================================
+# Credential Envelope Types (for enclave consumption)
+# =============================================================================
+
+
+class ProviderMetadata(TypedDict, total=False):
+    """Provider metadata for credential envelope."""
+
+    base_url: str | None
+
+
+class ApiKeyCredentialEnvelope(TypedDict):
+    """API key credential envelope for enclave decryption.
+
+    This is the format that gets encrypted and stored. The enclave parses this
+    to build the authentication header for downstream HTTP requests.
+
+    See: dcs/apps/openmcp_as_internal/docs/EXECSPEC-credential-envelope.md
+    """
+
+    type: Literal["api_key"]
+    api_key: str
+    header_name: str
+    header_template: str
+    provider_metadata: ProviderMetadata | None
+
+
+class OAuth2CredentialEnvelope(TypedDict):
+    """OAuth2 credential envelope for enclave decryption."""
+
+    type: Literal["oauth2"]
+    access_token: str
+    token_type: str
+    provider_metadata: ProviderMetadata | None
+
+
+# Union type for any credential envelope
+CredentialEnvelope = ApiKeyCredentialEnvelope | OAuth2CredentialEnvelope
 
 
 @dataclass(frozen=True, slots=True)
@@ -127,15 +167,21 @@ class _ConnectorType:
     It wraps a ConnectorDefinition and can be used for type hints and validation.
     """
 
+    _config_model: type[BaseModel]
+
     def __init__(self, definition: ConnectorDefinition) -> None:
         self._definition = definition
         fields = {
             name: (param_type, ...) for name, param_type in definition.params.items()
         }
-        self._config_model = create_model(
-            _model_name(definition.kind, 'Config'),
-            __base__=BaseModel,
-            **fields,
+        # mypy can't understand **dict spread in create_model
+        self._config_model = cast(
+            type[BaseModel],
+            create_model(  # type: ignore[call-overload]
+                _model_name(definition.kind, 'Config'),
+                __base__=BaseModel,
+                **fields,
+            ),
         )
 
     @property
@@ -252,12 +298,19 @@ def _type_to_json_schema(typ: type) -> dict[str, str]:
 
 
 __all__ = [
+    # Credential envelope types (for enclave consumption)
+    'ProviderMetadata',
+    'ApiKeyCredentialEnvelope',
+    'OAuth2CredentialEnvelope',
+    'CredentialEnvelope',
+    # Connection & Secrets classes
     'Connection',
+    'SecretKeys',
+    'SecretValues',
+    # Legacy/internal types
     'Binding',
     'ConnectorDefinition',
     'ConnectorHandle',
-    'Credential',
-    'Credentials',
     'EnvironmentCredentials',
     'EnvironmentCredentialLoader',
     'ResolvedConnector',
@@ -278,43 +331,85 @@ class Connection:
 
     Attributes:
         name: Logical name (e.g., "github", "openai"). Used in dispatch() calls.
-        credentials: Mapping from credential fields to their sources (e.g., env var names).
+        secrets: Mapping from secret fields to their sources (e.g., env var names).
+        schema: Optional Pydantic model for connection config validation.
         base_url: Override default base URL (for enterprise/self-hosted).
         timeout_ms: Default request timeout in milliseconds.
+        auth_header_name: HTTP header name for auth (default: "Authorization").
+        auth_header_format: Format string for header value (default: "Bearer {api_key}").
 
     Example:
+        >>> # Simple connection (secrets only)
         >>> github = Connection(
         ...     "github",
-        ...     credentials=Credentials(token="GITHUB_TOKEN"),
+        ...     secrets=SecretKeys(token="GITHUB_TOKEN"),
         ... )
+        >>>
+        >>> # With typed schema (recommended)
+        >>> class OpenAISchema(BaseModel):
+        ...     model: str = "gpt-4"
+        ...     temperature: float = 0.7
+        >>>
         >>> openai = Connection(
         ...     "openai",
-        ...     credentials=Credentials(api_key="OPENAI_API_KEY"),
+        ...     secrets=SecretKeys(api_key="OPENAI_API_KEY"),
+        ...     schema=OpenAISchema,
         ...     base_url="https://api.openai.com/v1",
         ... )
-        >>> server = MCPServer(
-        ...     name="code-reviewer",
-        ...     connections=[github, openai],
+        >>>
+        >>> # With dict schema (escape hatch for prototyping)
+        >>> anthropic = Connection(
+        ...     "anthropic",
+        ...     secrets=SecretKeys(api_key="ANTHROPIC_API_KEY"),
+        ...     schema={"model": str, "max_tokens": int},
+        ... )
+        >>>
+        >>> # Custom auth header (e.g., Supabase uses 'apikey' header)
+        >>> supabase = Connection(
+        ...     "supabase",
+        ...     secrets=SecretKeys(key="SUPABASE_SECRET_KEY"),
+        ...     base_url="https://xxx.supabase.co/rest/v1",
+        ...     auth_header_name="apikey",
+        ...     auth_header_format="{api_key}",
         ... )
     """
 
-    __slots__ = ('_name', '_credentials', '_base_url', '_timeout_ms')
+    __slots__ = (
+        '_name',
+        '_secrets',
+        '_schema',
+        '_base_url',
+        '_timeout_ms',
+        '_auth_header_name',
+        '_auth_header_format',
+    )
 
     def __init__(
         self,
         name: str,
-        credentials: Credentials | dict[str, Any],
+        secrets: SecretKeys | dict[str, Any],
         *,
+        schema: type[BaseModel] | dict[str, type] | None = None,
         base_url: str | None = None,
         timeout_ms: int = 30_000,
+        auth_header_name: str = 'Authorization',
+        auth_header_format: str = 'Bearer {api_key}',
     ) -> None:
         """Create a named connection.
 
         Args:
             name: Logical name for this connection. Must be unique within a server.
-            credentials: Credential bindings. Can be Credentials or a dict.
+            secrets: Secret key bindings. Can be SecretKeys or a dict.
+            schema: Optional config schema. Pass a Pydantic BaseModel subclass
+                for full type safety (recommended), or a dict mapping field names
+                to types for prototyping. If None, no config validation is performed.
             base_url: Optional base URL override. If None, uses provider default.
             timeout_ms: Default timeout for requests (1000-300000 ms).
+            auth_header_name: HTTP header name for authentication.
+                Defaults to "Authorization". Use "apikey" for Supabase, etc.
+            auth_header_format: Format string for the header value. Use {api_key}
+                as placeholder for the secret value. Defaults to "Bearer {api_key}".
+                Examples: "{api_key}" (raw), "token {api_key}" (GitHub), "Basic {api_key}".
 
         Raises:
             ValueError: If name is empty or timeout_ms is out of range.
@@ -323,15 +418,54 @@ class Connection:
             raise ValueError('Connection name must be non-empty')
         if not (1000 <= timeout_ms <= 300_000):
             raise ValueError(f'timeout_ms must be 1000-300000, got {timeout_ms}')
+        if '{api_key}' not in auth_header_format:
+            raise ValueError("auth_header_format must contain '{api_key}' placeholder")
 
         self._name = name
-        self._credentials = (
-            credentials
-            if isinstance(credentials, Credentials)
-            else Credentials(**credentials)
+        self._secrets = (
+            secrets
+            if isinstance(secrets, SecretKeys)
+            else SecretKeys(**secrets)
         )
+        self._schema = self._resolve_schema(name, schema)
         self._base_url = base_url
         self._timeout_ms = timeout_ms
+        self._auth_header_name = auth_header_name
+        self._auth_header_format = auth_header_format
+
+    @staticmethod
+    def _resolve_schema(
+        name: str,
+        schema: type[BaseModel] | dict[str, type] | None,
+    ) -> type[BaseModel] | None:
+        """Resolve schema to a Pydantic model class.
+
+        Args:
+            name: Connection name (used for dynamic model naming).
+            schema: User-provided schema (BaseModel subclass, dict, or None).
+
+        Returns:
+            Pydantic model class, or None if no schema provided.
+        """
+        if schema is None:
+            return None
+        if isinstance(schema, type) and issubclass(schema, BaseModel):
+            return schema
+        if isinstance(schema, dict):
+            # Escape hatch: create dynamic model from dict
+            # mypy can't understand **dict spread in create_model
+            fields = {field: (field_type, ...) for field, field_type in schema.items()}
+            return cast(
+                type[BaseModel],
+                create_model(  # type: ignore[call-overload]
+                    f'{name.title().replace("-", "").replace("_", "")}Schema',
+                    __base__=BaseModel,
+                    **fields,
+                ),
+            )
+        raise TypeError(
+            f"schema must be a BaseModel subclass or dict[str, type], got {type(schema).__name__}"
+        )
 
     @property
     def name(self) -> str:
@@ -339,9 +473,31 @@ class Connection:
         return self._name
 
     @property
-    def credentials(self) -> Credentials:
-        """Credential bindings for this connection."""
-        return self._credentials
+    def secrets(self) -> SecretKeys:
+        """Secret key bindings for this connection."""
+        return self._secrets
+
+    @property
+    def schema(self) -> type[BaseModel] | None:
+        """Pydantic model for config validation, or None if no schema."""
+        return self._schema
+
+    def validate_config(self, config: dict[str, Any]) -> BaseModel:
+        """Validate config against the schema.
+
+        Args:
+            config: Configuration dictionary to validate.
+
+        Returns:
+            Validated Pydantic model instance.
+
+        Raises:
+            ValueError: If no schema is defined for this connection.
+            ValidationError: If config doesn't match the schema.
+        """
+        if self._schema is None:
+            raise ValueError(f"Connection '{self._name}' has no schema defined")
+        return self._schema(**config)
 
     @property
     def base_url(self) -> str | None:
@@ -353,22 +509,42 @@ class Connection:
         """Default request timeout in milliseconds."""
         return self._timeout_ms
 
+    @property
+    def auth_header_name(self) -> str:
+        """HTTP header name for authentication."""
+        return self._auth_header_name
+
+    @property
+    def auth_header_format(self) -> str:
+        """Format string for authentication header value."""
+        return self._auth_header_format
+
     def to_dict(self) -> dict[str, Any]:
         """Serialize for wire transport or storage."""
         result: dict[str, Any] = {
             'name': self._name,
-            'credentials': self._credentials.to_dict(),
+            'secrets': self._secrets.to_dict(),
         }
+        if self._schema is not None:
+            result['schema'] = self._schema.__name__
         if self._base_url is not None:
             result['base_url'] = self._base_url
         if self._timeout_ms != 30_000:
             result['timeout_ms'] = self._timeout_ms
+        if self._auth_header_name != 'Authorization':
+            result['auth_header_name'] = self._auth_header_name
+        if self._auth_header_format != 'Bearer {api_key}':
+            result['auth_header_format'] = self._auth_header_format
         return result
 
     def __repr__(self) -> str:
         parts = [f'name={self._name!r}']
+        if self._schema is not None:
+            parts.append(f'schema={self._schema.__name__}')
         if self._base_url:
             parts.append(f'base_url={self._base_url!r}')
+        if self._auth_header_name != 'Authorization':
+            parts.append(f'auth_header_name={self._auth_header_name!r}')
         return f'Connection({", ".join(parts)})'
 
     def __eq__(self, other: object) -> bool:
@@ -396,8 +572,10 @@ class ResolvedConnector:
 
     async def build_client(self, driver: 'Driver') -> Any:
         """Instantiate a client using the provided driver."""
-
-        return await driver.create_client(self.config, self.auth)
+        return await driver.create_client(
+            self.config.model_dump(),
+            self.auth.model_dump(),
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -437,20 +615,20 @@ class Binding:
 
 
 @dataclass(frozen=True, slots=True)
-class Credentials:
-    """Schema declaring what credentials a Connection needs.
+class SecretKeys:
+    """Schema declaring what secret fields a Connection needs.
 
-    Maps credential field names to their sources (typically environment variable names).
+    Maps secret field names to their sources (typically environment variable names).
     Simple strings are auto-converted to Binding objects.
 
     Example:
-        >>> Credentials(token="GITHUB_TOKEN")  # simple
-        >>> Credentials(token="GITHUB_TOKEN", org=Binding("GITHUB_ORG", optional=True))
+        >>> SecretKeys(token="GITHUB_TOKEN")  # simple
+        >>> SecretKeys(token="GITHUB_TOKEN", org=Binding("GITHUB_ORG", optional=True))
     """
 
     entries: dict[str, Binding]
 
-    def __init__(self, **kwargs: Any) -> None:  # type: ignore[override]
+    def __init__(self, **kwargs: Any) -> None:
         entries = {
             key: value if isinstance(value, Binding) else Binding(str(value))
             for key, value in kwargs.items()
@@ -462,12 +640,14 @@ class Credentials:
         return {key: binding.to_dict() for key, binding in self.entries.items()}
 
 
+
+
 @dataclass(frozen=True, slots=True)
 class EnvironmentCredentials:
     """Environment-backed configuration for a connector auth method."""
 
-    config: Credentials = field(default_factory=Credentials)
-    secrets: Credentials = field(default_factory=Credentials)
+    config: SecretKeys = field(default_factory=SecretKeys)
+    secrets: SecretKeys = field(default_factory=SecretKeys)
 
 
 class EnvironmentCredentialLoader:
@@ -525,11 +705,15 @@ class EnvironmentCredentialLoader:
         secret_fields = {
             name: (value.cast, ...) for name, value in mapping.secrets.entries.items()
         }
-        AuthModel = create_model(  # type: ignore[call-arg]
-            _model_name(f'{self._connector.definition.kind}_{auth_type}', 'Auth'),
-            __base__=BaseModel,
-            type=(Literal[auth_type], auth_type),
-            **secret_fields,
+        # mypy can't understand **dict spread in create_model
+        AuthModel = cast(
+            type[BaseModel],
+            create_model(  # type: ignore[call-overload]
+                _model_name(f'{self._connector.definition.kind}_{auth_type}', 'Auth'),
+                __base__=BaseModel,
+                type=(Literal[auth_type], auth_type),
+                **secret_fields,
+            ),
         )
         secret_values = {
             name: self._read_env(value)
@@ -561,46 +745,46 @@ class EnvironmentCredentialLoader:
         return binding.cast(raw)
 
 
-# --- Credential: Binds actual credential values to Connection definitions ---
+# --- SecretValues: Binds actual secret values to Connection definitions ---
 
 
-class Credential:
-    """Bind actual credential values to a Connection definition.
+class SecretValues:
+    """Bind actual secret values to a Connection definition.
 
-    MCP server authors use Connection to declare what credentials their server
-    needs. SDK users use Credential to provide the actual values at runtime.
+    MCP server authors use Connection to declare what secrets their server
+    needs. SDK users use SecretValues to provide the actual values at runtime.
 
-    The Credential class validates that all required keys from the Connection's
-    credentials are provided, failing fast with clear error messages.
+    The SecretValues class validates that all required keys from the Connection's
+    secrets are provided, failing fast with clear error messages.
 
     Attributes:
-        connection: The Connection this credential binds to.
-        values: The actual credential values (keys match Connection.credentials entries).
+        connection: The Connection this binds to.
+        values: The actual secret values (keys match Connection.secrets entries).
 
     Example:
-        >>> github = Connection("github", credentials=Credentials(token="GITHUB_TOKEN"))
-        >>> github_cred = Credential(github, token="ghp_xxx")
+        >>> github = Connection("github", secrets=SecretKeys(token="GITHUB_TOKEN"))
+        >>> github_secrets = SecretValues(github, token="ghp_xxx")
         >>> # Use in SDK initialization:
-        >>> client = Dedalus(api_key="dsk_...", credentials=[github_cred])
+        >>> client = Dedalus(api_key="dsk_...", secrets=[github_secrets])
     """
 
     __slots__ = ('_connection', '_values')
 
     def __init__(self, connection: Connection, **values: Any) -> None:
-        """Create a credential binding for a connection.
+        """Create a secret binding for a connection.
 
         Args:
-            connection: The Connection definition this credential satisfies.
-            **values: Keyword arguments mapping credential keys to values.
-                      Keys must match entries in connection.credentials.
+            connection: The Connection definition this satisfies.
+            **values: Keyword arguments mapping secret keys to values.
+                      Keys must match entries in connection.secrets.
 
         Raises:
-            ValueError: If required keys from connection.credentials are missing.
+            ValueError: If required keys from connection.secrets are missing.
         """
         # Compute required keys: not optional and no default
         required_keys = {
             key
-            for key, binding in connection.credentials.entries.items()
+            for key, binding in connection.secrets.entries.items()
             if not binding.optional and binding.default is _UNSET
         }
 
@@ -609,7 +793,7 @@ class Credential:
 
         if missing:
             raise ValueError(
-                f"Missing credentials for '{connection.name}': {sorted(missing)}"
+                f"Missing secrets for '{connection.name}': {sorted(missing)}"
             )
 
         self._connection = connection
@@ -625,13 +809,45 @@ class Credential:
         """The credential values (read-only copy)."""
         return dict(self._values)
 
-    def values_for_encryption(self) -> dict[str, Any]:
-        """Return values for client-side encryption.
+    def values_for_encryption(self) -> ApiKeyCredentialEnvelope:
+        """Return credential envelope for client-side encryption.
 
-        This is what gets encrypted and sent to the AS. Contains only
-        the credential values, no metadata.
+        Builds the CredentialEnvelope format expected by the enclave. The enclave
+        decrypts this JSON and uses header_template to build the auth header.
+
+        Returns:
+            ApiKeyCredentialEnvelope with type, api_key, header_name, header_template,
+            and provider_metadata fields.
+
+        Raises:
+            ValueError: If no credential value can be extracted from the provided values.
         """
-        return dict(self._values)
+        # Extract credential value from known key names (in priority order)
+        CREDENTIAL_KEYS = ('api_key', 'key', 'token', 'secret', 'password')
+        api_key: str | None = None
+        for key in CREDENTIAL_KEYS:
+            if key in self._values and self._values[key]:
+                api_key = str(self._values[key])
+                break
+
+        if api_key is None:
+            raise ValueError(
+                f"No credential value found in {list(self._values.keys())}. "
+                f"Expected one of: {', '.join(CREDENTIAL_KEYS)}."
+            )
+
+        # Build provider metadata
+        provider_metadata: ProviderMetadata | None = None
+        if self._connection.base_url:
+            provider_metadata = {'base_url': self._connection.base_url}
+
+        return {
+            'type': 'api_key',
+            'api_key': api_key,
+            'header_name': self._connection.auth_header_name,
+            'header_template': self._connection.auth_header_format,  # Wire format uses 'header_template'
+            'provider_metadata': provider_metadata,
+        }
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize for wire transport or debugging.
@@ -644,16 +860,16 @@ class Credential:
         }
 
     def __repr__(self) -> str:
-        """String representation (hides credential values)."""
+        """String representation (hides secret values)."""
         keys = list(self._values.keys())
-        return f'Credential({self._connection.name!r}, keys={keys})'
+        return f'SecretValues({self._connection.name!r}, keys={keys})'
 
     def __str__(self) -> str:
-        """String representation (hides credential values)."""
+        """String representation (hides secret values)."""
         return repr(self)
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Credential):
+        if not isinstance(other, SecretValues):
             return NotImplemented
         return (
             self._connection.name == other._connection.name

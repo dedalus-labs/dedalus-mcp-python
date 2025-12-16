@@ -38,7 +38,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 
 from dedalus_mcp.client import MCPClient, DPoPAuth
-from dedalus_mcp.client.auth import generate_dpop_proof
+from dedalus_mcp.dpop import generate_dpop_proof
 
 
 def b64url(data: bytes) -> str:

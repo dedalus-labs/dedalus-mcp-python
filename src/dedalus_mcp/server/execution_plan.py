@@ -109,7 +109,7 @@ class ExecutionPlan(_BaseModel):
         return self.model_dump(by_alias=True, exclude_none=True)
 
 
-def _normalise_scope(scope_value: Any) -> list[str] | None:
+def _normalize_scope(scope_value: Any) -> list[str] | None:
     if scope_value is None:
         return None
     if isinstance(scope_value, str):
@@ -168,7 +168,7 @@ def build_plan_from_claims(
         auth_type=connection_claim.get("auth_type", "unknown"),
         fingerprint=connection_claim.get("fingerprint"),
         version=connection_claim.get("version"),
-        scope=_normalise_scope(connection_claim.get("scope")),
+        scope=_normalize_scope(connection_claim.get("scope")),
     )
 
     aad_payload = AdditionalAuthenticatedData(

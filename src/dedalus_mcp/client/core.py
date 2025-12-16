@@ -174,7 +174,7 @@ class MCPClient:
             sse_read_timeout: SSE read timeout in seconds
             headers: Optional HTTP headers
             auth: Optional httpx.Auth handler for authorization. Use
-                `dedalus_mcp.client.auth.DPoPAuth` for DPoP-bound tokens.
+                `dedalus_mcp.dpop.DPoPAuth` for DPoP-bound tokens.
             _transport_override: Internal use only (for testing)
 
         Returns:
@@ -313,8 +313,15 @@ class MCPClient:
             client_info=self._client_info,
         )
 
-        self._session = await session.__aenter__()
-        self.initialize_result = await self._session.initialize()
+        exit_stack = AsyncExitStack()
+        try:
+            self._session = await exit_stack.enter_async_context(session)
+            self.initialize_result = await self._session.initialize()
+        except Exception:
+            await exit_stack.aclose()
+            raise
+        else:
+            self._exit_stack = exit_stack
         return self
 
     async def __aexit__(self, exc_type: Any, exc: Any, tb: Any) -> bool | None:
