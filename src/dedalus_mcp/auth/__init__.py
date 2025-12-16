@@ -6,17 +6,17 @@
 This module provides the core credential and connection types for MCP servers.
 
 Usage:
-    from dedalus_mcp.auth import Connection, Credentials, Binding, Credential
+    from dedalus_mcp.auth import Connection, SecretKeys, Binding, SecretValues
 
-    # Define what credentials a connection needs
+    # Define what secrets a connection needs
     github = Connection(
         'github',
-        credentials=Credentials(token='GITHUB_TOKEN'),
+        secrets=SecretKeys(token='GITHUB_TOKEN'),
         base_url='https://api.github.com',
     )
 
-    # At runtime, bind actual credential values
-    cred = Credential(github, token='ghp_xxx')
+    # At runtime, bind actual secret values
+    secrets = SecretValues(github, token='ghp_xxx')
 """
 
 from __future__ import annotations
@@ -25,13 +25,13 @@ from __future__ import annotations
 from ..server.connectors import (
     Binding,
     Connection,
-    Credential,
-    Credentials,
+    SecretKeys,
+    SecretValues,
 )
 
 __all__ = [
     "Binding",
     "Connection",
-    "Credential",
-    "Credentials",
+    "SecretKeys",
+    "SecretValues",
 ]

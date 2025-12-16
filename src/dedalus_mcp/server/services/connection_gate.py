@@ -3,15 +3,16 @@
 
 """Connection handle authorization gate.
 
-This module provides authorization checks for connection handles based on
-JWT claims. The `ddls:connections` claim lists which handles a session
-is permitted to use when dispatching operations to the Enclave.
+Authorization is handled by the enclave gateway at runtime. The gateway calls
+Admin API to validate that the requested connection handle belongs to the
+org in the JWT's `ddls:org` claim.
+
+The SDK performs only format validation - it does not authorize handles locally.
+This ensures the gateway is the single source of truth for authorization.
 
 Key responsibilities:
-- Parse `ddls:connections` claim from validated JWT claims
-- Check if a requested handle is authorized
-- Support wildcard patterns for flexible authorization
-- Validate handle format
+- Validate connection handle format
+- Provide clear error types for invalid handles
 
 References:
     /dcs/apps/enclave/IMPLEMENTATION_SPEC.md (connection handle format)
@@ -19,9 +20,7 @@ References:
 
 from __future__ import annotations
 
-import fnmatch
 import re
-from typing import Any
 
 from ...utils import get_logger
 
@@ -42,14 +41,6 @@ class ConnectionHandleError(Exception):
     """Base error for connection handle operations."""
 
 
-class ConnectionHandleNotAuthorizedError(ConnectionHandleError):
-    """Raised when a connection handle is not in the authorized set."""
-
-    def __init__(self, handle: str) -> None:
-        self.handle = handle
-        super().__init__(f"connection handle not authorized: {handle}")
-
-
 class InvalidConnectionHandleError(ConnectionHandleError):
     """Raised when a connection handle has an invalid format."""
 
@@ -59,153 +50,38 @@ class InvalidConnectionHandleError(ConnectionHandleError):
 
 
 # =============================================================================
-# Claim Parsing
+# Format Validation
 # =============================================================================
 
 
-def parse_connections_claim(claims: dict[str, Any]) -> set[str]:
-    """Parse the ddls:connections claim from JWT claims.
+def is_valid_handle_format(handle: str) -> bool:
+    """Check if handle matches expected format.
 
     Args:
-        claims: JWT claims dictionary
+        handle: Connection handle string to validate
 
     Returns:
-        Set of authorized connection handle strings
+        True if format is valid, False otherwise
     """
-    raw = claims.get("ddls:connections")
-
-    if raw is None:
-        return set()
-
-    if isinstance(raw, list):
-        handles: set[str] = set()
-        for item in raw:
-            if isinstance(item, dict) and "id" in item:
-                handles.add(item["id"])
-        return handles
-
-    _logger.warning(
-        "unexpected ddls:connections claim type",
-        extra={"event": "connection_gate.claim.invalid_type", "type": type(raw).__name__},
-    )
-    return set()
+    return bool(_HANDLE_PATTERN.match(handle))
 
 
-# =============================================================================
-# Authorization Gate
-# =============================================================================
+def validate_handle_format(handle: str) -> None:
+    """Validate handle format, raising if invalid.
 
+    Args:
+        handle: Connection handle string to validate
 
-class ConnectionHandleGate:
-    """Authorizes connection handle usage based on JWT claims.
-
-    The gate checks if a requested connection handle is in the authorized set
-    derived from the `ddls:connections` JWT claim. Supports wildcard patterns
-    for flexible authorization (e.g., `ddls:conn:*:github` matches any github
-    connection).
-
-    Example:
-        >>> claims = {"ddls:connections": ["ddls:conn:01ABC-github"]}
-        >>> gate = ConnectionHandleGate.from_claims(claims)
-        >>> gate.check("ddls:conn:01ABC-github")  # OK
-        >>> gate.check("ddls:conn:99XYZ-slack")   # Raises ConnectionHandleNotAuthorizedError
+    Raises:
+        InvalidConnectionHandleError: If handle format is invalid
     """
-
-    def __init__(
-        self,
-        authorized_handles: set[str],
-        *,
-        validate_format: bool = True,
-    ) -> None:
-        """Initialize the gate with authorized handles.
-
-        Args:
-            authorized_handles: Set of authorized connection handle strings.
-                May include wildcard patterns using fnmatch syntax.
-            validate_format: If True, validate handle format before checking.
-        """
-        self._authorized = frozenset(authorized_handles)
-        self._validate_format = validate_format
-
-        # Separate exact matches from wildcard patterns
-        self._exact_handles: frozenset[str] = frozenset(
-            h for h in self._authorized if "*" not in h and "?" not in h
-        )
-        self._wildcard_patterns: tuple[str, ...] = tuple(
-            h for h in self._authorized if "*" in h or "?" in h
-        )
-
-    @classmethod
-    def from_claims(cls, claims: dict[str, Any], **kwargs: Any) -> "ConnectionHandleGate":
-        """Construct a gate from JWT claims.
-
-        Args:
-            claims: JWT claims dictionary containing ddls:connections
-            **kwargs: Additional arguments passed to constructor
-
-        Returns:
-            ConnectionHandleGate configured with authorized handles from claims
-        """
-        handles = parse_connections_claim(claims)
-        return cls(authorized_handles=handles, **kwargs)
-
-    def check(self, handle: str) -> None:
-        """Check if a connection handle is authorized.
-
-        Args:
-            handle: The connection handle to check
-
-        Raises:
-            InvalidConnectionHandleError: If handle format is invalid
-            ConnectionHandleNotAuthorizedError: If handle is not authorized
-        """
-        # Validate format first
-        if self._validate_format and not self._is_valid_format(handle):
-            raise InvalidConnectionHandleError(handle)
-
-        # Check exact match first (fast path)
-        if handle in self._exact_handles:
-            return
-
-        # Check wildcard patterns
-        for pattern in self._wildcard_patterns:
-            if fnmatch.fnmatch(handle, pattern):
-                return
-
-        # Not authorized
-        raise ConnectionHandleNotAuthorizedError(handle)
-
-    def is_authorized(self, handle: str) -> bool:
-        """Check if a handle is authorized without raising.
-
-        Args:
-            handle: The connection handle to check
-
-        Returns:
-            True if authorized, False otherwise
-        """
-        try:
-            self.check(handle)
-            return True
-        except (InvalidConnectionHandleError, ConnectionHandleNotAuthorizedError):
-            return False
-
-    @property
-    def authorized_handles(self) -> frozenset[str]:
-        """Return the set of authorized handles (including patterns)."""
-        return self._authorized
-
-    @staticmethod
-    def _is_valid_format(handle: str) -> bool:
-        """Check if handle matches expected format."""
-        return bool(_HANDLE_PATTERN.match(handle))
+    if not is_valid_handle_format(handle):
+        raise InvalidConnectionHandleError(handle)
 
 
 __all__ = [
-    "ConnectionHandleGate",
-    "parse_connections_claim",
     "ConnectionHandleError",
-    "ConnectionHandleNotAuthorizedError",
     "InvalidConnectionHandleError",
+    "is_valid_handle_format",
+    "validate_handle_format",
 ]
-
