@@ -1,18 +1,24 @@
 # Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""DPoP (Demonstrating Proof of Possession) validation service.
+"""DPoP proof validation (server-side) per RFC 9449.
 
-Implements RFC 9449 server-side validation of DPoP proofs to ensure access
-tokens are bound to the cryptographic key held by the legitimate client.
+This module implements RFC 9449 server-side validation of DPoP proofs to ensure
+access tokens are bound to the cryptographic key held by the legitimate client.
 
-Key responsibilities:
-- Parse and validate DPoP proof JWTs
-- Verify ES256 signatures using embedded JWK
-- Compute JWK thumbprints per RFC 7638
-- Enforce HTTP method and URL binding
-- Detect replay attacks via JTI caching
-- Validate access token hash (ath claim)
+Validation checks per RFC 9449 Section 4.3:
+1. Not more than one DPoP HTTP request header field
+2. The DPoP HTTP request header field value is a single and well-formed JWT
+3. All required claims per Section 4.2 are contained in the JWT
+4. The typ JOSE Header Parameter has the value dpop+jwt
+5. The alg JOSE Header Parameter indicates a registered asymmetric algorithm
+6. The JWT signature verifies with the public key contained in the jwk header
+7. The jwk JOSE Header Parameter does not contain a private key
+8. The htm claim matches the HTTP method of the current request
+9. The htu claim matches the HTTP URI (without query/fragment)
+10. If server provided a nonce, the nonce claim matches
+11. The iat claim is within an acceptable time window
+12. If presented with an access token: ath matches hash, and key matches cnf.jkt
 
 References:
     RFC 9449: OAuth 2.0 Demonstrating Proof of Possession (DPoP)
@@ -21,8 +27,6 @@ References:
 
 from __future__ import annotations
 
-import base64
-import hashlib
 import json
 import time
 from collections import OrderedDict
@@ -37,7 +41,8 @@ except ImportError:
     jwt = None  # type: ignore
     InvalidTokenError = Exception  # type: ignore
 
-from ...utils import get_logger
+from dedalus_mcp.dpop.thumbprint import compute_access_token_hash, compute_jwk_thumbprint
+from dedalus_mcp.utils import get_logger
 
 
 class Clock(Protocol):
@@ -64,27 +69,52 @@ class DPoPValidationError(Exception):
 
 
 class InvalidDPoPProofError(DPoPValidationError):
-    """Raised when proof structure or signature is invalid."""
+    """Raised when proof structure or signature is invalid.
+
+    Covers RFC 9449 Section 4.3 checks 1-7.
+    """
 
 
 class DPoPReplayError(DPoPValidationError):
-    """Raised when JTI has already been used."""
+    """Raised when JTI has already been used.
+
+    Per RFC 9449 Section 11.1, servers should detect replay attacks.
+    """
 
 
 class DPoPMethodMismatchError(DPoPValidationError):
-    """Raised when proof's htm doesn't match request method."""
+    """Raised when proof's htm doesn't match request method.
+
+    Per RFC 9449 Section 4.3 check 8.
+    """
 
 
 class DPoPUrlMismatchError(DPoPValidationError):
-    """Raised when proof's htu doesn't match request URL."""
+    """Raised when proof's htu doesn't match request URL.
+
+    Per RFC 9449 Section 4.3 check 9.
+    """
 
 
 class DPoPExpiredError(DPoPValidationError):
-    """Raised when proof iat is outside acceptable time window."""
+    """Raised when proof iat is outside acceptable time window.
+
+    Per RFC 9449 Section 4.3 check 11.
+    """
 
 
 class DPoPThumbprintMismatchError(DPoPValidationError):
-    """Raised when proof key doesn't match token's cnf.jkt binding."""
+    """Raised when proof key doesn't match token's cnf.jkt binding.
+
+    Per RFC 9449 Section 4.3 check 12.
+    """
+
+
+class DPoPNonceMismatchError(DPoPValidationError):
+    """Raised when proof nonce doesn't match server-provided nonce.
+
+    Per RFC 9449 Section 4.3 check 10.
+    """
 
 
 # =============================================================================
@@ -118,7 +148,7 @@ class DPoPValidatorConfig:
     """Clock for time operations (injectable for testing)."""
 
     leeway: float = 60.0
-    """Clock skew tolerance in seconds (default: 60s)."""
+    """Clock skew tolerance in seconds (default: 60s per RFC 9449 Section 11.1)."""
 
     jti_cache_size: int = 10000
     """Maximum number of JTIs to cache for replay detection."""
@@ -136,7 +166,11 @@ class DPoPValidatorConfig:
 
 
 class _JTICache:
-    """LRU cache with TTL for JTI replay detection."""
+    """LRU cache with TTL for JTI replay detection.
+
+    Per RFC 9449 Section 11.1, servers should track JTIs to prevent replay.
+    This implementation uses an ordered dict for LRU eviction and TTL expiration.
+    """
 
     def __init__(self, max_size: int, ttl: float, clock: Clock) -> None:
         self._max_size = max_size
@@ -182,58 +216,6 @@ class _JTICache:
 
 
 # =============================================================================
-# Thumbprint Computation
-# =============================================================================
-
-
-def _b64url_encode(data: bytes) -> str:
-    """Base64url encode without padding."""
-    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
-
-
-def compute_jwk_thumbprint(jwk: dict[str, Any]) -> str:
-    """Compute JWK thumbprint per RFC 7638.
-
-    For EC keys, the canonical form includes: crv, kty, x, y (sorted).
-    For RSA keys, it would include: e, kty, n (sorted).
-
-    Args:
-        jwk: JWK dictionary containing key parameters
-
-    Returns:
-        Base64url-encoded SHA-256 hash of canonical JWK representation
-    """
-    kty = jwk.get("kty")
-
-    if kty == "EC":
-        # EC key: required members are crv, kty, x, y
-        canonical_dict = {"crv": jwk["crv"], "kty": jwk["kty"], "x": jwk["x"], "y": jwk["y"]}
-    elif kty == "RSA":
-        # RSA key: required members are e, kty, n
-        canonical_dict = {"e": jwk["e"], "kty": jwk["kty"], "n": jwk["n"]}
-    else:
-        raise InvalidDPoPProofError(f"unsupported key type: {kty}")
-
-    # JSON with sorted keys, no whitespace
-    canonical = json.dumps(canonical_dict, separators=(",", ":"), sort_keys=True)
-    digest = hashlib.sha256(canonical.encode("utf-8")).digest()
-    return _b64url_encode(digest)
-
-
-def compute_access_token_hash(access_token: str) -> str:
-    """Compute access token hash for ath claim validation.
-
-    Args:
-        access_token: The access token string
-
-    Returns:
-        Base64url-encoded SHA-256 hash
-    """
-    digest = hashlib.sha256(access_token.encode("ascii")).digest()
-    return _b64url_encode(digest)
-
-
-# =============================================================================
 # URL Normalization
 # =============================================================================
 
@@ -246,7 +228,12 @@ def _normalize_url(url: str) -> str:
     """
     parsed = urlparse(url)
     # Strip query and fragment, lowercase scheme and host
-    normalized = parsed._replace(scheme=parsed.scheme.lower(), netloc=parsed.netloc.lower(), query="", fragment="")
+    normalized = parsed._replace(
+        scheme=parsed.scheme.lower(),
+        netloc=parsed.netloc.lower(),
+        query="",
+        fragment="",
+    )
     return normalized.geturl()
 
 
@@ -258,6 +245,8 @@ def _normalize_url(url: str) -> str:
 class DPoPValidator:
     """Validates DPoP proofs per RFC 9449.
 
+    This class implements all 12 validation checks from RFC 9449 Section 4.3.
+
     Example:
         >>> config = DPoPValidatorConfig()
         >>> validator = DPoPValidator(config)
@@ -266,6 +255,7 @@ class DPoPValidator:
         ...     method="POST",
         ...     url="https://mcp.example.com/messages",
         ...     expected_thumbprint="abc123...",  # From token's cnf.jkt
+        ...     access_token="eyJ...",
         ... )
     """
 
@@ -276,7 +266,9 @@ class DPoPValidator:
         self.config = config or DPoPValidatorConfig()
         self._logger = get_logger("dedalus_mcp.dpop")
         self._jti_cache = _JTICache(
-            max_size=self.config.jti_cache_size, ttl=self.config.jti_cache_ttl, clock=self.config.clock
+            max_size=self.config.jti_cache_size,
+            ttl=self.config.jti_cache_ttl,
+            clock=self.config.clock,
         )
 
     def validate_proof(
@@ -287,15 +279,22 @@ class DPoPValidator:
         *,
         expected_thumbprint: str | None = None,
         access_token: str | None = None,
+        expected_nonce: str | None = None,
     ) -> DPoPProofResult:
         """Validate a DPoP proof JWT.
+
+        Implements all checks from RFC 9449 Section 4.3.
 
         Args:
             proof: The DPoP proof JWT from the DPoP header
             method: HTTP method of the request (e.g., "POST")
             url: Full URL of the request (e.g., "https://mcp.example.com/messages")
-            expected_thumbprint: JWK thumbprint from access token's cnf.jkt claim
-            access_token: Access token for ath validation (if proof contains ath)
+            expected_thumbprint: JWK thumbprint from access token's cnf.jkt claim.
+                               If provided, validates key binding.
+            access_token: Access token for ath validation.
+                         If proof contains ath, this MUST be provided.
+            expected_nonce: Server-provided nonce. If provided and proof lacks
+                          matching nonce claim, validation fails.
 
         Returns:
             DPoPProofResult with validated claims
@@ -307,22 +306,24 @@ class DPoPValidator:
             DPoPUrlMismatchError: If htu doesn't match url
             DPoPExpiredError: If iat is outside acceptable window
             DPoPThumbprintMismatchError: If key doesn't match expected_thumbprint
+            DPoPNonceMismatchError: If nonce doesn't match expected_nonce
         """
+        # Check 2: Parse JWT header
         try:
-            # Step 1: Get unverified header to extract typ and jwk
             header = jwt.get_unverified_header(proof)
         except Exception as e:
             self._logger.warning(
-                "DPoP proof header parse failed", extra={"event": "dpop.header.invalid", "error": str(e)}
+                "DPoP proof header parse failed",
+                extra={"event": "dpop.header.invalid", "error": str(e)},
             )
             raise InvalidDPoPProofError(f"invalid proof header: {e}") from e
 
-        # Step 2: Validate typ header
+        # Check 4: Validate typ header
         typ = header.get("typ")
         if typ != "dpop+jwt":
             raise InvalidDPoPProofError(f"invalid typ header, expected 'dpop+jwt', got '{typ}'")
 
-        # Step 3: Extract and validate JWK from header
+        # Check 3 (partial): Extract and validate JWK from header
         jwk = header.get("jwk")
         if not jwk:
             raise InvalidDPoPProofError("missing jwk in proof header")
@@ -330,25 +331,27 @@ class DPoPValidator:
         if not isinstance(jwk, dict):
             raise InvalidDPoPProofError("jwk must be a JSON object")
 
-        # Per RFC 9449 Section 4.3 point 7: jwk MUST NOT contain a private key
+        # Check 7: jwk MUST NOT contain a private key
         # EC private key field: d
         # RSA private key fields: d, p, q, dp, dq, qi
         private_key_fields = {"d", "p", "q", "dp", "dq", "qi"}
         if private_key_fields & jwk.keys():
             raise InvalidDPoPProofError("jwk must not contain private key material")
 
-        # Step 4: Validate algorithm
+        # Check 5: Validate algorithm
         alg = header.get("alg")
         if alg not in self.config.allowed_algorithms:
-            raise InvalidDPoPProofError(f"unsupported algorithm '{alg}', allowed: {self.config.allowed_algorithms}")
+            raise InvalidDPoPProofError(
+                f"unsupported algorithm '{alg}', allowed: {self.config.allowed_algorithms}"
+            )
 
-        # Step 5: Convert JWK to public key for verification
+        # Check 6 (setup): Convert JWK to public key for verification
         try:
             public_key = self._jwk_to_public_key(jwk, alg)
         except Exception as e:
             raise InvalidDPoPProofError(f"invalid jwk: {e}") from e
 
-        # Step 6: Verify signature and decode claims
+        # Check 6: Verify signature and decode claims
         try:
             claims = jwt.decode(
                 proof,
@@ -365,11 +368,12 @@ class DPoPValidator:
             )
         except Exception as e:
             self._logger.warning(
-                "DPoP proof signature verification failed", extra={"event": "dpop.signature.invalid", "error": str(e)}
+                "DPoP proof signature verification failed",
+                extra={"event": "dpop.signature.invalid", "error": str(e)},
             )
             raise InvalidDPoPProofError(f"signature verification failed: {e}") from e
 
-        # Step 7: Validate required claims
+        # Check 3: Validate required claims
         jti = claims.get("jti")
         htm = claims.get("htm")
         htu = claims.get("htu")
@@ -384,17 +388,27 @@ class DPoPValidator:
         if iat is None:
             raise InvalidDPoPProofError("missing required claim: iat")
 
-        # Step 8: Validate method binding
+        # Check 8: Validate method binding
         if htm.upper() != method.upper():
-            raise DPoPMethodMismatchError(f"method mismatch: proof bound to '{htm}', request is '{method}'")
+            raise DPoPMethodMismatchError(
+                f"method mismatch: proof bound to '{htm}', request is '{method}'"
+            )
 
-        # Step 9: Validate URL binding (case-insensitive for scheme/host)
+        # Check 9: Validate URL binding (case-insensitive for scheme/host)
         normalized_htu = _normalize_url(htu)
         normalized_url = _normalize_url(url)
         if normalized_htu != normalized_url:
             raise DPoPUrlMismatchError(f"URL mismatch: proof bound to '{htu}', request is '{url}'")
 
-        # Step 10: Validate iat timing
+        # Check 10: Validate nonce if server requires it
+        proof_nonce = claims.get("nonce")
+        if expected_nonce is not None:
+            if proof_nonce != expected_nonce:
+                raise DPoPNonceMismatchError(
+                    f"nonce mismatch: proof has '{proof_nonce}', expected '{expected_nonce}'"
+                )
+
+        # Check 11: Validate iat timing
         now = self.config.clock.now()
         if isinstance(iat, (int, float)):
             iat_ts = float(iat)
@@ -406,12 +420,12 @@ class DPoPValidator:
         if iat_ts > now + self.config.leeway:
             raise DPoPExpiredError("proof from future (iat too far ahead)")
 
-        # Step 11: Check JTI replay
+        # Replay detection (RFC 9449 Section 11.1)
         if self._jti_cache.contains(jti):
             raise DPoPReplayError(f"JTI replay detected: {jti}")
         self._jti_cache.add(jti)
 
-        # Step 12: Compute and validate thumbprint
+        # Check 12: Compute and validate thumbprint
         thumbprint = compute_jwk_thumbprint(jwk)
 
         if expected_thumbprint is not None:
@@ -420,25 +434,38 @@ class DPoPValidator:
                     f"thumbprint mismatch: proof key '{thumbprint}' != expected '{expected_thumbprint}'"
                 )
 
-        # Step 13: Validate ath if present
+        # Check 12 (continued): Validate ath if present
         ath = claims.get("ath")
         if ath is not None:
             if access_token is None:
-                # ath present but no token to validate against - that's fine,
-                # we just can't validate it
+                # ath present but no token to validate against
+                # This is acceptable - we just can't validate it
                 pass
             else:
                 expected_ath = compute_access_token_hash(access_token)
                 if ath != expected_ath:
-                    raise InvalidDPoPProofError(f"ath mismatch: proof '{ath}' != computed '{expected_ath}'")
+                    raise InvalidDPoPProofError(
+                        f"ath mismatch: proof '{ath}' != computed '{expected_ath}'"
+                    )
 
         self._logger.debug(
             "DPoP proof validated",
-            extra={"event": "dpop.validated", "jti": jti, "htm": htm, "thumbprint": thumbprint[:8] + "..."},
+            extra={
+                "event": "dpop.validated",
+                "jti": jti,
+                "htm": htm,
+                "thumbprint": thumbprint[:8] + "...",
+            },
         )
 
         return DPoPProofResult(
-            jti=jti, htm=htm, htu=htu, iat=int(iat_ts), thumbprint=thumbprint, ath=ath, nonce=claims.get("nonce")
+            jti=jti,
+            htm=htm,
+            htu=htu,
+            iat=int(iat_ts),
+            thumbprint=thumbprint,
+            ath=ath,
+            nonce=proof_nonce,
         )
 
     def _jwk_to_public_key(self, jwk: dict[str, Any], alg: str) -> Any:
@@ -461,6 +488,7 @@ __all__ = [
     "SystemClock",
     "DPoPValidatorConfig",
     "DPoPValidator",
+    "DPoPProofResult",
     "DPoPValidationError",
     "InvalidDPoPProofError",
     "DPoPReplayError",
@@ -468,7 +496,5 @@ __all__ = [
     "DPoPUrlMismatchError",
     "DPoPExpiredError",
     "DPoPThumbprintMismatchError",
-    "DPoPProofResult",
-    "compute_jwk_thumbprint",
-    "compute_access_token_hash",
+    "DPoPNonceMismatchError",
 ]

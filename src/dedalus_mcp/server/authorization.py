@@ -195,7 +195,7 @@ class AuthorizationManager:
         self, request: Request, proof: str, access_token: str, claims: dict[str, Any]
     ) -> None:
         """Validate DPoP proof against request and token binding."""
-        from .services.dpop import DPoPValidator, DPoPValidatorConfig, DPoPValidationError
+        from dedalus_mcp.dpop import DPoPValidator, DPoPValidatorConfig, DPoPValidationError
 
         config = DPoPValidatorConfig(leeway=self.config.dpop_leeway)
         validator = DPoPValidator(config)

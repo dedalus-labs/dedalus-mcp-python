@@ -62,7 +62,7 @@ auth.set_nonce(nonce_from_response)
 For custom integrations:
 
 ```python
-from dedalus_mcp.client.auth import generate_dpop_proof
+from dedalus_mcp.dpop import generate_dpop_proof
 
 proof = generate_dpop_proof(
     dpop_key=private_key,
@@ -78,7 +78,7 @@ proof = generate_dpop_proof(
 The `DPoPValidator` validates incoming proofs:
 
 ```python
-from dedalus_mcp.server.services.dpop import DPoPValidator, DPoPValidatorConfig
+from dedalus_mcp.dpop import DPoPValidator, DPoPValidatorConfig
 
 config = DPoPValidatorConfig(leeway=60, jti_cache_ttl=120)
 validator = DPoPValidator(config)
@@ -99,8 +99,9 @@ Validation checks: signature, `typ`/`alg` headers, JWK presence (no private key 
 
 | Component | Role |
 |-----------|------|
-| `dedalus_mcp.client.auth.DPoPAuth` | Client-side proof generation |
-| `dedalus_mcp.server.services.dpop.DPoPValidator` | Server-side proof validation |
+| `dedalus_mcp.dpop.DPoPAuth` | Client-side auth handler |
+| `dedalus_mcp.dpop.generate_dpop_proof` | Standalone proof generation |
+| `dedalus_mcp.dpop.DPoPValidator` | Server-side proof validation |
 | `apps/dedalus_mcp_as/dpop/dpop.go` | AS validation (Go) |
 
 ## What DPoP Does Not Protect
@@ -111,5 +112,5 @@ API keys. DPoP binds tokens, not the credentials used to obtain them. An attacke
 
 - [RFC 9449: OAuth 2.0 DPoP](https://datatracker.ietf.org/doc/html/rfc9449)
 - [RFC 7638: JWK Thumbprint](https://datatracker.ietf.org/doc/html/rfc7638)
-- [Example: examples/client/dpop_auth.py](../../examples/client/dpop_auth.py)
-- [Tests: tests/test_client_auth.py, tests/test_dpop.py](../../tests/)
+- [Example: examples/auth/06_dpop_flow/client.py](../../examples/auth/06_dpop_flow/client.py)
+- [Tests: tests/dpop/](../../tests/dpop/)

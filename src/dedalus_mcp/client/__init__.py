@@ -9,7 +9,7 @@ modules; this wrapper exposes the pieces that most applications use.
 
 from __future__ import annotations
 
-from .auth import BearerAuth, DPoPAuth, generate_dpop_proof
+from dedalus_mcp.dpop import BearerAuth, DPoPAuth, generate_dpop_proof
 from .connection import open_connection
 from .core import ClientCapabilitiesConfig, MCPClient
 from .transports import lambda_http_client
