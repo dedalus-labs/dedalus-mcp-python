@@ -354,7 +354,12 @@ class Context:
 
         # Dedalus-hosted MCP servers require Authorization tokens
         if os.getenv("DEDALUS_DISPATCH_URL") and not authorization_token:
-            msg = "Expected Authorization header in request headers but got none"
+            dispatch_url = os.getenv("DEDALUS_DISPATCH_URL")
+            msg = f"""DEDALUS_DISPATCH_URL is set ({dispatch_url}), which requires JWT authorization from the client.
+        Either:
+        1) Unset DEDALUS_DISPATCH_URL to use OSS mode (direct API calls with local credentials)
+        2) Use the Dedalus SDK client that sends the proper Authorization headers
+        """
             raise RuntimeError(msg)
 
         # Build and execute wire request

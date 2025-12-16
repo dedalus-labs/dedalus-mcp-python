@@ -142,9 +142,9 @@ class TestDirectDispatchBackend:
             return_value=httpx.Response(200, json={"login": "testuser"})
         )
 
-        # Credential resolver returns (base_url, auth_header)
-        def resolver(handle: str) -> tuple[str, str]:
-            return ("https://api.github.com", "Bearer test_token")
+        # Credential resolver returns (base_url, header_name, header_value)
+        def resolver(handle: str) -> tuple[str, str, str]:
+            return ("https://api.github.com", "Authorization", "Bearer test_token")
 
         backend = DirectDispatchBackend(credential_resolver=resolver)
 
@@ -191,7 +191,7 @@ class TestDirectDispatchBackend:
             HttpRequest,
         )
 
-        def failing_resolver(handle: str) -> tuple[str, str]:
+        def failing_resolver(handle: str) -> tuple[str, str, str]:
             raise RuntimeError("Credentials not found")
 
         backend = DirectDispatchBackend(credential_resolver=failing_resolver)
@@ -414,8 +414,8 @@ class TestDirectDispatchBackendHTTPErrors:
             return_value=httpx.Response(404, json={"message": "Not found"})
         )
 
-        def resolver(handle: str) -> tuple[str, str]:
-            return ("https://api.github.com", "Bearer test_token")
+        def resolver(handle: str) -> tuple[str, str, str]:
+            return ("https://api.github.com", "Authorization", "Bearer test_token")
 
         backend = DirectDispatchBackend(credential_resolver=resolver)
         result = await backend.dispatch(
@@ -445,8 +445,8 @@ class TestDirectDispatchBackendHTTPErrors:
             return_value=httpx.Response(503, text="Service unavailable")
         )
 
-        def resolver(handle: str) -> tuple[str, str]:
-            return ("https://api.service.com", "Bearer token")
+        def resolver(handle: str) -> tuple[str, str, str]:
+            return ("https://api.service.com", "Authorization", "Bearer token")
 
         backend = DirectDispatchBackend(credential_resolver=resolver)
         result = await backend.dispatch(
@@ -476,8 +476,8 @@ class TestDirectDispatchBackendHTTPErrors:
             return_value=httpx.Response(200, text="OK", headers={"content-type": "text/plain"})
         )
 
-        def resolver(handle: str) -> tuple[str, str]:
-            return ("https://api.example.com", "Bearer token")
+        def resolver(handle: str) -> tuple[str, str, str]:
+            return ("https://api.example.com", "Authorization", "Bearer token")
 
         backend = DirectDispatchBackend(credential_resolver=resolver)
         result = await backend.dispatch(
@@ -506,8 +506,8 @@ class TestDirectDispatchBackendHTTPErrors:
             side_effect=httpx.ConnectError("Connection refused")
         )
 
-        def resolver(handle: str) -> tuple[str, str]:
-            return ("https://api.offline.com", "Bearer token")
+        def resolver(handle: str) -> tuple[str, str, str]:
+            return ("https://api.offline.com", "Authorization", "Bearer token")
 
         backend = DirectDispatchBackend(credential_resolver=resolver)
         result = await backend.dispatch(
@@ -536,8 +536,8 @@ class TestDirectDispatchBackendHTTPErrors:
 
         respx_mock.get("https://api.slow.com/endpoint").mock(side_effect=httpx.TimeoutException("timeout"))
 
-        def resolver(handle: str) -> tuple[str, str]:
-            return ("https://api.slow.com", "Bearer token")
+        def resolver(handle: str) -> tuple[str, str, str]:
+            return ("https://api.slow.com", "Authorization", "Bearer token")
 
         backend = DirectDispatchBackend(credential_resolver=resolver)
         result = await backend.dispatch(
@@ -573,8 +573,8 @@ class TestDirectDispatchBackendHTTPErrors:
 
         respx_mock.get("https://api.github.com/repos/owner/repo").mock(side_effect=capture)
 
-        def resolver(handle: str) -> tuple[str, str]:
-            return ("https://api.github.com", "Bearer token")
+        def resolver(handle: str) -> tuple[str, str, str]:
+            return ("https://api.github.com", "Authorization", "Bearer token")
 
         backend = DirectDispatchBackend(credential_resolver=resolver)
         await backend.dispatch(
@@ -614,8 +614,8 @@ class TestDirectDispatchBackendHTTPErrors:
 
         respx_mock.post("https://api.example.com/webhook").mock(side_effect=capture)
 
-        def resolver(handle: str) -> tuple[str, str]:
-            return ("https://api.example.com", "Bearer token")
+        def resolver(handle: str) -> tuple[str, str, str]:
+            return ("https://api.example.com", "Authorization", "Bearer token")
 
         backend = DirectDispatchBackend(credential_resolver=resolver)
         await backend.dispatch(
@@ -648,8 +648,8 @@ class TestDirectDispatchBackendHTTPErrors:
             )
         )
 
-        def resolver(handle: str) -> tuple[str, str]:
-            return ("https://api.example.com", "Bearer token")
+        def resolver(handle: str) -> tuple[str, str, str]:
+            return ("https://api.example.com", "Authorization", "Bearer token")
 
         backend = DirectDispatchBackend(credential_resolver=resolver)
         result = await backend.dispatch(
@@ -923,8 +923,8 @@ class TestDirectDispatchBackendEdgeCases:
             side_effect=RuntimeError("Unexpected error in httpx")
         )
 
-        def resolver(handle: str) -> tuple[str, str]:
-            return ("https://api.example.com", "Bearer token")
+        def resolver(handle: str) -> tuple[str, str, str]:
+            return ("https://api.example.com", "Authorization", "Bearer token")
 
         backend = DirectDispatchBackend(credential_resolver=resolver)
         result = await backend.dispatch(
