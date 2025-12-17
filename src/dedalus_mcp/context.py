@@ -298,7 +298,7 @@ class Context:
             raise RuntimeError("Dispatch backend not configured")
 
         # Resolve connection target to handle
-        connections = self._get_connection_handles(runtime)
+        connections = self._get_connections(runtime)
 
         if connection_target is None:
             # Single-connection server: use the only connection
@@ -401,13 +401,23 @@ class Context:
             payload["operation"] = dict(operation)
         return payload
 
-    def _get_connection_handles(self, runtime: Mapping[str, Any]) -> dict[str, str]:
-        """Get connection name to handle mapping from runtime config.
+    def _get_connections(self, runtime: Mapping[str, Any]) -> dict[str, str]:
+        """Get connection mapping from JWT claims (ddls:connections)."""
+        auth_context = self.auth_context
+        if auth_context is None:
+            msg = """DEDALUS_DISPATCH_URL not found.
+             Dispatch is only available through the Dedalus-hosted MCP servers."""
+            raise RuntimeError(msg)
 
-        Note: Authorization is handled by the gateway at runtime via Admin API.
-        The runtime config provides the name->handle mapping for dispatch routing.
-        """
-        return dict(runtime.get("connection_handles", {}))
+        claims = getattr(auth_context, "claims", None)
+        if not isinstance(claims, dict):
+            raise RuntimeError("Invalid authorization claims")
+
+        connections = claims.get("ddls:connections")
+        if not isinstance(connections, dict):
+            raise RuntimeError("Missing ddls:connections claim")
+
+        return dict(connections)
 
 
 def _activate_request_context() -> Token[Context | None]:
