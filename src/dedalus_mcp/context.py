@@ -418,7 +418,7 @@ class Context:
 
         connections = claims.get("ddls:connections")
         if not isinstance(connections, dict):
-            raise RuntimeError("Missing ddls:connections claim")
+            raise RuntimeError("Missing required JWT claims for connection resolution")
 
         return dict(connections)
 

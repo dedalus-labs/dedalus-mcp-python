@@ -163,6 +163,7 @@ class MCPServer(Server[Any, Any]):
         notification_sink: NotificationSink | None = None,
         http_security: TransportSecuritySettings | None = None,
         authorization: AuthorizationConfig | None = None,
+        authorization_server: str = "https://as.dedaluslabs.ai",
         streamable_http_stateless: bool = False,
         allow_dynamic_tools: bool = False,
         resource_uri: str | None = None,
@@ -244,15 +245,27 @@ class MCPServer(Server[Any, Any]):
         # Auto-enable authorization when connections are defined (they require JWT claims)
         if authorization is not None:
             auth_config = authorization
+            auto_configure_jwt = False
         elif connections:
             # Connections require auth to resolve name → handle from JWT
             auth_config = AuthorizationConfig(enabled=True)
+            auto_configure_jwt = True
         else:
             auth_config = AuthorizationConfig()
+            auto_configure_jwt = False
 
         self._authorization_manager: AuthorizationManager | None = None
         if auth_config.enabled:
             self._authorization_manager = AuthorizationManager(auth_config)
+            # Auto-configure JWT validator when connections trigger auto-enable
+            if auto_configure_jwt:
+                from .services.jwt_validator import JWTValidator, JWTValidatorConfig
+                as_url = authorization_server.rstrip("/")
+                jwt_config = JWTValidatorConfig(
+                    jwks_uri=f"{as_url}/.well-known/jwks.json",
+                    issuer=as_url,
+                )
+                self._authorization_manager.set_provider(JWTValidator(jwt_config))
 
         self._transport_factories: dict[str, TransportFactory] = {}
         self.register_transport("stdio", lambda server: StdioTransport(server))
