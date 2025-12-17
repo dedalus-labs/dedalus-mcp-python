@@ -37,6 +37,7 @@ def generate_dpop_keypair() -> tuple["EllipticCurvePrivateKey", dict[str, str]]:
         >>> private_key, public_jwk = generate_dpop_keypair()
         >>> proof = generate_dpop_proof(private_key, "POST", "https://as.example.com/token")
         >>> thumbprint = compute_jwk_thumbprint(public_jwk)
+
     """
     from cryptography.hazmat.backends import default_backend
     from cryptography.hazmat.primitives.asymmetric import ec

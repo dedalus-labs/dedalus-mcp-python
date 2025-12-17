@@ -99,7 +99,6 @@ class MCPClient:
     the MCP specification. Hosts can provide handlers for sampling, elicitation,
     logging, and root discovery to negotiate those capabilities during initialization.
     """
-
     def __init__(
         self,
         read_stream: MemoryObjectReceiveStream[Any],

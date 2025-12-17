@@ -76,6 +76,7 @@ def parse_authorization_token(auth_header: str) -> str | None:
 
     Returns:
         Token string, or None if header format is invalid
+
     """
     if not auth_header:
         return None

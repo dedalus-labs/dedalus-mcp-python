@@ -13,9 +13,6 @@ This ensures the gateway is the single source of truth for authorization.
 Key responsibilities:
 - Validate connection handle format
 - Provide clear error types for invalid handles
-
-References:
-    /dcs/apps/enclave/IMPLEMENTATION_SPEC.md (connection handle format)
 """
 
 from __future__ import annotations

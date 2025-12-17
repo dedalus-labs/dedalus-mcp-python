@@ -70,6 +70,7 @@ def generate_dpop_proof(
         ...     key, "POST", "https://mcp.example.com/messages",
         ...     access_token="eyJ..."
         ... )
+
     """
     import jwt
 
@@ -142,8 +143,8 @@ class DPoPAuth(httpx.Auth):
           with DPoP binding (cnf.jkt claim matching your key's thumbprint)
         - The same key used during token request MUST be used here
         - If the server returns a DPoP-Nonce header, update via set_nonce()
-    """
 
+    """
     requires_response_body = False
 
     def __init__(
@@ -159,6 +160,7 @@ class DPoPAuth(httpx.Auth):
             dpop_key: EC private key (P-256) for signing DPoP proofs.
                      Must be the same key used during token request.
             nonce: Optional initial nonce from server
+
         """
         self._access_token = access_token
         self._dpop_key = dpop_key
@@ -187,6 +189,7 @@ class DPoPAuth(httpx.Auth):
 
         Args:
             nonce: New nonce value, or None to clear
+
         """
         self._nonce = nonce
 
@@ -195,6 +198,7 @@ class DPoPAuth(httpx.Auth):
 
         Args:
             token: New access token
+
         """
         self._access_token = token
 
@@ -203,6 +207,7 @@ class DPoPAuth(httpx.Auth):
 
         Called by httpx for each request. Generates a fresh DPoP proof
         containing the request's method and URL.
+
         """
         # Generate fresh DPoP proof for this specific request
         proof = generate_dpop_proof(
@@ -230,8 +235,8 @@ class BearerAuth(httpx.Auth):
         >>> auth = BearerAuth(access_token="eyJ...")
         >>> async with httpx.AsyncClient() as client:
         ...     response = await client.get(url, auth=auth)
-    """
 
+    """
     requires_response_body = False
 
     def __init__(self, access_token: str) -> None:
@@ -239,6 +244,7 @@ class BearerAuth(httpx.Auth):
 
         Args:
             access_token: OAuth 2.0/2.1 access token
+
         """
         self._access_token = access_token
 
@@ -247,6 +253,7 @@ class BearerAuth(httpx.Auth):
 
         Args:
             token: New access token
+
         """
         self._access_token = token
 

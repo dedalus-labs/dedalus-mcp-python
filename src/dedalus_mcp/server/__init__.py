@@ -13,7 +13,6 @@ from mcp.server.transport_security import TransportSecuritySettings
 
 from .authorization import AuthorizationConfig
 from .core import MCPServer, NotificationFlags, ServerValidationError, TransportLiteral
-from .execution_plan import ExecutionPlan, build_plan_from_claims
 
 
 __all__ = [
@@ -23,6 +22,4 @@ __all__ = [
     "TransportLiteral",
     "TransportSecuritySettings",
     "AuthorizationConfig",
-    "ExecutionPlan",
-    "build_plan_from_claims",
 ]

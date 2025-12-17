@@ -15,6 +15,7 @@ def register_injectable_type(typ: type) -> None:
     """Register a type to be auto-injected in dependency resolution.
 
     Currently only Context is supported. This exists for future extensibility.
+
     """
     # For now, we only support Context, but this allows future types
     pass
@@ -25,6 +26,7 @@ def _find_context_param(func: Callable[..., Any]) -> str | None:
 
     Uses get_type_hints to properly resolve string annotations and handle
     forward references, ensuring the Context class identity check works correctly.
+
     """
     from typing import get_type_hints
 
@@ -57,8 +59,8 @@ class Depends:
 
     Supports both explicit subdependencies and automatic injection of
     registered types (like Context) based on type annotations.
-    """
 
+    """
     __slots__ = ("call", "dependencies", "use_cache")
 
     def __init__(

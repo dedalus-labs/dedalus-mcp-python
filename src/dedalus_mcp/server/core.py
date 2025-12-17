@@ -109,7 +109,7 @@ if TYPE_CHECKING:
     from anyio.abc import TaskGroup
     from mcp.server.models import InitializationOptions
     from mcp.server.session import ServerSession
-    from .connectors import Connection
+    from ..auth import Connection
     from .resolver import ConnectionResolver
 
 TransportLiteral = Literal["stdio", "streamable-http"]

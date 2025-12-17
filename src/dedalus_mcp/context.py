@@ -35,7 +35,7 @@ from .progress import progress as progress_manager
 if TYPE_CHECKING:
     from mcp.server.session import ServerSession
     from .dispatch import DispatchResponse
-    from .server.connectors import Connection
+    from .auth import Connection
     from .server.core import MCPServer
     from .server.dependencies.models import DependencyCall, ResolvedDependency
     from .server.resolver import ConnectionResolver
@@ -61,6 +61,7 @@ def get_context() -> Context:
             ctx = get_context()
             await ctx.info("Handling whoami request")
             return ctx.request_id
+
     """
     ctx = _CURRENT_CONTEXT.get()
     if ctx is None:
@@ -75,8 +76,8 @@ class Context:
     This wrapper keeps Dedalus MCP applications within the framework surface
     while still enabling access to logging and progress utilities mandated
     by the MCP specification.
-    """
 
+    """
     _request_context: RequestContext
     dependency_cache: dict["DependencyCall", "ResolvedDependency"] | None = None
     runtime: Mapping[str, Any] | None = None
@@ -169,6 +170,7 @@ class Context:
             message: Human-readable message describing the event.
             logger: Optional logger name for client-side routing.
             data: Optional structured payload merged into the log body.
+
         """
         payload: dict[str, Any] = {"msg": message}
         if data:
@@ -263,6 +265,7 @@ class Context:
             ... ))
             >>> if response.success:
             ...     print(response.response.body)
+
         """
         from .dispatch import (
             DispatchBackend,
@@ -270,7 +273,7 @@ class Context:
             DispatchWireRequest,
             HttpRequest,
         )
-        from .server.connectors import Connection
+        from .auth import Connection
         from .server.services.connection_gate import validate_handle_format
 
         # Handle overloaded signature: dispatch(HttpRequest) or dispatch(target, HttpRequest)

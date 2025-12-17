@@ -21,6 +21,7 @@ def paginate_sequence(items: Sequence[T], cursor: str | None, *, limit: int) -> 
 
     Raises :class:`McpError` if the cursor cannot be interpreted as an integer,
     matching the ``INVALID_PARAMS`` contract described in the pagination spec.
+
     """
     start = 0
     if cursor:

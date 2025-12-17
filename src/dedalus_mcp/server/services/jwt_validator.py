@@ -136,8 +136,8 @@ class JWTValidator(AuthorizationProvider):
         ... )
         >>> validator = JWTValidator(config)
         >>> context = await validator.validate("eyJhbGci...")
-    """
 
+    """
     def __init__(self, config: JWTValidatorConfig) -> None:
         if httpx is None or jwt is None:
             raise ImportError(
@@ -163,6 +163,7 @@ class JWTValidator(AuthorizationProvider):
 
         Raises:
             AuthorizationError: If validation fails
+
         """
         kid: str | None = None
         try:
@@ -295,7 +296,6 @@ class JWTValidator(AuthorizationProvider):
 
     def _validate_claims(self, claims: dict[str, Any]) -> None:
         """Validate standard JWT claims per RFC 9068 with skew tolerance."""
-
         now = self.config.clock.now()
 
         # exp is required (enforced during decode) but still validate semantics
@@ -333,7 +333,6 @@ class JWTValidator(AuthorizationProvider):
 
     def _as_timestamp(self, value: Any) -> float | None:
         """Convert JWT time claim values to a float timestamp."""
-
         if value is None:
             return None
 
@@ -363,6 +362,7 @@ class JWTValidator(AuthorizationProvider):
         Handles both:
         - scope: space-delimited string (RFC 9068)
         - scp: list of strings (some AS implementations)
+
         """
         # Try scope claim first (standard)
         scope_str = claims.get("scope")
@@ -385,6 +385,7 @@ class JWTValidator(AuthorizationProvider):
 
         Raises:
             AuthorizationError: If required scopes not present
+
         """
         granted_set = set(granted)
         required_set = set(required)

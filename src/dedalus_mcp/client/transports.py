@@ -61,6 +61,7 @@ async def lambda_http_client(
     Yields:
         Tuple of ``(read_stream, write_stream, get_session_id)`` compatible with
         :class:`mcp.client.session.ClientSession`.
+
     """
     transport = StreamableHTTPTransport(url, headers, timeout, sse_read_timeout, auth)
 

@@ -98,8 +98,8 @@ def tool(
 
     The decorator attaches a :class:`ToolSpec` to the function and, if a server
     is actively binding, registers it immediately.
-    """
 
+    """
     def decorator(fn: ToolFn) -> ToolFn:
         desc = (description if description is not None else (fn.__doc__ or "")).strip()
 

@@ -66,8 +66,8 @@ def resource(
     The decorated function must return ``str`` (text) or ``bytes`` (binary)
     content.  Registration happens immediately if inside
     :meth:`dedalus_mcp.server.MCPServer.binding`.
-    """
 
+    """
     def decorator(fn: ResourceFn) -> ResourceFn:
         spec = ResourceSpec(uri=uri, fn=fn, name=name, description=description, mime_type=mime_type)
         setattr(fn, _RESOURCE_ATTR, spec)

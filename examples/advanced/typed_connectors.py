@@ -24,8 +24,8 @@ When NOT to use typed connectors:
 import asyncio
 import os
 
+from dedalus_mcp.auth import Credentials
 from dedalus_mcp.server.connectors import (
-    Credentials,
     EnvironmentCredentialLoader,
     EnvironmentCredentials,
     define,
@@ -227,7 +227,7 @@ async def example_with_driver():
 
 def example_optional_fields():
     """Show optional fields and defaults in connectors."""
-    from dedalus_mcp.server.connectors import Binding
+    from dedalus_mcp.auth import Binding
 
     OpenAIConn = define(
         kind="openai",

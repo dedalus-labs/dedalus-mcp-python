@@ -34,9 +34,6 @@ Example:
     ...         body={"title": title, "body": "Auto-created"},
     ...     ))
     ...     return response.body
-
-References:
-    /dcs/docs/design/dispatch-interface.md (security model)
 """
 
 from __future__ import annotations
@@ -78,8 +75,8 @@ class HttpRequest(BaseModel):
         body: Request body - dict/list serialized as JSON, str sent as-is
         headers: Additional headers (cannot override Authorization)
         timeout_ms: Request timeout; falls back to connection default if None
-    """
 
+    """
     model_config = ConfigDict(extra="forbid")
 
     method: HttpMethod
@@ -118,8 +115,8 @@ class HttpResponse(BaseModel):
         status: HTTP status code (100-599)
         headers: Response headers
         body: Response body - parsed JSON if applicable, else raw string
-    """
 
+    """
     status: int = Field(..., ge=100, le=599)
     headers: dict[str, str] = Field(default_factory=dict)
     body: dict[str, Any] | list[Any] | str | None = None
@@ -130,8 +127,8 @@ class DispatchErrorCode(str, Enum):
 
     These represent infrastructure failures - NOT HTTP 4xx/5xx from downstream.
     A downstream 404 is still success=True with response.status=404.
-    """
 
+    """
     CONNECTION_NOT_FOUND = "connection_not_found"
     CONNECTION_REVOKED = "connection_revoked"
     DECRYPTION_FAILED = "decryption_failed"
@@ -147,8 +144,8 @@ class DispatchError(BaseModel):
         code: Structured error code for programmatic handling
         message: Human-readable error description
         retryable: Whether the operation may succeed on retry
+    
     """
-
     code: DispatchErrorCode
     message: str
     retryable: bool = False
@@ -164,8 +161,8 @@ class DispatchResponse(BaseModel):
         success: Whether we got an HTTP response from downstream
         response: HTTP response if success=True
         error: Structured error if success=False
+    
     """
-
     model_config = ConfigDict(extra="forbid")
 
     success: bool
@@ -197,8 +194,8 @@ class DispatchWireRequest(BaseModel):
         connection_handle: Resolved handle (e.g., "ddls:conn:abc123")
         request: The HTTP request to execute
         authorization: Optional JWT from MCP server request context for dispatch auth
-    """
 
+    """
     connection_handle: str = Field(..., min_length=1)
     request: HttpRequest
     authorization: str | None = None
@@ -223,8 +220,8 @@ class DispatchBackend(Protocol):
 
     Backends handle execution of authenticated HTTP requests, either
     locally (DirectDispatchBackend) or via the Enclave (EnclaveDispatchBackend).
-    """
 
+    """
     async def dispatch(self, request: DispatchWireRequest) -> DispatchResponse:
         """Execute an authenticated HTTP request.
 
@@ -233,6 +230,7 @@ class DispatchBackend(Protocol):
 
         Returns:
             DispatchResponse with HTTP response or error
+
         """
         ...
 
@@ -263,14 +261,15 @@ class DirectDispatchBackend:
         ...     return ("https://api.github.com", "Authorization", f"Bearer {os.getenv('GITHUB_TOKEN')}")
         >>> backend = DirectDispatchBackend(credential_resolver=resolve_creds)
         >>> response = await backend.dispatch(wire_request)
-    """
 
+    """
     def __init__(self, credential_resolver: CredentialResolver | None = None) -> None:
         """Initialize direct dispatch backend.
 
         Args:
             credential_resolver: Function that resolves connection handle to
                 (base_url, header_name, header_value). If None, dispatch will fail.
+
         """
         self._resolver = credential_resolver
 
@@ -282,6 +281,7 @@ class DirectDispatchBackend:
 
         Returns:
             DispatchResponse with HTTP response or error
+
         """
         if self._resolver is None:
             return DispatchResponse.fail(
@@ -422,8 +422,8 @@ class EnclaveDispatchBackend:
         ...     auth_secret=b"32-byte-secret...",
         ... )
         >>> response = await backend.dispatch(wire_request)
-    """
 
+    """
     def __init__(
         self,
         enclave_url: str,
@@ -442,6 +442,7 @@ class EnclaveDispatchBackend:
             deployment_id: Deployment ID for HMAC auth (from DEDALUS_DEPLOYMENT_ID)
             auth_secret: 32-byte HMAC secret (from DEDALUS_AUTH_SECRET, base64)
             timeout: Request timeout in seconds
+
         """
         self._enclave_url = enclave_url.rstrip("/")
         self._access_token = access_token
@@ -458,6 +459,7 @@ class EnclaveDispatchBackend:
 
         Returns:
             DispatchResponse with HTTP response or error
+
         """
         try:
             import httpx

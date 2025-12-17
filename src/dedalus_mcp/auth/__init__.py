@@ -3,8 +3,6 @@
 
 """Dedalus MCP authentication primitives.
 
-This module provides the core credential and connection types for MCP servers.
-
 Usage:
     from dedalus_mcp.auth import Connection, SecretKeys, Binding, SecretValues
 
@@ -19,19 +17,31 @@ Usage:
     secrets = SecretValues(github, token='ghp_xxx')
 """
 
-from __future__ import annotations
-
-# Re-export from server.connectors (canonical location)
-from ..server.connectors import (
+from .credentials import (
+    _UNSET,
+    ApiKeyCredentialEnvelope,
     Binding,
     Connection,
+    Credential,
+    CredentialEnvelope,
+    Credentials,
+    OAuth2CredentialEnvelope,
+    ProviderMetadata,
     SecretKeys,
     SecretValues,
 )
 
+
 __all__ = [
-    "Binding",
-    "Connection",
-    "SecretKeys",
-    "SecretValues",
+    '_UNSET',
+    'ApiKeyCredentialEnvelope',
+    'Binding',
+    'Connection',
+    'Credential',
+    'CredentialEnvelope',
+    'Credentials',
+    'OAuth2CredentialEnvelope',
+    'ProviderMetadata',
+    'SecretKeys',
+    'SecretValues',
 ]

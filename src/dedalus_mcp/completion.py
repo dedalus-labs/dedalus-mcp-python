@@ -36,8 +36,8 @@ class CompletionFunction(Protocol):
 
     Providers accept the argument being completed and optional prior context,
     mirroring ``CompletionRequestParams`` in the spec.
-    """
 
+    """
     def __call__(
         self, argument: types.CompletionArgument, context: types.CompletionContext | None
     ) -> (
@@ -55,8 +55,8 @@ class CompletionResult:
 
     Maps directly to ``Completion`` from the spec while allowing optional
     ``total`` and ``hasMore`` fields.
-    """
 
+    """
     values: Iterable[str]
     total: int | None = None
     has_more: bool | None = None
@@ -67,8 +67,8 @@ class CompletionSpec:
     """Registered completion provider.
 
     See: https://modelcontextprotocol.io/specification/2025-06-18/server/completion
-    """
 
+    """
     ref_type: str  # ``"prompt"`` or ``"resource"``
     key: str  # prompt name or resource template URI
     fn: CompletionFunction
@@ -98,6 +98,7 @@ def completion(
     Exactly one of ``prompt`` or ``resource`` must be supplied.  This mirrors
     the ``PromptReference`` and ``ResourceTemplateReference`` types in the
     completion spec.
+
     """
     if (prompt is None) == (resource is None):
         raise ValueError("Provide exactly one of 'prompt' or 'resource'.")

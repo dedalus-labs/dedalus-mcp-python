@@ -29,6 +29,7 @@ def b64url_encode(data: bytes) -> str:
 
     Returns:
         Base64url-encoded string without padding
+
     """
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
 
@@ -41,6 +42,7 @@ def b64url_decode(s: str) -> bytes:
 
     Returns:
         Decoded bytes
+
     """
     padding = 4 - len(s) % 4
     if padding != 4:
@@ -70,6 +72,7 @@ def compute_jwk_thumbprint(jwk: dict[str, Any]) -> str:
         >>> jwk = {"kty": "EC", "crv": "P-256", "x": "...", "y": "..."}
         >>> thumbprint = compute_jwk_thumbprint(jwk)
         >>> # thumbprint is 43 characters (256 bits / 6 bits per char)
+
     """
     kty = jwk.get("kty")
 
@@ -111,6 +114,7 @@ def compute_access_token_hash(access_token: str) -> str:
 
     Example:
         >>> ath = compute_access_token_hash("eyJhbGciOiJSUzI1NiIs...")
+
     """
     digest = hashlib.sha256(access_token.encode("ascii")).digest()
     return b64url_encode(digest)

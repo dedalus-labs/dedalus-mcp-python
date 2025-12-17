@@ -49,7 +49,7 @@ from .resource_template import (
 )
 from .server import MCPServer
 from .server.authorization import AuthorizationConfig
-from .server.connectors import (
+from .auth import (
     Binding,
     Connection,
     SecretKeys,

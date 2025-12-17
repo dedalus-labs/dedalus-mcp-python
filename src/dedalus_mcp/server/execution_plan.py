@@ -153,8 +153,8 @@ def build_plan_from_claims(
 
     Raises:
         KeyError: If the requested handle is not present in the token claims.
-    """
 
+    """
     connection_claim = None
     for entry in claims.get("ddls:connections", []):
         if isinstance(entry, Mapping) and entry.get("id") == handle:

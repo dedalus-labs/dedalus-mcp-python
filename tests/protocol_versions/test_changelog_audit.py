@@ -64,8 +64,7 @@ class VersionChangelog:
 
 
 # --- Changelog data (extracted from MCP spec) ----------------------------------
-# When a new MCP version is released, add a VersionChangelog here by reading
-# the changelog at: internals/references/modelcontextprotocol/docs/specification/{version}/changelog.mdx
+
 
 
 CHANGELOG_2025_03_26 = VersionChangelog(

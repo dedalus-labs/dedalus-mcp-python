@@ -77,8 +77,8 @@ class ProgressConfig:
     disable throttling, causing each update to send immediately. The
     ``retry_backoff`` window governs the sleep interval (in seconds) between
     retry attempts when a notification send fails.
-    """
 
+    """
     emit_hz: float = 8.0
     retry_backoff: tuple[float, float] = (0.05, 0.25)
 
@@ -152,8 +152,8 @@ class ProgressTelemetry:
 
     Each callback receives one of the event dataclasses defined above. Users
     can supply any subset of callbacks; unspecified hooks default to no-ops.
-    """
 
+    """
     on_start: Callable[[ProgressLifecycleEvent], None] | None = None
     on_emit: Callable[[ProgressEmitEvent], None] | None = None
     on_throttle: Callable[[ProgressThrottleEvent], None] | None = None
@@ -466,6 +466,7 @@ class ProgressTracker:
 
         ``progress`` must be monotonically increasing as mandated by the MCP
         specification. ``total`` overrides the configured total for this update.
+
         """
         await self._emitter.set(progress, message=message, total=total)
 

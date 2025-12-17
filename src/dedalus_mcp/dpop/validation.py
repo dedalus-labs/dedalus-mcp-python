@@ -47,14 +47,12 @@ from dedalus_mcp.utils import get_logger
 
 class Clock(Protocol):
     """Clock abstraction for testing time-dependent logic."""
-
     def now(self) -> float:
         """Return current Unix timestamp."""
 
 
 class SystemClock:
     """Production clock using system time."""
-
     def now(self) -> float:
         return time.time()
 
@@ -72,6 +70,7 @@ class InvalidDPoPProofError(DPoPValidationError):
     """Raised when proof structure or signature is invalid.
 
     Covers RFC 9449 Section 4.3 checks 1-7.
+
     """
 
 
@@ -79,6 +78,7 @@ class DPoPReplayError(DPoPValidationError):
     """Raised when JTI has already been used.
 
     Per RFC 9449 Section 11.1, servers should detect replay attacks.
+
     """
 
 
@@ -86,6 +86,7 @@ class DPoPMethodMismatchError(DPoPValidationError):
     """Raised when proof's htm doesn't match request method.
 
     Per RFC 9449 Section 4.3 check 8.
+
     """
 
 
@@ -93,6 +94,7 @@ class DPoPUrlMismatchError(DPoPValidationError):
     """Raised when proof's htu doesn't match request URL.
 
     Per RFC 9449 Section 4.3 check 9.
+
     """
 
 
@@ -100,6 +102,7 @@ class DPoPExpiredError(DPoPValidationError):
     """Raised when proof iat is outside acceptable time window.
 
     Per RFC 9449 Section 4.3 check 11.
+
     """
 
 
@@ -107,6 +110,7 @@ class DPoPThumbprintMismatchError(DPoPValidationError):
     """Raised when proof key doesn't match token's cnf.jkt binding.
 
     Per RFC 9449 Section 4.3 check 12.
+
     """
 
 
@@ -114,6 +118,7 @@ class DPoPNonceMismatchError(DPoPValidationError):
     """Raised when proof nonce doesn't match server-provided nonce.
 
     Per RFC 9449 Section 4.3 check 10.
+
     """
 
 
@@ -170,8 +175,8 @@ class _JTICache:
 
     Per RFC 9449 Section 11.1, servers should track JTIs to prevent replay.
     This implementation uses an ordered dict for LRU eviction and TTL expiration.
-    """
 
+    """
     def __init__(self, max_size: int, ttl: float, clock: Clock) -> None:
         self._max_size = max_size
         self._ttl = ttl
@@ -225,6 +230,7 @@ def _normalize_url(url: str) -> str:
 
     The htu claim is "The HTTP target URI ... without query and fragment parts."
     We also lowercase scheme and host per RFC 3986 normalization.
+
     """
     parsed = urlparse(url)
     # Strip query and fragment, lowercase scheme and host
@@ -257,8 +263,8 @@ class DPoPValidator:
         ...     expected_thumbprint="abc123...",  # From token's cnf.jkt
         ...     access_token="eyJ...",
         ... )
-    """
 
+    """
     def __init__(self, config: DPoPValidatorConfig | None = None) -> None:
         if jwt is None:
             raise ImportError("DPoP validation requires pyjwt. Install with: uv add pyjwt cryptography")
@@ -307,6 +313,7 @@ class DPoPValidator:
             DPoPExpiredError: If iat is outside acceptable window
             DPoPThumbprintMismatchError: If key doesn't match expected_thumbprint
             DPoPNonceMismatchError: If nonce doesn't match expected_nonce
+
         """
         # Check 2: Parse JWT header
         try:

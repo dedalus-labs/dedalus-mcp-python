@@ -72,6 +72,7 @@ async def open_connection(
 
     Yields:
         MCPClient: A negotiated MCP client ready for ``send_request`` and other operations.
+
     """
     selected = transport.lower()
 

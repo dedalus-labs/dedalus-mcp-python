@@ -6,8 +6,6 @@ Dedalus MCP implements the Model Context Protocol. Spec-faithful, minimal surfac
 
 | What | Where |
 |------|-------|
-| MCP spec | `internals/references/modelcontextprotocol/` |
-| Reference SDK | `internals/references/python-sdk/` |
 | Server core | `src/dedalus_mcp/server/core.py` |
 | Versioning | `src/dedalus_mcp/versioning.py` |
 | Types | `src/dedalus_mcp/types/` |
@@ -144,14 +142,6 @@ The SDK uses `exclude_none=True`. Set unsupported fields to `None`.
 2. **Register it correctly** — Add to `FEATURE_REGISTRY` with the correct `added=` version
 3. **Consider backwards compatibility** — If the feature builds on earlier concepts, ensure those are also tracked
 4. **Test across versions** — Write tests that verify the feature is absent in earlier versions and present in later ones
-
-**Adding a new MCP version:**
-
-1. Read changelog at `internals/references/modelcontextprotocol/docs/specification/{version}/changelog.mdx`
-2. Add `V_YYYY_MM_DD` constant
-3. Add `FeatureId` entries with correct `added=` dates
-4. Write migration function
-5. Add tests in `tests/protocol_versions/{version}/`
 
 **Why this matters:** Users negotiate protocol versions with servers. If Dedalus MCP claims to support `2024-11-05` but includes features from `2025-06-18`, we break interoperability. The versioning system is our contract with the spec.
 

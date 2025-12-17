@@ -82,8 +82,8 @@ def prompt(
     """Register a prompt renderer.
 
     See: https://modelcontextprotocol.io/specification/2025-06-18/server/prompts
-    """
 
+    """
     def decorator(fn: PromptFunction) -> PromptFunction:
         spec = PromptSpec(
             name=name,

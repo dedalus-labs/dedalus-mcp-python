@@ -88,8 +88,8 @@ class VaultConnector(Protocol):
     """Protocol for vault connector implementations.
 
     Handles org credential resolution from secure vault.
-    """
 
+    """
     async def get_connection(self, handle: str) -> ConnectionMetadata:
         """Fetch connection metadata from vault.
 
@@ -101,6 +101,7 @@ class VaultConnector(Protocol):
 
         Raises:
             VaultError: If vault operation fails
+
         """
 
     async def decrypt_secret(self, handle: str) -> str:
@@ -114,6 +115,7 @@ class VaultConnector(Protocol):
 
         Raises:
             VaultError: If decryption fails
+
         """
 
 
@@ -121,8 +123,8 @@ class ExecutionBackendClient(Protocol):
     """Protocol for execution backend client.
 
     Handles user credential forwarding to backend.
-    """
 
+    """
     async def execute_with_credential(
         self, encrypted_cred: dict[str, Any], upstream_call: dict[str, Any]
     ) -> dict[str, Any]:
@@ -137,6 +139,7 @@ class ExecutionBackendClient(Protocol):
 
         Raises:
             BackendError: If backend execution fails
+
         """
 
 
@@ -144,8 +147,8 @@ class Driver(Protocol):
     """Protocol for connection drivers.
 
     Implements connection logic for specific database/API types.
-    """
 
+    """
     async def create_client(self, secret: str, params: dict[str, Any] | None = None) -> Any:
         """Create client from decrypted secret.
 
@@ -158,6 +161,7 @@ class Driver(Protocol):
 
         Raises:
             Exception: If client creation fails
+
         """
 
 
@@ -174,8 +178,8 @@ class ConnectionResolver:
     - Fingerprint validation
     - Secret zeroization
     - Audit logging
-    """
 
+    """
     def __init__(
         self,
         config: ResolverConfig,
@@ -190,6 +194,7 @@ class ConnectionResolver:
             vault: Vault connector for org credentials
             backend: Execution backend client for user credentials
             drivers: Driver registry mapping driver_type -> Driver
+
         """
         self.config = config
         self._vault = vault
@@ -203,6 +208,7 @@ class ConnectionResolver:
         Args:
             driver_type: Driver type identifier (e.g., 'supabase', 'postgres')
             driver: Driver implementation
+
         """
         self._drivers[driver_type] = driver
         self._logger.debug("driver registered", extra={"event": "resolver.driver.register", "driver_type": driver_type})
@@ -223,6 +229,7 @@ class ConnectionResolver:
             VaultError: If vault operations fail
             BackendError: If backend execution fails
             DriverNotFoundError: If driver not registered
+
         """
         # Extract auth context from request
         auth_context = request_context.get("dedalus_mcp.auth")
@@ -270,6 +277,7 @@ class ConnectionResolver:
         Raises:
             VaultError: If secret decryption fails
             DriverNotFoundError: If driver not found
+
         """
         # Get driver
         driver = self._drivers.get(metadata.driver_type)
@@ -311,6 +319,7 @@ class ConnectionResolver:
 
         Raises:
             BackendError: If backend execution fails
+
         """
         if not self._backend or not self.config.backend_enabled:
             self._audit_log("resolve_failed", handle, "backend_disabled")
@@ -350,6 +359,7 @@ class ConnectionResolver:
 
         Raises:
             UnauthorizedHandleError: If handle not authorized
+
         """
         authorized_handles = auth_context.claims.get("ddls:connectors", [])
 
@@ -367,6 +377,7 @@ class ConnectionResolver:
 
         Raises:
             FingerprintMismatchError: If fingerprints don't match
+
         """
         token_fingerprints = auth_context.claims.get("ddls:fingerprints", {})
         token_fp = token_fingerprints.get(handle)
@@ -380,6 +391,7 @@ class ConnectionResolver:
 
         Args:
             secret: Secret to zeroize
+
         """
         # Python doesn't have true zeroization, but we can at least
         # clear the reference and rely on GC
@@ -393,6 +405,7 @@ class ConnectionResolver:
             event: Event type
             handle: Connection handle
             detail: Event detail
+
         """
         if not self.config.audit_log:
             return
