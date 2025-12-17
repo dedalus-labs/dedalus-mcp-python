@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.9](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.2.8...v0.2.9) (2025-12-17)
+
+
+### Bug Fixes
+
+* connections ([830e2f6](https://github.com/dedalus-labs/dedalus-mcp-python/commit/830e2f674950bd7d8194d1fbd174f52a8d360a96))
+* connections ([#35](https://github.com/dedalus-labs/dedalus-mcp-python/issues/35)) ([1cfe635](https://github.com/dedalus-labs/dedalus-mcp-python/commit/1cfe6356c7ed7cf1550d85622fcdb7be6d276ef5))
+
 ## [0.2.8](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.2.7...v0.2.8) (2025-12-16)
 
 
