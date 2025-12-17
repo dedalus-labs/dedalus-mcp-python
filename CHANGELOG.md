@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.2.10...v0.3.0) (2025-12-17)
+
+
+### Features
+
+* auth server ([ad02b90](https://github.com/dedalus-labs/dedalus-mcp-python/commit/ad02b905f972e57fc9a404e437bd8bc1280bd689))
+* auth server ([#41](https://github.com/dedalus-labs/dedalus-mcp-python/issues/41)) ([0937148](https://github.com/dedalus-labs/dedalus-mcp-python/commit/0937148d2cf6a11d0936aaa981a6c14152fb5af7))
+
 ## [0.2.10](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.2.9...v0.2.10) (2025-12-17)
 
 
