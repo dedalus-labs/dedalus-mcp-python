@@ -405,8 +405,11 @@ class Context:
         """Get connection mapping from JWT claims (ddls:connections)."""
         auth_context = self.auth_context
         if auth_context is None:
-            msg = """DEDALUS_DISPATCH_URL not found.
-             Dispatch is only available through the Dedalus-hosted MCP servers."""
+            msg = (
+                "Authorization context is None. "
+                "Ensure MCPServer has authorization=AuthorizationConfig() configured "
+                "and the client sends a valid JWT in the Authorization header."
+            )
             raise RuntimeError(msg)
 
         claims = getattr(auth_context, "claims", None)

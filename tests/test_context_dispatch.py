@@ -205,12 +205,11 @@ class TestContextDispatch:
             await ctx.dispatch('ddls:conn:01ABC-github', request)
 
     @pytest.mark.asyncio
-    async def test_dispatch_no_auth_context_still_validates_format(self, backend):
-        """Dispatch without auth context should still validate handle format."""
+    async def test_dispatch_no_auth_context_raises_error(self, backend):
+        """Dispatch without auth context should raise RuntimeError."""
         mock_request_ctx = MockRequestContext(
             lifespan_context={'dedalus_mcp.runtime': {
                 'dispatch_backend': backend,
-                'connection_handles': {'github': 'ddls:conn:01ABC-github'}
             }}
         )
         mock_request = MagicMock()
@@ -219,10 +218,10 @@ class TestContextDispatch:
 
         ctx = Context(
             _request_context=mock_request_ctx,
-            runtime={'dispatch_backend': backend, 'connection_handles': {'github': 'ddls:conn:01ABC-github'}}
+            runtime={'dispatch_backend': backend}
         )
         request = HttpRequest(method=HttpMethod.POST, path="/repos")
 
-        # Valid handle should succeed
-        result = await ctx.dispatch('github', request)
-        assert result.success is True
+        # Without auth context, dispatch fails (can't look up connections from JWT)
+        with pytest.raises(RuntimeError, match='Authorization context is None'):
+            await ctx.dispatch('github', request)
