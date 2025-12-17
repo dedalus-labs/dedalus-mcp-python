@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.3.0...v0.4.0) (2025-12-17)
+
+
+### Features
+
+* url encoding ([6d00f4a](https://github.com/dedalus-labs/dedalus-mcp-python/commit/6d00f4a04b2ee53f06ee13075dcd6e7bbbdabd14))
+* url encoding ([#44](https://github.com/dedalus-labs/dedalus-mcp-python/issues/44)) ([39bc3ca](https://github.com/dedalus-labs/dedalus-mcp-python/commit/39bc3ca6638bd0ce56826d224dc5c25605a91d89))
+
 ## [0.3.0](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.2.10...v0.3.0) (2025-12-17)
 
 
