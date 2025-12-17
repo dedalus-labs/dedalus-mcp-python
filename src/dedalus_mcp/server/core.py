@@ -241,9 +241,18 @@ class MCPServer(Server[Any, Any]):
         self._connector_params = connector_params
         self._auth_methods = auth_methods
 
+        # Auto-enable authorization when connections are defined (they require JWT claims)
+        if authorization is not None:
+            auth_config = authorization
+        elif connections:
+            # Connections require auth to resolve name → handle from JWT
+            auth_config = AuthorizationConfig(enabled=True)
+        else:
+            auth_config = AuthorizationConfig()
+
         self._authorization_manager: AuthorizationManager | None = None
-        if authorization and authorization.enabled:
-            self._authorization_manager = AuthorizationManager(authorization)
+        if auth_config.enabled:
+            self._authorization_manager = AuthorizationManager(auth_config)
 
         self._transport_factories: dict[str, TransportFactory] = {}
         self.register_transport("stdio", lambda server: StdioTransport(server))
