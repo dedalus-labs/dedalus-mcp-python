@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.4.0...v0.4.1) (2025-12-17)
+
+
+### Bug Fixes
+
+* improve error handling ([4c92707](https://github.com/dedalus-labs/dedalus-mcp-python/commit/4c9270743bbae81c06bb2944be6433274c400c92))
+* improve error handling ([#47](https://github.com/dedalus-labs/dedalus-mcp-python/issues/47)) ([ecc018b](https://github.com/dedalus-labs/dedalus-mcp-python/commit/ecc018bbe156054ec400b8a354e828c96692ec19))
+
 ## [0.4.0](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.3.0...v0.4.0) (2025-12-17)
 
 
