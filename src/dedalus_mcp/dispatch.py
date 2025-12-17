@@ -46,6 +46,7 @@ import hmac
 import time
 from enum import Enum, StrEnum
 from typing import Any, Callable, Protocol, runtime_checkable
+from urllib.parse import quote
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -91,9 +92,22 @@ class HttpRequest(BaseModel):
     @field_validator("path")
     @classmethod
     def validate_path(cls, v: str) -> str:
-        """Validate path starts with /."""
+        """Validate path and URL-encode query string if needed.
+
+        Automatically encodes unsafe characters in query params (spaces,
+        parentheses, quotes) while preserving REST API structure chars.
+        This prevents "invalid uri character" errors from downstream.
+        """
         if not v.startswith("/"):
             raise ValueError("path must start with '/'")
+
+        # Split path and query, encode query params if present
+        if "?" in v:
+            path_part, query_part = v.split("?", 1)
+            # Encode query while keeping structure chars (=&,.*) intact
+            # This handles PostgREST operators like "NOT IN (...)" safely
+            encoded_query = quote(query_part, safe="=&,.*-_~:")
+            return f"{path_part}?{encoded_query}"
         return v
 
     @field_validator("headers")
@@ -135,6 +149,7 @@ class DispatchErrorCode(str, Enum):
     CONNECTION_NOT_FOUND = "connection_not_found"
     CONNECTION_REVOKED = "connection_revoked"
     DECRYPTION_FAILED = "decryption_failed"
+    INVALID_REQUEST = "invalid_request"  # Malformed path, invalid URI, bad headers
     DOWNSTREAM_TIMEOUT = "downstream_timeout"
     DOWNSTREAM_UNREACHABLE = "downstream_unreachable"
     DOWNSTREAM_TLS_ERROR = "downstream_tls_error"
