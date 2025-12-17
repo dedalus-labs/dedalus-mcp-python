@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.10](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.2.9...v0.2.10) (2025-12-17)
+
+
+### Bug Fixes
+
+* enable auth ([cf92543](https://github.com/dedalus-labs/dedalus-mcp-python/commit/cf925435243cf7a36c97f2bb991b521dd88ef3e2))
+* enable auth ([#38](https://github.com/dedalus-labs/dedalus-mcp-python/issues/38)) ([6b7edf0](https://github.com/dedalus-labs/dedalus-mcp-python/commit/6b7edf0fd42d773eb502520b2c726ee36ab12d7b))
+
 ## [0.2.9](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.2.8...v0.2.9) (2025-12-17)
 
 
