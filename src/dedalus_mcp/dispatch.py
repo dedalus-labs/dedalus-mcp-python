@@ -144,15 +144,23 @@ class DispatchErrorCode(str, Enum):
 
     These represent infrastructure failures - NOT HTTP 4xx/5xx from downstream.
     A downstream 404 is still success=True with response.status=404.
+
+    Wire format uses SCREAMING_CASE for machine-readability and grep-ability.
     """
 
-    CONNECTION_NOT_FOUND = "connection_not_found"
-    CONNECTION_REVOKED = "connection_revoked"
-    DECRYPTION_FAILED = "decryption_failed"
-    INVALID_REQUEST = "invalid_request"  # Malformed path, invalid URI, bad headers
-    DOWNSTREAM_TIMEOUT = "downstream_timeout"
-    DOWNSTREAM_UNREACHABLE = "downstream_unreachable"
-    DOWNSTREAM_TLS_ERROR = "downstream_tls_error"
+    CONNECTION_NOT_FOUND = "CONNECTION_NOT_FOUND"
+    CONNECTION_REVOKED = "CONNECTION_REVOKED"
+    CONNECTION_SUSPENDED = "CONNECTION_SUSPENDED"
+    ORG_MISMATCH = "ORG_MISMATCH"
+    DECRYPTION_FAILED = "DECRYPTION_FAILED"
+    INVALID_REQUEST = "INVALID_REQUEST"
+    BAD_REQUEST = "BAD_REQUEST"
+    DOWNSTREAM_TIMEOUT = "DOWNSTREAM_TIMEOUT"
+    DOWNSTREAM_UNREACHABLE = "DOWNSTREAM_UNREACHABLE"
+    DOWNSTREAM_TLS_ERROR = "DOWNSTREAM_TLS_ERROR"
+    DOWNSTREAM_AUTH_FAILURE = "DOWNSTREAM_AUTH_FAILURE"
+    DOWNSTREAM_RATE_LIMITED = "DOWNSTREAM_RATE_LIMITED"
+    ENCLAVE_UNAVAILABLE = "ENCLAVE_UNAVAILABLE"
 
 
 class DispatchError(BaseModel):
@@ -548,7 +556,7 @@ class EnclaveDispatchBackend:
 
             data = response.json()
 
-            # Enclave returns DispatchResponse format
+            # Enclave returns canonical DispatchResponse format
             if data.get("success"):
                 http_resp = data.get("response", {})
                 return DispatchResponse.ok(
@@ -560,8 +568,17 @@ class EnclaveDispatchBackend:
                 )
             else:
                 error_data = data.get("error", {})
+                code_str = error_data.get("code", "DOWNSTREAM_UNREACHABLE")
+                try:
+                    code = DispatchErrorCode(code_str)
+                except ValueError:
+                    _logger.warning(
+                        "unknown dispatch error code",
+                        extra={"event": "dispatch.unknown_code", "code": code_str},
+                    )
+                    code = DispatchErrorCode.DOWNSTREAM_UNREACHABLE
                 return DispatchResponse.fail(
-                    DispatchErrorCode(error_data.get("code", "downstream_unreachable")),
+                    code,
                     error_data.get("message", "Unknown error"),
                     retryable=error_data.get("retryable", False),
                 )
