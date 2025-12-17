@@ -50,11 +50,17 @@ class TestContextDispatch:
 
     @pytest.fixture
     def auth_context(self):
-        """Auth context with org reference (gateway validates connections)."""
+        """Auth context with connections MAP (required for dispatch)."""
         return AuthorizationContext(
             subject='user123',
             scopes=['mcp:tools:call'],
-            claims={'ddls:org': 'org_123'},
+            claims={
+                'ddls:org': 'org_123',
+                'ddls:connections': {
+                    'github': 'ddls:conn:019b2464-d1c1-7751-a409-ed273f51da82',
+                    'invalid': 'not-a-valid-handle',  # For invalid handle test
+                },
+            },
         )
 
     @pytest.fixture
@@ -224,4 +230,104 @@ class TestContextDispatch:
 
         # Without auth context, dispatch fails (can't look up connections from JWT)
         with pytest.raises(RuntimeError, match='Authorization context is None'):
+            await ctx.dispatch('github', request)
+
+    @pytest.mark.asyncio
+    async def test_dispatch_with_jwt_connections_claim(self, backend):
+        """Full flow: JWT with ddls:connections claim → dispatch resolves name → handle."""
+        # Simulate JWT claims with connection MAP format
+        jwt_claims = {
+            "sub": "user_123",
+            "aud": "https://mcp.example.com",
+            "ddls:connections": {
+                "github": "ddls:conn:019b2464-d1c1-7751-a409-ed273f51da82",
+                "supabase": "ddls:conn:019b2464-d1c1-7751-a409-ed273f51da83",
+            },
+        }
+        auth_context = AuthorizationContext(
+            subject="user_123",
+            scopes=["mcp:tools:call"],
+            claims=jwt_claims,
+        )
+
+        mock_request_ctx = MockRequestContext(
+            lifespan_context={'dedalus_mcp.runtime': {'dispatch_backend': backend}}
+        )
+        mock_request = MagicMock()
+        # Simulate auth middleware having set the auth context in scope
+        mock_request.scope = {"dedalus_mcp.auth": auth_context}
+        mock_request_ctx.request = mock_request
+
+        ctx = Context(
+            _request_context=mock_request_ctx,
+            runtime={'dispatch_backend': backend}
+        )
+        request = HttpRequest(method=HttpMethod.GET, path="/user")
+
+        # Dispatch by connection NAME - should resolve to handle from JWT claims
+        result = await ctx.dispatch('github', request)
+        assert result.success is True
+
+    @pytest.mark.asyncio
+    async def test_dispatch_connection_not_in_jwt_claims(self, backend):
+        """Dispatch fails if connection name not in JWT ddls:connections."""
+        jwt_claims = {
+            "sub": "user_123",
+            "ddls:connections": {
+                "github": "ddls:conn:019b2464-d1c1-7751-a409-ed273f51da82",
+            },
+        }
+        auth_context = AuthorizationContext(
+            subject="user_123",
+            scopes=[],
+            claims=jwt_claims,
+        )
+
+        mock_request_ctx = MockRequestContext(
+            lifespan_context={'dedalus_mcp.runtime': {'dispatch_backend': backend}}
+        )
+        mock_request = MagicMock()
+        mock_request.scope = {"dedalus_mcp.auth": auth_context}
+        mock_request_ctx.request = mock_request
+
+        ctx = Context(
+            _request_context=mock_request_ctx,
+            runtime={'dispatch_backend': backend}
+        )
+        request = HttpRequest(method=HttpMethod.GET, path="/query")
+
+        # "supabase" not in JWT claims - should fail
+        with pytest.raises(ValueError, match="Connection 'supabase' not found"):
+            await ctx.dispatch('supabase', request)
+
+    @pytest.mark.asyncio
+    async def test_dispatch_invalid_jwt_connections_format(self, backend):
+        """Dispatch fails if ddls:connections is not a dict (old list format)."""
+        # Old LIST format - should fail
+        jwt_claims = {
+            "sub": "user_123",
+            "ddls:connections": [
+                {"handle": "ddls:conn:123", "provider": "github"},
+            ],
+        }
+        auth_context = AuthorizationContext(
+            subject="user_123",
+            scopes=[],
+            claims=jwt_claims,
+        )
+
+        mock_request_ctx = MockRequestContext(
+            lifespan_context={'dedalus_mcp.runtime': {'dispatch_backend': backend}}
+        )
+        mock_request = MagicMock()
+        mock_request.scope = {"dedalus_mcp.auth": auth_context}
+        mock_request_ctx.request = mock_request
+
+        ctx = Context(
+            _request_context=mock_request_ctx,
+            runtime={'dispatch_backend': backend}
+        )
+        request = HttpRequest(method=HttpMethod.GET, path="/user")
+
+        with pytest.raises(RuntimeError, match="Missing required JWT claims"):
             await ctx.dispatch('github', request)
