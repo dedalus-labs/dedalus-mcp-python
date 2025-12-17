@@ -518,7 +518,7 @@ class TestDirectDispatchBackendHTTPErrors:
         )
 
         assert result.success is False
-        assert result.error.code.value == "downstream_unreachable"
+        assert result.error.code.value == "DOWNSTREAM_UNREACHABLE"
         assert result.error.retryable is True
         assert "connect" in result.error.message.lower()
 
@@ -548,7 +548,7 @@ class TestDirectDispatchBackendHTTPErrors:
         )
 
         assert result.success is False
-        assert result.error.code.value == "downstream_timeout"
+        assert result.error.code.value == "DOWNSTREAM_TIMEOUT"
         assert result.error.retryable is True
         assert "timed out" in result.error.message.lower()
 
@@ -741,7 +741,7 @@ class TestEnclaveDispatchBackendAdvanced:
         )
 
         assert result.success is False
-        assert result.error.code.value == "connection_not_found"
+        assert result.error.code.value == "CONNECTION_NOT_FOUND"
         assert "403" in result.error.message
 
     @pytest.mark.asyncio
@@ -773,7 +773,7 @@ class TestEnclaveDispatchBackendAdvanced:
         )
 
         assert result.success is False
-        assert result.error.code.value == "downstream_unreachable"
+        assert result.error.code.value == "DOWNSTREAM_UNREACHABLE"
         assert "500" in result.error.message
 
     @pytest.mark.asyncio
@@ -794,7 +794,7 @@ class TestEnclaveDispatchBackendAdvanced:
                 json={
                     "success": False,
                     "error": {
-                        "code": "downstream_timeout",
+                        "code": "DOWNSTREAM_TIMEOUT",
                         "message": "Request timed out",
                         "retryable": True,
                     },
@@ -815,7 +815,7 @@ class TestEnclaveDispatchBackendAdvanced:
         )
 
         assert result.success is False
-        assert result.error.code.value == "downstream_timeout"
+        assert result.error.code.value == "DOWNSTREAM_TIMEOUT"
         assert result.error.message == "Request timed out"
         assert result.error.retryable is True
 
@@ -848,7 +848,7 @@ class TestEnclaveDispatchBackendAdvanced:
         )
 
         assert result.success is False
-        assert result.error.code.value == "downstream_unreachable"
+        assert result.error.code.value == "DOWNSTREAM_UNREACHABLE"
         assert result.error.retryable is True
 
     @pytest.mark.asyncio
@@ -935,7 +935,7 @@ class TestDirectDispatchBackendEdgeCases:
         )
 
         assert result.success is False
-        assert result.error.code.value == "downstream_unreachable"
+        assert result.error.code.value == "DOWNSTREAM_UNREACHABLE"
         assert "unexpected error" in result.error.message.lower()
 
 
@@ -971,7 +971,7 @@ class TestEnclaveDispatchBackendEdgeCases:
         )
 
         assert result.success is False
-        assert result.error.code.value == "downstream_unreachable"
+        assert result.error.code.value == "DOWNSTREAM_UNREACHABLE"
 
     def test_sign_request_without_deployment_auth(self):
         """Signing without deployment_id/auth_secret should return empty dict."""
@@ -1025,6 +1025,63 @@ class TestCreateDispatchBackendFromEnv:
 
         backend = create_dispatch_backend_from_env()
         assert isinstance(backend, DirectDispatchBackend)
+
+
+class TestDispatchResponseConformance:
+    """Conformance tests for DispatchResponse wire format (ADR-013)."""
+
+    @pytest.mark.asyncio
+    async def test_enclave_dispatch_handles_unknown_error_code(self, respx_mock):
+        """Unknown error codes should fall back to DOWNSTREAM_UNREACHABLE."""
+        import httpx
+
+        from dedalus_mcp.dispatch import (
+            EnclaveDispatchBackend,
+            DispatchErrorCode,
+            DispatchWireRequest,
+            HttpMethod,
+            HttpRequest,
+        )
+
+        # Simulate enclave returning an unknown error code
+        respx_mock.post("https://enclave.example.com/dispatch").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "success": False,
+                    "error": {
+                        "code": "SOME_FUTURE_ERROR_CODE",
+                        "message": "Some new error",
+                        "retryable": False,
+                    },
+                },
+            )
+        )
+
+        backend = EnclaveDispatchBackend(
+            enclave_url="https://enclave.example.com",
+            access_token="test_token",
+        )
+
+        result = await backend.dispatch(
+            DispatchWireRequest(
+                connection_handle="ddls:conn:github",
+                request=HttpRequest(method=HttpMethod.GET, path="/user"),
+            )
+        )
+
+        assert result.success is False
+        assert result.error.code == DispatchErrorCode.DOWNSTREAM_UNREACHABLE
+        assert result.error.message == "Some new error"
+
+    def test_dispatch_error_code_wire_format(self):
+        """Error codes must be SCREAMING_CASE on the wire."""
+        from dedalus_mcp.dispatch import DispatchErrorCode
+
+        # All error codes should be uppercase (wire format)
+        for code in DispatchErrorCode:
+            assert code.value == code.value.upper(), f"{code.name} value must be uppercase"
+            assert "_" in code.value or code.value.isalpha(), f"{code.name} must be SCREAMING_CASE"
 
 
 class TestDispatchIntegration:
