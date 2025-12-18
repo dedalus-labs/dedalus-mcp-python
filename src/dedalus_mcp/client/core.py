@@ -215,7 +215,8 @@ class MCPClient:
             return client
 
         # Real implementation: use transport helpers
-        from mcp.client.streamable_http import MCP_PROTOCOL_VERSION, streamablehttp_client
+        from mcp.client.streamable_http import MCP_PROTOCOL_VERSION, streamable_http_client
+        from mcp.shared._httpx_utils import create_mcp_http_client
         from mcp.types import LATEST_PROTOCOL_VERSION
 
         from .transports import lambda_http_client
@@ -224,22 +225,26 @@ class MCPClient:
 
         try:
             try:
+                # Build httpx client with MCP-appropriate settings
                 base_headers: dict[str, str] = {MCP_PROTOCOL_VERSION: LATEST_PROTOCOL_VERSION}
                 if headers:
                     base_headers.update(headers)
 
+                http_client = create_mcp_http_client(
+                    headers=base_headers,
+                    timeout=httpx.Timeout(timeout, read=sse_read_timeout),
+                    auth=auth,
+                )
+                await exit_stack.enter_async_context(http_client)
+
                 transport_lower = transport.lower()
                 if transport_lower in {"streamable-http", "streamable_http", "shttp", "http"}:
                     read_stream, write_stream, get_session_id = await exit_stack.enter_async_context(
-                        streamablehttp_client(
-                            url, headers=base_headers, timeout=timeout, sse_read_timeout=sse_read_timeout, auth=auth
-                        )
+                        streamable_http_client(url, http_client=http_client)
                     )
                 elif transport_lower in {"lambda-http", "lambda_http"}:
                     read_stream, write_stream, get_session_id = await exit_stack.enter_async_context(
-                        lambda_http_client(
-                            url, headers=base_headers, timeout=timeout, sse_read_timeout=sse_read_timeout, auth=auth
-                        )
+                        lambda_http_client(url, http_client=http_client)
                     )
                 else:
                     raise ValueError(f"Unsupported transport: {transport}")

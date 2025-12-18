@@ -24,7 +24,7 @@ import pytest
 
 from dedalus_mcp.client.transports import lambda_http_client
 
-from mcp.client.streamable_http import streamablehttp_client
+from mcp.client.streamable_http import streamable_http_client
 
 
 class SentinelError(RuntimeError):
@@ -32,16 +32,15 @@ class SentinelError(RuntimeError):
 
 
 class FakeTransport:
-    """Test double mirroring the SDK transport interface without real I/O."""
+    """Test double mirroring the SDK transport interface without real I/O.
 
-    def __init__(
-        self, url: str, headers: dict[str, str] | None, timeout: float, sse_read_timeout: float, auth: Any
-    ) -> None:
+    Note: As of MCP SDK 1.24.0, StreamableHTTPTransport only takes url in its
+    constructor. HTTP configuration (headers, timeout, auth) is now handled
+    by passing a pre-configured httpx.AsyncClient.
+    """
+
+    def __init__(self, url: str) -> None:
         self.url = url
-        self.request_headers = headers or {}
-        self.timeout = timeout
-        self.sse_read_timeout = sse_read_timeout
-        self.auth = auth
         self.session_id = "fake-session"
         self.start_get_stream = None
         self.terminated = False
@@ -75,10 +74,8 @@ async def test_lambda_http_client_injects_noop_get_stream(monkeypatch: pytest.Mo
     """Our wrapper must *not* invoke the GET/SSE starter the SDK normally uses."""
     transport_instances: list[FakeTransport] = []
 
-    def transport_factory(
-        url: str, headers: dict[str, str] | None, timeout: float, sse_timeout: float, auth: Any
-    ) -> FakeTransport:
-        inst = FakeTransport(url, headers, timeout, sse_timeout, auth)
+    def transport_factory(url: str) -> FakeTransport:
+        inst = FakeTransport(url)
         transport_instances.append(inst)
         return inst
 
@@ -106,7 +103,7 @@ async def test_lambda_http_client_injects_noop_get_stream(monkeypatch: pytest.Mo
 
 
 @pytest.mark.anyio
-async def test_streamablehttp_client_raises_when_get_stream_starts(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_streamable_http_client_raises_when_get_stream_starts(monkeypatch: pytest.MonkeyPatch) -> None:
     """Regression guard: stock streamable client still tries to attach SSE."""
 
     class RaisingTransport(FakeTransport):
@@ -131,10 +128,8 @@ async def test_streamablehttp_client_raises_when_get_stream_starts(monkeypatch: 
             except BaseException:
                 pass
 
-    def transport_factory(
-        url: str, headers: dict[str, str] | None, timeout: float, sse_timeout: float, auth: Any
-    ) -> RaisingTransport:
-        return RaisingTransport(url, headers, timeout, sse_timeout, auth)
+    def transport_factory(url: str) -> RaisingTransport:
+        return RaisingTransport(url)
 
     @asynccontextmanager
     async def fake_client_factory(**_: Any):
@@ -144,7 +139,7 @@ async def test_streamablehttp_client_raises_when_get_stream_starts(monkeypatch: 
     monkeypatch.setattr("mcp.client.streamable_http.create_mcp_http_client", fake_client_factory)
 
     with pytest.raises(BaseExceptionGroup) as excinfo:
-        async with streamablehttp_client(url="https://lambda.example.test/mcp"):
+        async with streamable_http_client(url="https://lambda.example.test/mcp"):
             pass
 
     def _flatten(exc: BaseException | BaseExceptionGroup):
