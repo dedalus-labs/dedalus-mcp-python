@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.4.1...v0.5.0) (2025-12-18)
+
+
+### Features
+
+* auth flow for client ([4b5540d](https://github.com/dedalus-labs/dedalus-mcp-python/commit/4b5540de43d59ec62f282853332f45b2e0f66ecd))
+
+
+### Bug Fixes
+
+* update reference mcp version ([47064ed](https://github.com/dedalus-labs/dedalus-mcp-python/commit/47064ed36ae586f3b30ce381c7bf0d0488504c2b))
+* update reference mcp version ([#52](https://github.com/dedalus-labs/dedalus-mcp-python/issues/52)) ([7b7bcda](https://github.com/dedalus-labs/dedalus-mcp-python/commit/7b7bcda867cb612ade8bfb5dd895170d41b35f64))
+
 ## [0.4.1](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.4.0...v0.4.1) (2025-12-17)
 
 
