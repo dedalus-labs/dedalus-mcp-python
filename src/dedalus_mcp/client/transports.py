@@ -3,42 +3,35 @@
 
 """HTTP transport helpers for :mod:`dedalus_mcp.client`.
 
-TODO: Check this.
 This module provides variants of the streamable HTTP transport described in the
-Model Context Protocol specification (see
-the MCP specification). ``lambda_http_client`` mirrors
+Model Context Protocol specification. ``lambda_http_client`` mirrors
 the reference SDK implementation but deliberately avoids registering a
 server-push GET stream so that it works with stateless environments such as AWS
-Lambda.  The behavior aligns with the "POST-only" pattern noted in the spec's
-server guidance and our notes in ``docs/dedalus_mcp/transports.md``.
+Lambda. The behavior aligns with the "POST-only" pattern noted in the spec's
+server guidance.
 """
 
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator, Callable
+import contextlib
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from datetime import timedelta
 
 import anyio
-from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 import httpx
+from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 
 from mcp.client.streamable_http import GetSessionIdCallback, StreamableHTTPTransport
-from mcp.shared._httpx_utils import McpHttpClientFactory, create_mcp_http_client
+from mcp.shared._httpx_utils import create_mcp_http_client
 from mcp.shared.message import SessionMessage
 
 
-# TODO: Do we even need this anymore?
 @asynccontextmanager
 async def lambda_http_client(
     url: str,
     *,
-    headers: dict[str, str] | None = None,
-    timeout: float | timedelta = 30,
-    sse_read_timeout: float | timedelta = 300,
+    http_client: httpx.AsyncClient | None = None,
     terminate_on_close: bool = True,
-    httpx_client_factory: McpHttpClientFactory | Callable[..., httpx.AsyncClient] = create_mcp_http_client,
-    auth: httpx.Auth | None = None,
 ) -> AsyncGenerator[
     tuple[
         MemoryObjectReceiveStream[SessionMessage | Exception],
@@ -50,30 +43,40 @@ async def lambda_http_client(
     """Create a streamable HTTP transport without the persistent GET stream.
 
     The Model Context Protocol allows streamable HTTP transports to keep a
-    server-push channel open (see https://modelcontextprotocol.io/specification/2024-11-05/basic/transports),
-    but serverless hosts like AWS Lambda cannot maintain such long-lived
-    connections.  ``lambda_http_client`` mirrors the reference SDK's
-    ``streamablehttp_client`` implementation while replacing the
-    ``start_get_stream`` callback with a no-op.  This keeps each JSON-RPC request
-    self-contained (``initialize`` -> operation -> optional ``session/close``) and
-    matches the stateless guidance in ``docs/dedalus_mcp/transports.md``.
+    server-push channel open, but serverless hosts like AWS Lambda cannot
+    maintain such long-lived connections. ``lambda_http_client`` mirrors the
+    reference SDK's ``streamable_http_client`` implementation while replacing
+    the ``start_get_stream`` callback with a no-op. This keeps each JSON-RPC
+    request self-contained.
+
+    Args:
+        url: The MCP server endpoint URL.
+        http_client: Optional pre-configured httpx.AsyncClient. If None, a default
+            client with recommended MCP timeouts will be created. To configure headers,
+            authentication, or other HTTP settings, create an httpx.AsyncClient
+            and pass it here.
+        terminate_on_close: If True, send a DELETE request to terminate the session
+            when the context exits.
 
     Yields:
         Tuple of ``(read_stream, write_stream, get_session_id)`` compatible with
         :class:`mcp.client.session.ClientSession`.
     """
-    transport = StreamableHTTPTransport(url, headers, timeout, sse_read_timeout, auth)
-
     read_writer, read_stream = anyio.create_memory_object_stream[SessionMessage | Exception](0)
     write_stream, write_reader = anyio.create_memory_object_stream[SessionMessage](0)
 
+    # Determine if we need to create and manage the client
+    client_provided = http_client is not None
+    client = http_client if client_provided else create_mcp_http_client()
+
+    transport = StreamableHTTPTransport(url)
+
     async with anyio.create_task_group() as tg:
         try:
-            async with httpx_client_factory(
-                headers=transport.request_headers,
-                timeout=httpx.Timeout(transport.timeout, read=transport.sse_read_timeout),
-                auth=transport.auth,
-            ) as client:
+            async with contextlib.AsyncExitStack() as stack:
+                # Only manage client lifecycle if we created it
+                if not client_provided:
+                    await stack.enter_async_context(client)
 
                 def _noop_start_get_stream() -> None:
                     """Lambda-safe placeholder that intentionally avoids SSE."""

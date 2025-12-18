@@ -215,10 +215,11 @@ class TestDispatchError:
         """DispatchErrorCode should define infrastructure errors."""
         from dedalus_mcp.dispatch import DispatchErrorCode
 
-        assert DispatchErrorCode.CONNECTION_NOT_FOUND == "connection_not_found"
-        assert DispatchErrorCode.CONNECTION_REVOKED == "connection_revoked"
-        assert DispatchErrorCode.DOWNSTREAM_TIMEOUT == "downstream_timeout"
-        assert DispatchErrorCode.DOWNSTREAM_UNREACHABLE == "downstream_unreachable"
+        # NOTE: Wire format uses SCREAMING_CASE
+        assert DispatchErrorCode.CONNECTION_NOT_FOUND == "CONNECTION_NOT_FOUND"
+        assert DispatchErrorCode.CONNECTION_REVOKED == "CONNECTION_REVOKED"
+        assert DispatchErrorCode.DOWNSTREAM_TIMEOUT == "DOWNSTREAM_TIMEOUT"
+        assert DispatchErrorCode.DOWNSTREAM_UNREACHABLE == "DOWNSTREAM_UNREACHABLE"
 
     def test_dispatch_error_construction(self):
         """DispatchError should hold code, message, retryable."""
