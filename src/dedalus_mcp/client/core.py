@@ -39,6 +39,14 @@ import httpx
 
 from mcp.client.session import ClientSession
 
+from .errors import MCPConnectionError, SessionExpiredError
+from .error_handling import (
+    extract_http_error,
+    extract_network_error,
+    http_error_to_mcp_error,
+    network_error_to_mcp_error,
+)
+
 from ..types.client.elicitation import ElicitRequestParams, ElicitResult
 from ..types.client.roots import ListRootsResult, Root
 from ..types.client.sampling import CreateMessageRequestParams, CreateMessageResult
@@ -207,7 +215,8 @@ class MCPClient:
             return client
 
         # Real implementation: use transport helpers
-        from mcp.client.streamable_http import MCP_PROTOCOL_VERSION, streamablehttp_client
+        from mcp.client.streamable_http import MCP_PROTOCOL_VERSION, streamable_http_client
+        from mcp.shared._httpx_utils import create_mcp_http_client
         from mcp.types import LATEST_PROTOCOL_VERSION
 
         from .transports import lambda_http_client
@@ -215,64 +224,97 @@ class MCPClient:
         exit_stack = AsyncExitStack()
 
         try:
-            base_headers: dict[str, str] = {MCP_PROTOCOL_VERSION: LATEST_PROTOCOL_VERSION}
-            if headers:
-                base_headers.update(headers)
-
-            transport_lower = transport.lower()
-            if transport_lower in {"streamable-http", "streamable_http", "shttp", "http"}:
-                read_stream, write_stream, get_session_id = await exit_stack.enter_async_context(
-                    streamablehttp_client(
-                        url, headers=base_headers, timeout=timeout, sse_read_timeout=sse_read_timeout, auth=auth
-                    )
-                )
-            elif transport_lower in {"lambda-http", "lambda_http"}:
-                read_stream, write_stream, get_session_id = await exit_stack.enter_async_context(
-                    lambda_http_client(
-                        url, headers=base_headers, timeout=timeout, sse_read_timeout=sse_read_timeout, auth=auth
-                    )
-                )
-            else:
-                raise ValueError(f"Unsupported transport: {transport}")
-
-            # Create client with exit stack for cleanup
-            client = cls(
-                read_stream,
-                write_stream,
-                capabilities=capabilities,
-                client_info=client_info,
-                get_session_id=get_session_id,
-                _exit_stack=exit_stack,
-            )
-
-            # Enter the session context
-            session = ClientSession(
-                read_stream,
-                write_stream,
-                sampling_callback=client._build_sampling_handler(),
-                elicitation_callback=client._build_elicitation_handler(),
-                list_roots_callback=client._build_roots_handler(),
-                logging_callback=client._build_logging_handler(),
-                client_info=client._client_info,
-            )
-            client._session = await exit_stack.enter_async_context(session)
             try:
+                # Build httpx client with MCP-appropriate settings
+                base_headers: dict[str, str] = {MCP_PROTOCOL_VERSION: LATEST_PROTOCOL_VERSION}
+                if headers:
+                    base_headers.update(headers)
+
+                http_client = create_mcp_http_client(
+                    headers=base_headers,
+                    timeout=httpx.Timeout(timeout, read=sse_read_timeout),
+                    auth=auth,
+                )
+                await exit_stack.enter_async_context(http_client)
+
+                transport_lower = transport.lower()
+                if transport_lower in {"streamable-http", "streamable_http", "shttp", "http"}:
+                    read_stream, write_stream, get_session_id = await exit_stack.enter_async_context(
+                        streamable_http_client(url, http_client=http_client)
+                    )
+                elif transport_lower in {"lambda-http", "lambda_http"}:
+                    read_stream, write_stream, get_session_id = await exit_stack.enter_async_context(
+                        lambda_http_client(url, http_client=http_client)
+                    )
+                else:
+                    raise ValueError(f"Unsupported transport: {transport}")
+
+                # Create client with exit stack for cleanup
+                client = cls(
+                    read_stream,
+                    write_stream,
+                    capabilities=capabilities,
+                    client_info=client_info,
+                    get_session_id=get_session_id,
+                    _exit_stack=exit_stack,
+                )
+
+                # Enter the session context
+                session = ClientSession(
+                    read_stream,
+                    write_stream,
+                    sampling_callback=client._build_sampling_handler(),
+                    elicitation_callback=client._build_elicitation_handler(),
+                    list_roots_callback=client._build_roots_handler(),
+                    logging_callback=client._build_logging_handler(),
+                    client_info=client._client_info,
+                )
+                client._session = await exit_stack.enter_async_context(session)
                 client.initialize_result = await client._session.initialize()
-            except Exception as e:
-                err = str(e).lower()
-                if "session terminated" in err or "connection" in err:
-                    msg = "Failed to connect to the MCP server"
-                    raise ConnectionError(msg) from e
-                raise
 
-            # Transfer ownership of exit_stack - don't close it here
-            exit_stack = None  # type: ignore[assignment]
-            return client
+                # Transfer ownership of exit_stack - don't close it here
+                exit_stack = None  # type: ignore[assignment]
+                return client
 
-        finally:
-            # Only close if we didn't transfer ownership
-            if exit_stack is not None:
-                await exit_stack.aclose()
+            finally:
+                # Only close if we didn't transfer ownership
+                if exit_stack is not None:
+                    await exit_stack.aclose()
+
+        except (httpx.ConnectError, httpx.TimeoutException) as e:
+            raise network_error_to_mcp_error(e) from e
+
+        except httpx.HTTPStatusError as e:
+            raise http_error_to_mcp_error(e) from e
+
+        except BaseExceptionGroup as e:
+            # MCP SDK transport wraps errors in ExceptionGroup from anyio
+            http_error = extract_http_error(e)
+            if http_error is not None:
+                raise http_error_to_mcp_error(http_error) from e
+
+            # Check for network errors in the group
+            network_error = extract_network_error(e)
+            if network_error is not None:
+                raise network_error_to_mcp_error(network_error) from e
+
+            # Not an HTTP or network error - re-raise the group
+            raise
+
+        except Exception as e:
+            # Handle MCP SDK errors (e.g., McpError for session terminated)
+            from mcp.shared.exceptions import McpError
+
+            if isinstance(e, McpError):
+                err_msg = str(e).lower()
+                if "session" in err_msg and ("terminated" in err_msg or "expired" in err_msg):
+                    raise SessionExpiredError(f"Session expired or terminated: {e}") from e
+                raise MCPConnectionError(f"MCP error: {e}") from e
+
+            # Check for network errors that might not be caught above
+            if isinstance(e.__cause__, (httpx.ConnectError, httpx.TimeoutException)):
+                raise network_error_to_mcp_error(e.__cause__) from e
+            raise
 
     # ---------------------------------------------------------------------
     # Cleanup: close()
