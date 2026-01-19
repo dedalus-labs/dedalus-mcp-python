@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Completion capability service.
@@ -23,8 +23,16 @@ from ...utils import maybe_await_with_args
 
 
 class CompletionService:
-    def __init__(self) -> None:
+    """Completion capability service.
+
+    Args:
+        limit: Maximum completions to return (default: 100 per MCP spec).
+    """
+
+    def __init__(self, *, limit: int = 100) -> None:
+        self._limit = limit
         self._completion_specs: dict[tuple[str, str], CompletionSpec] = {}
+        self._limit = limit
 
     def register(self, target) -> CompletionSpec:
         spec = target if isinstance(target, CompletionSpec) else extract_completion_spec(target)
@@ -88,7 +96,7 @@ class CompletionService:
         return types.Completion(values=limited, total=completion.total, hasMore=has_more)
 
     def _limit_values(self, values: list[str], has_more: bool | None) -> tuple[list[str], bool | None]:
-        limit = 100
+        limit = self._limit
         if len(values) <= limit:
             return values, has_more
         truncated = values[:limit]
