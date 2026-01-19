@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Dispatch backend for privileged operations.
@@ -28,11 +28,13 @@ The dispatch flow:
 Example:
     >>> @server.tool()
     >>> async def create_issue(ctx: Context, title: str) -> dict:
-    ...     response = await ctx.dispatch(HttpRequest(
-    ...         method=HttpMethod.POST,
-    ...         path="/repos/owner/repo/issues",
-    ...         body={"title": title, "body": "Auto-created"},
-    ...     ))
+    ...     response = await ctx.dispatch(
+    ...         HttpRequest(
+    ...             method=HttpMethod.POST,
+    ...             path="/repos/owner/repo/issues",
+    ...             body={"title": title, "body": "Auto-created"},
+    ...         )
+    ...     )
     ...     return response.body
 
 References:
@@ -283,7 +285,11 @@ class DirectDispatchBackend:
     Example:
         >>> def resolve_creds(handle: str) -> tuple[str, str, str]:
         ...     # Return (base_url, header_name, header_value)
-        ...     return ("https://api.github.com", "Authorization", f"Bearer {os.getenv('GITHUB_TOKEN')}")
+        ...     return (
+        ...         "https://api.github.com",
+        ...         "Authorization",
+        ...         f"Bearer {os.getenv('GITHUB_TOKEN')}",
+        ...     )
         >>> backend = DirectDispatchBackend(credential_resolver=resolve_creds)
         >>> response = await backend.dispatch(wire_request)
     """
@@ -308,8 +314,7 @@ class DirectDispatchBackend:
         """
         if self._resolver is None:
             return DispatchResponse.fail(
-                DispatchErrorCode.CONNECTION_NOT_FOUND,
-                "No credential resolver configured for direct dispatch",
+                DispatchErrorCode.CONNECTION_NOT_FOUND, "No credential resolver configured for direct dispatch"
             )
 
         try:
@@ -319,17 +324,13 @@ class DirectDispatchBackend:
                 "credential resolution failed",
                 extra={"event": "dispatch.resolve.error", "handle": request.connection_handle, "error": str(e)},
             )
-            return DispatchResponse.fail(
-                DispatchErrorCode.CONNECTION_NOT_FOUND,
-                f"Failed to resolve credentials: {e}",
-            )
+            return DispatchResponse.fail(DispatchErrorCode.CONNECTION_NOT_FOUND, f"Failed to resolve credentials: {e}")
 
         try:
             import httpx
         except ImportError:
             return DispatchResponse.fail(
-                DispatchErrorCode.DOWNSTREAM_UNREACHABLE,
-                "httpx not installed; required for HTTP dispatch",
+                DispatchErrorCode.DOWNSTREAM_UNREACHABLE, "httpx not installed; required for HTTP dispatch"
             )
 
         # Build full URL
@@ -364,11 +365,7 @@ class DirectDispatchBackend:
             elif response.text:
                 body = response.text
 
-            http_response = HttpResponse(
-                status=response.status_code,
-                headers=dict(response.headers),
-                body=body,
-            )
+            http_response = HttpResponse(status=response.status_code, headers=dict(response.headers), body=body)
 
             _logger.debug(
                 "dispatch succeeded",
@@ -383,25 +380,18 @@ class DirectDispatchBackend:
 
         except httpx.TimeoutException:
             return DispatchResponse.fail(
-                DispatchErrorCode.DOWNSTREAM_TIMEOUT,
-                f"Request timed out after {timeout}s",
-                retryable=True,
+                DispatchErrorCode.DOWNSTREAM_TIMEOUT, f"Request timed out after {timeout}s", retryable=True
             )
         except httpx.ConnectError as e:
             return DispatchResponse.fail(
-                DispatchErrorCode.DOWNSTREAM_UNREACHABLE,
-                f"Could not connect to downstream: {e}",
-                retryable=True,
+                DispatchErrorCode.DOWNSTREAM_UNREACHABLE, f"Could not connect to downstream: {e}", retryable=True
             )
         except Exception as e:
             _logger.exception(
                 "unexpected dispatch error",
                 extra={"event": "dispatch.error", "handle": request.connection_handle, "error": str(e)},
             )
-            return DispatchResponse.fail(
-                DispatchErrorCode.DOWNSTREAM_UNREACHABLE,
-                f"Unexpected error: {e}",
-            )
+            return DispatchResponse.fail(DispatchErrorCode.DOWNSTREAM_UNREACHABLE, f"Unexpected error: {e}")
 
 
 # =============================================================================
@@ -486,8 +476,7 @@ class EnclaveDispatchBackend:
             import httpx
         except ImportError:
             return DispatchResponse.fail(
-                DispatchErrorCode.DOWNSTREAM_UNREACHABLE,
-                "httpx not installed; required for Enclave dispatch",
+                DispatchErrorCode.DOWNSTREAM_UNREACHABLE, "httpx not installed; required for Enclave dispatch"
             )
 
         dispatch_url = f"{self._enclave_url.rstrip('/')}/dispatch"
@@ -506,6 +495,7 @@ class EnclaveDispatchBackend:
 
         # Serialize body for HMAC computation
         import json
+
         body_bytes = json.dumps(body, separators=(",", ":")).encode()
 
         # Build headers
@@ -538,20 +528,17 @@ class EnclaveDispatchBackend:
 
             if response.status_code == 401:
                 return DispatchResponse.fail(
-                    DispatchErrorCode.CONNECTION_REVOKED,
-                    f"Authentication failed (401): {response.text}",
+                    DispatchErrorCode.CONNECTION_REVOKED, f"Authentication failed (401): {response.text}"
                 )
 
             if response.status_code == 403:
                 return DispatchResponse.fail(
-                    DispatchErrorCode.CONNECTION_NOT_FOUND,
-                    f"Authorization failed (403): {response.text}",
+                    DispatchErrorCode.CONNECTION_NOT_FOUND, f"Authorization failed (403): {response.text}"
                 )
 
             if response.status_code >= 400:
                 return DispatchResponse.fail(
-                    DispatchErrorCode.DOWNSTREAM_UNREACHABLE,
-                    f"Enclave error ({response.status_code}): {response.text}",
+                    DispatchErrorCode.DOWNSTREAM_UNREACHABLE, f"Enclave error ({response.status_code}): {response.text}"
                 )
 
             data = response.json()
@@ -573,37 +560,26 @@ class EnclaveDispatchBackend:
                     code = DispatchErrorCode(code_str)
                 except ValueError:
                     _logger.warning(
-                        "unknown dispatch error code",
-                        extra={"event": "dispatch.unknown_code", "code": code_str},
+                        "unknown dispatch error code", extra={"event": "dispatch.unknown_code", "code": code_str}
                     )
                     code = DispatchErrorCode.DOWNSTREAM_UNREACHABLE
                 return DispatchResponse.fail(
-                    code,
-                    error_data.get("message", "Unknown error"),
-                    retryable=error_data.get("retryable", False),
+                    code, error_data.get("message", "Unknown error"), retryable=error_data.get("retryable", False)
                 )
 
         except httpx.TimeoutException:
             return DispatchResponse.fail(
-                DispatchErrorCode.DOWNSTREAM_TIMEOUT,
-                "Enclave request timed out",
-                retryable=True,
+                DispatchErrorCode.DOWNSTREAM_TIMEOUT, "Enclave request timed out", retryable=True
             )
         except httpx.RequestError as e:
             return DispatchResponse.fail(
-                DispatchErrorCode.DOWNSTREAM_UNREACHABLE,
-                f"Enclave request failed: {e}",
-                retryable=True,
+                DispatchErrorCode.DOWNSTREAM_UNREACHABLE, f"Enclave request failed: {e}", retryable=True
             )
         except Exception as e:
             _logger.exception(
-                "unexpected enclave dispatch error",
-                extra={"event": "dispatch.enclave.error", "error": str(e)},
+                "unexpected enclave dispatch error", extra={"event": "dispatch.enclave.error", "error": str(e)}
             )
-            return DispatchResponse.fail(
-                DispatchErrorCode.DOWNSTREAM_UNREACHABLE,
-                f"Unexpected error: {e}",
-            )
+            return DispatchResponse.fail(DispatchErrorCode.DOWNSTREAM_UNREACHABLE, f"Unexpected error: {e}")
 
     def _sign_request(self, body: bytes) -> dict[str, str]:
         """Generate HMAC signature headers for runner authentication.
@@ -645,12 +621,7 @@ class EnclaveDispatchBackend:
 
         from dedalus_mcp.dpop import generate_dpop_proof
 
-        return generate_dpop_proof(
-            private_key=self._dpop_key,
-            method=method,
-            url=url,
-            access_token=self._access_token,
-        )
+        return generate_dpop_proof(private_key=self._dpop_key, method=method, url=url, access_token=self._access_token)
 
 
 def create_dispatch_backend_from_env() -> DispatchBackend:
@@ -682,8 +653,7 @@ def create_dispatch_backend_from_env() -> DispatchBackend:
         auth_secret = base64.b64decode(auth_secret_b64) if auth_secret_b64 else None
 
         _logger.info(
-            "dispatch backend configured",
-            extra={"event": "dispatch.init", "backend": "enclave", "url": dispatch_url},
+            "dispatch backend configured", extra={"event": "dispatch.init", "backend": "enclave", "url": dispatch_url}
         )
 
         # Access token and DPoP key are typically set per-request, not at init
@@ -699,8 +669,7 @@ def create_dispatch_backend_from_env() -> DispatchBackend:
     is_managed = os.getenv("AWS_LAMBDA_FUNCTION_NAME") or os.getenv("AWS_EXECUTION_ENV")
     if is_managed:
         _logger.error(
-            "DEDALUS_DISPATCH_URL not set in managed environment. "
-            "Dispatch to external services will fail.",
+            "DEDALUS_DISPATCH_URL not set in managed environment. Dispatch to external services will fail.",
             extra={"event": "dispatch.init.error", "backend": "none"},
         )
         raise RuntimeError(
@@ -708,10 +677,7 @@ def create_dispatch_backend_from_env() -> DispatchBackend:
             "Verify deployment configuration injects dispatch credentials."
         )
 
-    _logger.debug(
-        "dispatch backend configured",
-        extra={"event": "dispatch.init", "backend": "direct"},
-    )
+    _logger.debug("dispatch backend configured", extra={"event": "dispatch.init", "backend": "direct"})
     return DirectDispatchBackend()
 
 

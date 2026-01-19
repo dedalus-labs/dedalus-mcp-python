@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Client that reacts to real-time tool updates.
@@ -34,10 +34,7 @@ for name in ("mcp", "httpx"):
 async def add_tool_via_api(name: str, description: str) -> None:
     """Add a tool via the control API."""
     async with httpx.AsyncClient() as client:
-        resp = await client.post(
-            "http://127.0.0.1:8001/tools",
-            json={"name": name, "description": description},
-        )
+        resp = await client.post("http://127.0.0.1:8001/tools", json={"name": name, "description": description})
         print(f"API Response: {resp.json()}")
 
 

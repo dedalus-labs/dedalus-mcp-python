@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Dedalus MCP showcase examples.
@@ -8,4 +8,3 @@ Each example is designed to be copy-pasted and run immediately.
 
 See README.md for usage instructions.
 """
-

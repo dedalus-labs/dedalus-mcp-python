@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Minimal dependency resolver used by the Dedalus MCP server."""
@@ -23,12 +23,8 @@ def _get_callable_name(call: DependencyCall) -> str:
     return repr(fn)
 
 
-
-
 async def _resolve_dependency(
-    call: DependencyCall,
-    cache: Dict[DependencyCall, ResolvedDependency] | None = None,
-    seen: Set[int] | None = None,
+    call: DependencyCall, cache: Dict[DependencyCall, ResolvedDependency] | None = None, seen: Set[int] | None = None
 ) -> Any:
     cache = cache if cache is not None else {}
     seen = seen if seen is not None else set()
@@ -71,9 +67,7 @@ async def _resolve_dependency(
             value = await maybe_await_with_args(call.callable, *resolved_args, **injectable_kwargs)
         except Exception as e:
             name = _get_callable_name(call)
-            raise DependencyResolutionError(
-                f"Failed to resolve dependency '{name}': {e}"
-            ) from e
+            raise DependencyResolutionError(f"Failed to resolve dependency '{name}': {e}") from e
 
         if call.use_cache:
             cache[call] = ResolvedDependency(value)
@@ -83,9 +77,7 @@ async def _resolve_dependency(
         seen.discard(call_id)
 
 
-async def resolve(
-    dependency: Callable[..., Any] | Depends | DependencyCall,
-) -> Any:
+async def resolve(dependency: Callable[..., Any] | Depends | DependencyCall) -> Any:
     """Resolve *dependency* inside the active request scope."""
 
     if isinstance(dependency, Depends):

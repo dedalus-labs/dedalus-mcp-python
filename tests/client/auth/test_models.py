@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Tests for OAuth metadata models (RFC 9728, RFC 8414)."""
@@ -20,10 +20,7 @@ class TestResourceMetadata:
         """ResourceMetadata can be constructed with minimal required fields."""
         from dedalus_mcp.client.auth.models import ResourceMetadata
 
-        meta = ResourceMetadata(
-            resource="https://mcp.example.com",
-            authorization_servers=["https://as.example.com"],
-        )
+        meta = ResourceMetadata(resource="https://mcp.example.com", authorization_servers=["https://as.example.com"])
         assert meta.resource == "https://mcp.example.com"
         assert meta.authorization_servers == ["https://as.example.com"]
 
@@ -105,8 +102,7 @@ class TestAuthorizationServerMetadata:
         from dedalus_mcp.client.auth.models import AuthorizationServerMetadata
 
         meta = AuthorizationServerMetadata(
-            issuer="https://as.example.com",
-            token_endpoint="https://as.example.com/oauth2/token",
+            issuer="https://as.example.com", token_endpoint="https://as.example.com/oauth2/token"
         )
         assert meta.issuer == "https://as.example.com"
         assert meta.token_endpoint == "https://as.example.com/oauth2/token"
@@ -187,8 +183,7 @@ class TestAuthorizationServerMetadata:
         from dedalus_mcp.client.auth.models import AuthorizationServerMetadata
 
         meta = AuthorizationServerMetadata(
-            issuer="https://as.example.com",
-            token_endpoint="https://as.example.com/oauth2/token",
+            issuer="https://as.example.com", token_endpoint="https://as.example.com/oauth2/token"
         )
         # Per RFC 8414, if not present, default is ["authorization_code", "implicit"]
         # but we don't assume - just return False for safety
@@ -224,10 +219,7 @@ class TestTokenResponse:
         """TokenResponse can be constructed with minimal fields."""
         from dedalus_mcp.client.auth.models import TokenResponse
 
-        token = TokenResponse(
-            access_token="eyJhbGciOiJFUzI1NiIs...",
-            token_type="Bearer",
-        )
+        token = TokenResponse(access_token="eyJhbGciOiJFUzI1NiIs...", token_type="Bearer")
         assert token.access_token == "eyJhbGciOiJFUzI1NiIs..."
         assert token.token_type == "Bearer"
         assert token.expires_in is None
@@ -237,11 +229,7 @@ class TestTokenResponse:
         """TokenResponse can be created from a dictionary."""
         from dedalus_mcp.client.auth.models import TokenResponse
 
-        data = {
-            "access_token": "token123",
-            "token_type": "Bearer",
-            "expires_in": 7200,
-        }
+        data = {"access_token": "token123", "token_type": "Bearer", "expires_in": 7200}
         token = TokenResponse.from_dict(data)
         assert token.access_token == "token123"
         assert token.token_type == "Bearer"

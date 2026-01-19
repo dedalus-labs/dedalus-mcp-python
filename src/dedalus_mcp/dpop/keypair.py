@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """DPoP keypair generation utilities.
@@ -35,7 +35,9 @@ def generate_dpop_keypair() -> tuple["EllipticCurvePrivateKey", dict[str, str]]:
 
     Example:
         >>> private_key, public_jwk = generate_dpop_keypair()
-        >>> proof = generate_dpop_proof(private_key, "POST", "https://as.example.com/token")
+        >>> proof = generate_dpop_proof(
+        ...     private_key, "POST", "https://as.example.com/token"
+        ... )
         >>> thumbprint = compute_jwk_thumbprint(public_jwk)
     """
     from cryptography.hazmat.backends import default_backend
@@ -53,12 +55,7 @@ def generate_dpop_keypair() -> tuple["EllipticCurvePrivateKey", dict[str, str]]:
     x_bytes = public_numbers.x.to_bytes(coord_size, byteorder="big")
     y_bytes = public_numbers.y.to_bytes(coord_size, byteorder="big")
 
-    public_jwk = {
-        "kty": "EC",
-        "crv": "P-256",
-        "x": b64url_encode(x_bytes),
-        "y": b64url_encode(y_bytes),
-    }
+    public_jwk = {"kty": "EC", "crv": "P-256", "x": b64url_encode(x_bytes), "y": b64url_encode(y_bytes)}
 
     return private_key, public_jwk
 

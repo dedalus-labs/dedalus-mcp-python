@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Schema compliance tests for MCP 2024-11-05."""
@@ -69,10 +69,7 @@ async def test_tools_responses_match_schema(assert_schema) -> None:
 
 @pytest.mark.anyio
 async def test_resources_responses_match_schema(assert_schema) -> None:
-    server = MCPServer(
-        "schema-resources",
-        notification_flags=NotificationFlags(resources_changed=True),
-    )
+    server = MCPServer("schema-resources", notification_flags=NotificationFlags(resources_changed=True))
 
     with server.binding():
 
@@ -109,8 +106,7 @@ async def test_prompts_responses_match_schema(assert_schema) -> None:
                 description="Friendly greeting",
                 messages=[
                     types.PromptMessage(
-                        role="assistant",
-                        content=types.TextContent(type="text", text=f"Hello, {name}!"),
+                        role="assistant", content=types.TextContent(type="text", text=f"Hello, {name}!")
                     )
                 ],
             )
@@ -130,7 +126,7 @@ async def test_prompts_responses_match_schema(assert_schema) -> None:
 @pytest.mark.anyio
 async def test_notifications_match_schema(assert_schema) -> None:
     progress_notification = types.ProgressNotification(
-        params=types.ProgressNotificationParams(progressToken="token", progress=50, total=100),
+        params=types.ProgressNotificationParams(progressToken="token", progress=50, total=100)
     )
     assert_schema(
         progress_notification.model_dump(mode="json", by_alias=True, exclude_none=True),
@@ -139,7 +135,7 @@ async def test_notifications_match_schema(assert_schema) -> None:
     )
 
     cancelled_notification = types.CancelledNotification(
-        params=types.CancelledNotificationParams(requestId="req-1", reason="user_cancelled"),
+        params=types.CancelledNotificationParams(requestId="req-1", reason="user_cancelled")
     )
     assert_schema(
         cancelled_notification.model_dump(mode="json", by_alias=True, exclude_none=True),

@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Shared transport primitives for :mod:`dedalus_mcp.server`.
@@ -76,8 +76,7 @@ class BaseTransport(ABC):
 class TransportFactory(Protocol):
     """Callable that produces a configured transport for an ``MCPServer``."""
 
-    def __call__(self, server: MCPServer) -> BaseTransport:
-        ...
+    def __call__(self, server: MCPServer) -> BaseTransport: ...
 
 
 __all__ = ["BaseTransport", "TransportFactory"]

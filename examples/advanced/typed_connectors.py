@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Example: Using typed connectors with define() and EnvironmentCredentialLoader.
@@ -24,12 +24,7 @@ When NOT to use typed connectors:
 import asyncio
 import os
 
-from dedalus_mcp.server.connectors import (
-    Credentials,
-    EnvironmentCredentialLoader,
-    EnvironmentCredentials,
-    define,
-)
+from dedalus_mcp.server.connectors import Credentials, EnvironmentCredentialLoader, EnvironmentCredentials, define
 
 
 # =============================================================================
@@ -53,12 +48,10 @@ def example_basic_connector():
         connector=HttpApiConn,
         variants={
             "service_credential": EnvironmentCredentials(
-                config=Credentials(base_url="API_BASE_URL"),
-                secrets=Credentials(secret="API_SECRET_KEY"),
+                config=Credentials(base_url="API_BASE_URL"), secrets=Credentials(secret="API_SECRET_KEY")
             ),
             "user_token": EnvironmentCredentials(
-                config=Credentials(base_url="API_BASE_URL"),
-                secrets=Credentials(token="USER_ACCESS_TOKEN"),
+                config=Credentials(base_url="API_BASE_URL"), secrets=Credentials(token="USER_ACCESS_TOKEN")
             ),
         },
     )
@@ -92,12 +85,7 @@ def example_database_connector():
 
     PostgresConn = define(
         kind="postgres",
-        params={
-            "host": str,
-            "port": int,
-            "database": str,
-            "ssl_mode": str,
-        },
+        params={"host": str, "port": int, "database": str, "ssl_mode": str},
         auth=["password", "iam"],
         description="PostgreSQL database connection",
     )
@@ -107,16 +95,10 @@ def example_database_connector():
         variants={
             "password": EnvironmentCredentials(
                 config=Credentials(
-                    host="POSTGRES_HOST",
-                    port="POSTGRES_PORT",
-                    database="POSTGRES_DB",
-                    ssl_mode="POSTGRES_SSL_MODE",
+                    host="POSTGRES_HOST", port="POSTGRES_PORT", database="POSTGRES_DB", ssl_mode="POSTGRES_SSL_MODE"
                 ),
-                secrets=Credentials(
-                    username="POSTGRES_USER",
-                    password="POSTGRES_PASSWORD",
-                ),
-            ),
+                secrets=Credentials(username="POSTGRES_USER", password="POSTGRES_PASSWORD"),
+            )
         },
     )
 
@@ -178,9 +160,7 @@ async def example_with_driver():
     """Use typed connector with a driver."""
 
     PostgresConn = define(
-        kind="postgres",
-        params={"host": str, "port": int, "database": str, "ssl_mode": str},
-        auth=["password"],
+        kind="postgres", params={"host": str, "port": int, "database": str, "ssl_mode": str}, auth=["password"]
     )
 
     loader = EnvironmentCredentialLoader(
@@ -188,13 +168,10 @@ async def example_with_driver():
         variants={
             "password": EnvironmentCredentials(
                 config=Credentials(
-                    host="POSTGRES_HOST",
-                    port="POSTGRES_PORT",
-                    database="POSTGRES_DB",
-                    ssl_mode="POSTGRES_SSL_MODE",
+                    host="POSTGRES_HOST", port="POSTGRES_PORT", database="POSTGRES_DB", ssl_mode="POSTGRES_SSL_MODE"
                 ),
                 secrets=Credentials(username="POSTGRES_USER", password="POSTGRES_PASSWORD"),
-            ),
+            )
         },
     )
 
@@ -229,11 +206,7 @@ def example_optional_fields():
     """Show optional fields and defaults in connectors."""
     from dedalus_mcp.server.connectors import Binding
 
-    OpenAIConn = define(
-        kind="openai",
-        params={"base_url": str, "model": str},
-        auth=["api_key"],
-    )
+    OpenAIConn = define(kind="openai", params={"base_url": str, "model": str}, auth=["api_key"])
 
     loader = EnvironmentCredentialLoader(
         connector=OpenAIConn,
@@ -243,11 +216,8 @@ def example_optional_fields():
                     base_url=Binding("OPENAI_BASE_URL", default="https://api.openai.com/v1"),
                     model=Binding("OPENAI_MODEL", default="gpt-4"),
                 ),
-                secrets=Credentials(
-                    api_key="OPENAI_API_KEY",
-                    org_id=Binding("OPENAI_ORG_ID", optional=True),
-                ),
-            ),
+                secrets=Credentials(api_key="OPENAI_API_KEY", org_id=Binding("OPENAI_ORG_ID", optional=True)),
+            )
         },
     )
 
@@ -279,21 +249,14 @@ def comparison_connection_vs_define():
     # -------------------------------------------------------------------------
     from dedalus_mcp import Connection, Credentials, HttpMethod, HttpRequest, MCPServer, get_context, tool
 
-    github = Connection(
-        "github",
-        credentials=Credentials(token="GITHUB_TOKEN"),
-        base_url="https://api.github.com",
-    )
+    github = Connection("github", credentials=Credentials(token="GITHUB_TOKEN"), base_url="https://api.github.com")
 
     server = MCPServer(name="github-tools", connections=[github])
 
     @tool(description="List repos")
     async def list_repos():
         ctx = get_context()
-        response = await ctx.dispatch(
-            "github",
-            HttpRequest(method=HttpMethod.GET, path="/user/repos"),
-        )
+        response = await ctx.dispatch("github", HttpRequest(method=HttpMethod.GET, path="/user/repos"))
         if response.success:
             return response.response.body
         return []
@@ -303,17 +266,9 @@ def comparison_connection_vs_define():
     # -------------------------------------------------------------------------
     # Pattern B: define() (for typed drivers)
     # -------------------------------------------------------------------------
-    from dedalus_mcp.server.connectors import (
-        EnvironmentCredentialLoader,
-        EnvironmentCredentials,
-        define,
-    )
+    from dedalus_mcp.server.connectors import EnvironmentCredentialLoader, EnvironmentCredentials, define
 
-    PostgresConn = define(
-        kind="postgres",
-        params={"host": str, "port": int, "database": str},
-        auth=["password"],
-    )
+    PostgresConn = define(kind="postgres", params={"host": str, "port": int, "database": str}, auth=["password"])
 
     loader = EnvironmentCredentialLoader(
         connector=PostgresConn,
@@ -321,7 +276,7 @@ def comparison_connection_vs_define():
             "password": EnvironmentCredentials(
                 config=Credentials(host="POSTGRES_HOST", port="POSTGRES_PORT", database="POSTGRES_DB"),
                 secrets=Credentials(username="POSTGRES_USER", password="POSTGRES_PASSWORD"),
-            ),
+            )
         },
     )
 

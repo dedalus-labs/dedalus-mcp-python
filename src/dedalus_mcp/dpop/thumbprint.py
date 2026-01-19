@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """JWK thumbprint and hash utilities per RFC 7638 and RFC 9449.
@@ -75,19 +75,10 @@ def compute_jwk_thumbprint(jwk: dict[str, Any]) -> str:
 
     if kty == "EC":
         # EC key: required members are crv, kty, x, y (alphabetically sorted)
-        canonical_dict = {
-            "crv": jwk["crv"],
-            "kty": jwk["kty"],
-            "x": jwk["x"],
-            "y": jwk["y"],
-        }
+        canonical_dict = {"crv": jwk["crv"], "kty": jwk["kty"], "x": jwk["x"], "y": jwk["y"]}
     elif kty == "RSA":
         # RSA key: required members are e, kty, n (alphabetically sorted)
-        canonical_dict = {
-            "e": jwk["e"],
-            "kty": jwk["kty"],
-            "n": jwk["n"],
-        }
+        canonical_dict = {"e": jwk["e"], "kty": jwk["kty"], "n": jwk["n"]}
     else:
         raise ValueError(f"unsupported key type: {kty}")
 
@@ -116,9 +107,4 @@ def compute_access_token_hash(access_token: str) -> str:
     return b64url_encode(digest)
 
 
-__all__ = [
-    "b64url_encode",
-    "b64url_decode",
-    "compute_jwk_thumbprint",
-    "compute_access_token_hash",
-]
+__all__ = ["b64url_encode", "b64url_decode", "compute_jwk_thumbprint", "compute_access_token_hash"]

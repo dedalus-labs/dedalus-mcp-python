@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Migrate FastAPI endpoints to MCP tools.
@@ -201,4 +201,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

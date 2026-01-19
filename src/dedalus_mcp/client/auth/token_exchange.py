@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """OAuth 2.0 Token Exchange Auth (RFC 8693).
@@ -67,9 +67,7 @@ class TokenExchangeAuth(httpx.Auth):
             AuthConfigError: If AS doesn't support token-exchange grant.
         """
         if not server_metadata.supports_grant_type(TOKEN_EXCHANGE_GRANT):
-            raise AuthConfigError(
-                "Authorization server does not support token-exchange grant type"
-            )
+            raise AuthConfigError("Authorization server does not support token-exchange grant type")
 
         self._server_metadata = server_metadata
         self._client_id = client_id
@@ -176,10 +174,7 @@ class TokenExchangeAuth(httpx.Auth):
             data["resource"] = self._resource
 
         async with httpx.AsyncClient() as client:
-            response = await client.post(
-                self._server_metadata.token_endpoint,
-                data=data,
-            )
+            response = await client.post(self._server_metadata.token_endpoint, data=data)
 
         if response.status_code != 200:
             try:
@@ -196,9 +191,7 @@ class TokenExchangeAuth(httpx.Auth):
         self._cached_token = token
         return token
 
-    def sync_auth_flow(
-        self, request: httpx.Request
-    ) -> Generator[httpx.Request, httpx.Response, None]:
+    def sync_auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response, None]:
         """Synchronous auth flow for httpx.Auth interface.
 
         Injects the Bearer token into the request. Token must be
@@ -208,9 +201,7 @@ class TokenExchangeAuth(httpx.Auth):
             request.headers["Authorization"] = f"Bearer {self._cached_token.access_token}"
         yield request
 
-    async def async_auth_flow(
-        self, request: httpx.Request
-    ) -> Generator[httpx.Request, httpx.Response, None]:
+    async def async_auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response, None]:
         """Async auth flow for httpx.Auth interface.
 
         Injects the Bearer token into the request. Token must be

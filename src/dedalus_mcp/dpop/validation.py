@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """DPoP proof validation (server-side) per RFC 9449.
@@ -228,12 +228,7 @@ def _normalize_url(url: str) -> str:
     """
     parsed = urlparse(url)
     # Strip query and fragment, lowercase scheme and host
-    normalized = parsed._replace(
-        scheme=parsed.scheme.lower(),
-        netloc=parsed.netloc.lower(),
-        query="",
-        fragment="",
-    )
+    normalized = parsed._replace(scheme=parsed.scheme.lower(), netloc=parsed.netloc.lower(), query="", fragment="")
     return normalized.geturl()
 
 
@@ -266,9 +261,7 @@ class DPoPValidator:
         self.config = config or DPoPValidatorConfig()
         self._logger = get_logger("dedalus_mcp.dpop")
         self._jti_cache = _JTICache(
-            max_size=self.config.jti_cache_size,
-            ttl=self.config.jti_cache_ttl,
-            clock=self.config.clock,
+            max_size=self.config.jti_cache_size, ttl=self.config.jti_cache_ttl, clock=self.config.clock
         )
 
     def validate_proof(
@@ -313,8 +306,7 @@ class DPoPValidator:
             header = jwt.get_unverified_header(proof)
         except Exception as e:
             self._logger.warning(
-                "DPoP proof header parse failed",
-                extra={"event": "dpop.header.invalid", "error": str(e)},
+                "DPoP proof header parse failed", extra={"event": "dpop.header.invalid", "error": str(e)}
             )
             raise InvalidDPoPProofError(f"invalid proof header: {e}") from e
 
@@ -341,9 +333,7 @@ class DPoPValidator:
         # Check 5: Validate algorithm
         alg = header.get("alg")
         if alg not in self.config.allowed_algorithms:
-            raise InvalidDPoPProofError(
-                f"unsupported algorithm '{alg}', allowed: {self.config.allowed_algorithms}"
-            )
+            raise InvalidDPoPProofError(f"unsupported algorithm '{alg}', allowed: {self.config.allowed_algorithms}")
 
         # Check 6 (setup): Convert JWK to public key for verification
         try:
@@ -368,8 +358,7 @@ class DPoPValidator:
             )
         except Exception as e:
             self._logger.warning(
-                "DPoP proof signature verification failed",
-                extra={"event": "dpop.signature.invalid", "error": str(e)},
+                "DPoP proof signature verification failed", extra={"event": "dpop.signature.invalid", "error": str(e)}
             )
             raise InvalidDPoPProofError(f"signature verification failed: {e}") from e
 
@@ -390,9 +379,7 @@ class DPoPValidator:
 
         # Check 8: Validate method binding
         if htm.upper() != method.upper():
-            raise DPoPMethodMismatchError(
-                f"method mismatch: proof bound to '{htm}', request is '{method}'"
-            )
+            raise DPoPMethodMismatchError(f"method mismatch: proof bound to '{htm}', request is '{method}'")
 
         # Check 9: Validate URL binding (case-insensitive for scheme/host)
         normalized_htu = _normalize_url(htu)
@@ -404,9 +391,7 @@ class DPoPValidator:
         proof_nonce = claims.get("nonce")
         if expected_nonce is not None:
             if proof_nonce != expected_nonce:
-                raise DPoPNonceMismatchError(
-                    f"nonce mismatch: proof has '{proof_nonce}', expected '{expected_nonce}'"
-                )
+                raise DPoPNonceMismatchError(f"nonce mismatch: proof has '{proof_nonce}', expected '{expected_nonce}'")
 
         # Check 11: Validate iat timing
         now = self.config.clock.now()
@@ -444,28 +429,15 @@ class DPoPValidator:
             else:
                 expected_ath = compute_access_token_hash(access_token)
                 if ath != expected_ath:
-                    raise InvalidDPoPProofError(
-                        f"ath mismatch: proof '{ath}' != computed '{expected_ath}'"
-                    )
+                    raise InvalidDPoPProofError(f"ath mismatch: proof '{ath}' != computed '{expected_ath}'")
 
         self._logger.debug(
             "DPoP proof validated",
-            extra={
-                "event": "dpop.validated",
-                "jti": jti,
-                "htm": htm,
-                "thumbprint": thumbprint[:8] + "...",
-            },
+            extra={"event": "dpop.validated", "jti": jti, "htm": htm, "thumbprint": thumbprint[:8] + "..."},
         )
 
         return DPoPProofResult(
-            jti=jti,
-            htm=htm,
-            htu=htu,
-            iat=int(iat_ts),
-            thumbprint=thumbprint,
-            ath=ath,
-            nonce=proof_nonce,
+            jti=jti, htm=htm, htu=htu, iat=int(iat_ts), thumbprint=thumbprint, ath=ath, nonce=proof_nonce
         )
 
     def _jwk_to_public_key(self, jwk: dict[str, Any], alg: str) -> Any:

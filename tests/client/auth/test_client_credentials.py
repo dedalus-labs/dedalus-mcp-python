@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Tests for OAuth 2.0 Client Credentials Auth (RFC 6749 Section 4.4).
@@ -33,21 +33,14 @@ class TestClientCredentialsAuthConstruction:
             grant_types_supported=["client_credentials"],
         )
 
-        auth = ClientCredentialsAuth(
-            server_metadata=server_metadata,
-            client_id="m2m",
-            client_secret="secret123",
-        )
+        auth = ClientCredentialsAuth(server_metadata=server_metadata, client_id="m2m", client_secret="secret123")
 
         assert auth.client_id == "m2m"
         assert auth.token_endpoint == "https://as.example.com/oauth2/token"
 
     def test_construction_validates_grant_type_support(self):
         """ClientCredentialsAuth raises if AS doesn't support client_credentials."""
-        from dedalus_mcp.client.auth.client_credentials import (
-            ClientCredentialsAuth,
-            AuthConfigError,
-        )
+        from dedalus_mcp.client.auth.client_credentials import ClientCredentialsAuth, AuthConfigError
         from dedalus_mcp.client.auth.models import AuthorizationServerMetadata
 
         server_metadata = AuthorizationServerMetadata(
@@ -57,11 +50,7 @@ class TestClientCredentialsAuthConstruction:
         )
 
         with pytest.raises(AuthConfigError, match="client_credentials"):
-            ClientCredentialsAuth(
-                server_metadata=server_metadata,
-                client_id="m2m",
-                client_secret="secret123",
-            )
+            ClientCredentialsAuth(server_metadata=server_metadata, client_id="m2m", client_secret="secret123")
 
     def test_construction_with_scope(self):
         """ClientCredentialsAuth accepts optional scope parameter."""
@@ -75,10 +64,7 @@ class TestClientCredentialsAuthConstruction:
         )
 
         auth = ClientCredentialsAuth(
-            server_metadata=server_metadata,
-            client_id="m2m",
-            client_secret="secret123",
-            scope="openid mcp:read",
+            server_metadata=server_metadata, client_id="m2m", client_secret="secret123", scope="openid mcp:read"
         )
 
         assert auth.scope == "openid mcp:read"
@@ -101,21 +87,14 @@ class TestClientCredentialsAuthFromResource:
         # Mock initial 401 response
         respx.get("https://mcp.example.com/mcp").mock(
             return_value=httpx.Response(
-                401,
-                headers={
-                    "WWW-Authenticate": 'Bearer resource_metadata="/.well-known/oauth-protected-resource"'
-                },
+                401, headers={"WWW-Authenticate": 'Bearer resource_metadata="/.well-known/oauth-protected-resource"'}
             )
         )
 
         # Mock PRM endpoint
         respx.get("https://mcp.example.com/.well-known/oauth-protected-resource").mock(
             return_value=httpx.Response(
-                200,
-                json={
-                    "resource": "https://mcp.example.com",
-                    "authorization_servers": ["https://as.example.com"],
-                },
+                200, json={"resource": "https://mcp.example.com", "authorization_servers": ["https://as.example.com"]}
             )
         )
 
@@ -132,9 +111,7 @@ class TestClientCredentialsAuthFromResource:
         )
 
         auth = await ClientCredentialsAuth.from_resource(
-            resource_url="https://mcp.example.com/mcp",
-            client_id="m2m",
-            client_secret="secret123",
+            resource_url="https://mcp.example.com/mcp", client_id="m2m", client_secret="secret123"
         )
 
         assert auth.client_id == "m2m"
@@ -151,9 +128,7 @@ class TestClientCredentialsAuthFromResource:
 
         with pytest.raises(DiscoveryError, match="not protected"):
             await ClientCredentialsAuth.from_resource(
-                resource_url="https://mcp.example.com/mcp",
-                client_id="m2m",
-                client_secret="secret123",
+                resource_url="https://mcp.example.com/mcp", client_id="m2m", client_secret="secret123"
             )
 
 
@@ -180,20 +155,11 @@ class TestClientCredentialsAuthTokenAcquisition:
 
         respx.post("https://as.example.com/oauth2/token").mock(
             return_value=httpx.Response(
-                200,
-                json={
-                    "access_token": "eyJhbGciOiJFUzI1NiIs...",
-                    "token_type": "Bearer",
-                    "expires_in": 3600,
-                },
+                200, json={"access_token": "eyJhbGciOiJFUzI1NiIs...", "token_type": "Bearer", "expires_in": 3600}
             )
         )
 
-        auth = ClientCredentialsAuth(
-            server_metadata=server_metadata,
-            client_id="m2m",
-            client_secret="secret123",
-        )
+        auth = ClientCredentialsAuth(server_metadata=server_metadata, client_id="m2m", client_secret="secret123")
 
         token = await auth.get_token()
 
@@ -215,20 +181,11 @@ class TestClientCredentialsAuthTokenAcquisition:
         )
 
         route = respx.post("https://as.example.com/oauth2/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "access_token": "token",
-                    "token_type": "Bearer",
-                },
-            )
+            return_value=httpx.Response(200, json={"access_token": "token", "token_type": "Bearer"})
         )
 
         auth = ClientCredentialsAuth(
-            server_metadata=server_metadata,
-            client_id="m2m",
-            client_secret="secret123",
-            scope="openid mcp:read",
+            server_metadata=server_metadata, client_id="m2m", client_secret="secret123", scope="openid mcp:read"
         )
 
         await auth.get_token()
@@ -253,20 +210,10 @@ class TestClientCredentialsAuthTokenAcquisition:
         )
 
         route = respx.post("https://as.example.com/oauth2/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "access_token": "token",
-                    "token_type": "Bearer",
-                },
-            )
+            return_value=httpx.Response(200, json={"access_token": "token", "token_type": "Bearer"})
         )
 
-        auth = ClientCredentialsAuth(
-            server_metadata=server_metadata,
-            client_id="m2m",
-            client_secret="secret123",
-        )
+        auth = ClientCredentialsAuth(server_metadata=server_metadata, client_id="m2m", client_secret="secret123")
 
         await auth.get_token()
 
@@ -285,10 +232,7 @@ class TestClientCredentialsAuthTokenAcquisition:
     @pytest.mark.anyio
     async def test_get_token_error_response(self):
         """get_token raises on error response from token endpoint."""
-        from dedalus_mcp.client.auth.client_credentials import (
-            ClientCredentialsAuth,
-            TokenError,
-        )
+        from dedalus_mcp.client.auth.client_credentials import ClientCredentialsAuth, TokenError
         from dedalus_mcp.client.auth.models import AuthorizationServerMetadata
 
         server_metadata = AuthorizationServerMetadata(
@@ -299,19 +243,11 @@ class TestClientCredentialsAuthTokenAcquisition:
 
         respx.post("https://as.example.com/oauth2/token").mock(
             return_value=httpx.Response(
-                400,
-                json={
-                    "error": "invalid_client",
-                    "error_description": "Client authentication failed",
-                },
+                400, json={"error": "invalid_client", "error_description": "Client authentication failed"}
             )
         )
 
-        auth = ClientCredentialsAuth(
-            server_metadata=server_metadata,
-            client_id="m2m",
-            client_secret="wrong_secret",
-        )
+        auth = ClientCredentialsAuth(server_metadata=server_metadata, client_id="m2m", client_secret="wrong_secret")
 
         with pytest.raises(TokenError, match="invalid_client"):
             await auth.get_token()
@@ -341,12 +277,7 @@ class TestClientCredentialsAuthHttpxInterface:
         # Mock token endpoint
         respx.post("https://as.example.com/oauth2/token").mock(
             return_value=httpx.Response(
-                200,
-                json={
-                    "access_token": "the_access_token",
-                    "token_type": "Bearer",
-                    "expires_in": 3600,
-                },
+                200, json={"access_token": "the_access_token", "token_type": "Bearer", "expires_in": 3600}
             )
         )
 
@@ -355,11 +286,7 @@ class TestClientCredentialsAuthHttpxInterface:
             return_value=httpx.Response(200, json={"result": "success"})
         )
 
-        auth = ClientCredentialsAuth(
-            server_metadata=server_metadata,
-            client_id="m2m",
-            client_secret="secret123",
-        )
+        auth = ClientCredentialsAuth(server_metadata=server_metadata, client_id="m2m", client_secret="secret123")
 
         # Pre-fetch token
         await auth.get_token()
@@ -389,20 +316,11 @@ class TestClientCredentialsAuthHttpxInterface:
 
         token_route = respx.post("https://as.example.com/oauth2/token").mock(
             return_value=httpx.Response(
-                200,
-                json={
-                    "access_token": "cached_token",
-                    "token_type": "Bearer",
-                    "expires_in": 3600,
-                },
+                200, json={"access_token": "cached_token", "token_type": "Bearer", "expires_in": 3600}
             )
         )
 
-        auth = ClientCredentialsAuth(
-            server_metadata=server_metadata,
-            client_id="m2m",
-            client_secret="secret123",
-        )
+        auth = ClientCredentialsAuth(server_metadata=server_metadata, client_id="m2m", client_secret="secret123")
 
         # Get token twice
         token1 = await auth.get_token()
@@ -435,13 +353,7 @@ class TestClientCredentialsAuthResourceIndicator:
         )
 
         route = respx.post("https://as.example.com/oauth2/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "access_token": "token",
-                    "token_type": "Bearer",
-                },
-            )
+            return_value=httpx.Response(200, json={"access_token": "token", "token_type": "Bearer"})
         )
 
         auth = ClientCredentialsAuth(

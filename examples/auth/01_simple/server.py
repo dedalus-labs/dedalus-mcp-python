@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Simplified Supabase REST API demo using only environment credentials.
@@ -38,11 +38,7 @@ server = MCPServer(name="supabase-rest-demo")
 with server.binding():
 
     @tool(description="Query Supabase REST API directly using the configured secret key.")
-    async def supabase_query(
-        table: str = "users",
-        columns: str = "*",
-        limit: int | None = 5,
-    ) -> dict[str, Any]:
+    async def supabase_query(table: str = "users", columns: str = "*", limit: int | None = 5) -> dict[str, Any]:
         """Execute a Supabase REST API query.
 
         Args:
@@ -88,22 +84,17 @@ with server.binding():
         if response.status_code >= 400:
             server._logger.warning("supabase request failed", extra={"context": {**log_context, "body": body}})
         else:
-            server._logger.info("supabase request succeeded", extra={"context": {**log_context, "row_count": row_count}})
+            server._logger.info(
+                "supabase request succeeded", extra={"context": {**log_context, "row_count": row_count}}
+            )
 
-        return {
-            "url": url,
-            "status": response.status_code,
-            "body": body,
-        }
+        return {"url": url, "status": response.status_code, "body": body}
 
 
 async def main() -> None:
     print(f"[supabase-demo] starting — SUPABASE_URL={SUPABASE_URL}")
     await server.serve(
-        transport="streamable-http",
-        verbose=False,
-        log_level="info",
-        uvicorn_options={"access_log": False},
+        transport="streamable-http", verbose=False, log_level="info", uvicorn_options={"access_log": False}
     )
 
 

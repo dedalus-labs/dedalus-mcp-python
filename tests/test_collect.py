@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Tests for server.collect() and server.collect_from() APIs."""
@@ -10,17 +10,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from dedalus_mcp import (
-    MCPServer,
-    ToolSpec,
-    completion,
-    extract_spec,
-    prompt,
-    resource,
-    resource_template,
-    tool,
-    types,
-)
+from dedalus_mcp import MCPServer, ToolSpec, completion, extract_spec, prompt, resource, resource_template, tool, types
 
 if TYPE_CHECKING:
     pass
@@ -271,4 +261,3 @@ class TestIntegration:
 
         # Tool should still be registered
         assert "test_fn" in server.tool_names
-

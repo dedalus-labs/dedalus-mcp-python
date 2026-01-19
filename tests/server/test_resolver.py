@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Tests for connection resolver with credential custody split."""
@@ -47,12 +47,7 @@ class MockVaultConnector:
         return self.secrets[handle]
 
     def add_connection(
-        self,
-        handle: str,
-        driver_type: str,
-        auth_type: str,
-        secret: str,
-        fingerprint: str | None = None,
+        self, handle: str, driver_type: str, auth_type: str, secret: str, fingerprint: str | None = None
     ) -> None:
         """Helper to add test connection."""
         self.connections[handle] = ConnectionMetadata(
@@ -72,9 +67,7 @@ class MockExecutionBackend:
         self.calls: list[dict[str, Any]] = []
 
     async def execute_with_credential(
-        self,
-        encrypted_cred: dict[str, Any],
-        upstream_call: dict[str, Any],
+        self, encrypted_cred: dict[str, Any], upstream_call: dict[str, Any]
     ) -> dict[str, Any]:
         """Execute with credential."""
         self.calls.append({"cred": encrypted_cred, "call": upstream_call})
@@ -87,11 +80,7 @@ class MockDriver:
     def __init__(self) -> None:
         self.created_clients: list[tuple[str, dict[str, Any] | None]] = []
 
-    async def create_client(
-        self,
-        secret: str,
-        params: dict[str, Any] | None = None,
-    ) -> Any:
+    async def create_client(self, secret: str, params: dict[str, Any] | None = None) -> Any:
         """Create client."""
         self.created_clients.append((secret, params))
         return Mock(spec=["query", "close"])
@@ -118,12 +107,7 @@ def mock_driver() -> MockDriver:
 @pytest.fixture
 def resolver_config() -> ResolverConfig:
     """Create resolver config."""
-    return ResolverConfig(
-        vault_enabled=True,
-        backend_enabled=True,
-        require_fingerprint=False,
-        audit_log=True,
-    )
+    return ResolverConfig(vault_enabled=True, backend_enabled=True, require_fingerprint=False, audit_log=True)
 
 
 @pytest.fixture
@@ -134,10 +118,7 @@ def auth_context() -> AuthorizationContext:
         scopes=["mcp:tools:call"],
         claims={
             "ddls:connectors": ["ddls:conn_org", "ddls:conn_user"],
-            "ddls:fingerprints": {
-                "ddls:conn_org": "fp_org_123",
-                "ddls:conn_user": "fp_user_456",
-            },
+            "ddls:fingerprints": {"ddls:conn_org": "fp_org_123", "ddls:conn_user": "fp_user_456"},
             "ddls:credential": {"encrypted": "user_cred_data"},
         },
     )
@@ -161,10 +142,7 @@ async def test_resolve_org_credential_success(
     resolver.register_driver("postgres", mock_driver)
 
     mock_vault.add_connection(
-        handle="ddls:conn_org",
-        driver_type="postgres",
-        auth_type="org",
-        secret="postgres://user:pass@host/db",
+        handle="ddls:conn_org", driver_type="postgres", auth_type="org", secret="postgres://user:pass@host/db"
     )
 
     request_context = {"dedalus_mcp.auth": auth_context}
@@ -239,9 +217,7 @@ async def test_resolve_org_credential_fingerprint_mismatch(
 
 @pytest.mark.asyncio
 async def test_resolve_org_credential_driver_not_found(
-    resolver_config: ResolverConfig,
-    mock_vault: MockVaultConnector,
-    auth_context: AuthorizationContext,
+    resolver_config: ResolverConfig, mock_vault: MockVaultConnector, auth_context: AuthorizationContext
 ) -> None:
     """Test error when driver not registered."""
     # Setup
@@ -249,10 +225,7 @@ async def test_resolve_org_credential_driver_not_found(
     # Don't register any driver
 
     mock_vault.add_connection(
-        handle="ddls:conn_org",
-        driver_type="postgres",
-        auth_type="org",
-        secret="postgres://user:pass@host/db",
+        handle="ddls:conn_org", driver_type="postgres", auth_type="org", secret="postgres://user:pass@host/db"
     )
 
     request_context = {"dedalus_mcp.auth": auth_context}
@@ -285,10 +258,7 @@ async def test_resolve_user_credential_success(
         secret="",  # Not used for user creds
     )
 
-    request_context = {
-        "dedalus_mcp.auth": auth_context,
-        "operation": {"type": "query", "sql": "SELECT * FROM users"},
-    }
+    request_context = {"dedalus_mcp.auth": auth_context, "operation": {"type": "query", "sql": "SELECT * FROM users"}}
 
     # Execute
     result = await resolver.resolve_client("ddls:conn_user", request_context)
@@ -304,21 +274,14 @@ async def test_resolve_user_credential_success(
 
 @pytest.mark.asyncio
 async def test_resolve_user_credential_backend_disabled(
-    resolver_config: ResolverConfig,
-    mock_vault: MockVaultConnector,
-    auth_context: AuthorizationContext,
+    resolver_config: ResolverConfig, mock_vault: MockVaultConnector, auth_context: AuthorizationContext
 ) -> None:
     """Test error when backend disabled."""
     # Setup with backend disabled
     resolver_config.backend_enabled = False
     resolver = ConnectionResolver(resolver_config, vault=mock_vault, backend=None)
 
-    mock_vault.add_connection(
-        handle="ddls:conn_user",
-        driver_type="supabase",
-        auth_type="user",
-        secret="",
-    )
+    mock_vault.add_connection(handle="ddls:conn_user", driver_type="supabase", auth_type="user", secret="")
 
     request_context = {"dedalus_mcp.auth": auth_context}
 
@@ -329,27 +292,20 @@ async def test_resolve_user_credential_backend_disabled(
 
 @pytest.mark.asyncio
 async def test_resolve_user_credential_missing_encrypted_cred(
-    resolver_config: ResolverConfig,
-    mock_vault: MockVaultConnector,
-    mock_backend: MockExecutionBackend,
+    resolver_config: ResolverConfig, mock_vault: MockVaultConnector, mock_backend: MockExecutionBackend
 ) -> None:
     """Test error when encrypted credential missing from token."""
     # Setup
     resolver = ConnectionResolver(resolver_config, vault=mock_vault, backend=mock_backend)
 
-    mock_vault.add_connection(
-        handle="ddls:conn_user",
-        driver_type="supabase",
-        auth_type="user",
-        secret="",
-    )
+    mock_vault.add_connection(handle="ddls:conn_user", driver_type="supabase", auth_type="user", secret="")
 
     # Auth context without encrypted credential
     auth_context = AuthorizationContext(
         subject="user_123",
         scopes=["mcp:tools:call"],
         claims={
-            "ddls:connectors": ["ddls:conn_user"],
+            "ddls:connectors": ["ddls:conn_user"]
             # Missing ddls:credential
         },
     )
@@ -368,9 +324,7 @@ async def test_resolve_user_credential_missing_encrypted_cred(
 
 @pytest.mark.asyncio
 async def test_unauthorized_handle_rejected(
-    resolver_config: ResolverConfig,
-    mock_vault: MockVaultConnector,
-    mock_driver: MockDriver,
+    resolver_config: ResolverConfig, mock_vault: MockVaultConnector, mock_driver: MockDriver
 ) -> None:
     """Test unauthorized handle rejection."""
     # Setup
@@ -378,10 +332,7 @@ async def test_unauthorized_handle_rejected(
     resolver.register_driver("postgres", mock_driver)
 
     mock_vault.add_connection(
-        handle="ddls:conn_unauthorized",
-        driver_type="postgres",
-        auth_type="org",
-        secret="postgres://user:pass@host/db",
+        handle="ddls:conn_unauthorized", driver_type="postgres", auth_type="org", secret="postgres://user:pass@host/db"
     )
 
     # Auth context WITHOUT unauthorized handle
@@ -389,7 +340,7 @@ async def test_unauthorized_handle_rejected(
         subject="user_123",
         scopes=["mcp:tools:call"],
         claims={
-            "ddls:connectors": ["ddls:conn_org"],  # Different handle
+            "ddls:connectors": ["ddls:conn_org"]  # Different handle
         },
     )
 
@@ -401,10 +352,7 @@ async def test_unauthorized_handle_rejected(
 
 
 @pytest.mark.asyncio
-async def test_missing_auth_context(
-    resolver_config: ResolverConfig,
-    mock_vault: MockVaultConnector,
-) -> None:
+async def test_missing_auth_context(resolver_config: ResolverConfig, mock_vault: MockVaultConnector) -> None:
     """Test error when auth context missing."""
     # Setup
     resolver = ConnectionResolver(resolver_config, vault=mock_vault)
@@ -423,9 +371,7 @@ async def test_missing_auth_context(
 
 @pytest.mark.asyncio
 async def test_validate_handle_in_connections_claim(
-    resolver_config: ResolverConfig,
-    mock_vault: MockVaultConnector,
-    mock_driver: MockDriver,
+    resolver_config: ResolverConfig, mock_vault: MockVaultConnector, mock_driver: MockDriver
 ) -> None:
     """Test handle must be in ddls:connectors claim."""
     # Setup
@@ -433,19 +379,12 @@ async def test_validate_handle_in_connections_claim(
     resolver.register_driver("postgres", mock_driver)
 
     mock_vault.add_connection(
-        handle="ddls:conn_test",
-        driver_type="postgres",
-        auth_type="org",
-        secret="postgres://user:pass@host/db",
+        handle="ddls:conn_test", driver_type="postgres", auth_type="org", secret="postgres://user:pass@host/db"
     )
 
     # Auth context with handle in connections
     auth_context = AuthorizationContext(
-        subject="user_123",
-        scopes=["mcp:tools:call"],
-        claims={
-            "ddls:connectors": ["ddls:conn_test", "ddls:conn_other"],
-        },
+        subject="user_123", scopes=["mcp:tools:call"], claims={"ddls:connectors": ["ddls:conn_test", "ddls:conn_other"]}
     )
 
     request_context = {"dedalus_mcp.auth": auth_context}
@@ -457,9 +396,7 @@ async def test_validate_handle_in_connections_claim(
 
 @pytest.mark.asyncio
 async def test_validate_fingerprint_from_token_claim(
-    resolver_config: ResolverConfig,
-    mock_vault: MockVaultConnector,
-    mock_driver: MockDriver,
+    resolver_config: ResolverConfig, mock_vault: MockVaultConnector, mock_driver: MockDriver
 ) -> None:
     """Test fingerprint validation uses ddls:fingerprints claim."""
     # Setup
@@ -478,12 +415,7 @@ async def test_validate_fingerprint_from_token_claim(
     auth_context = AuthorizationContext(
         subject="user_123",
         scopes=["mcp:tools:call"],
-        claims={
-            "ddls:connectors": ["ddls:conn_fp"],
-            "ddls:fingerprints": {
-                "ddls:conn_fp": "fp_correct_123",
-            },
-        },
+        claims={"ddls:connectors": ["ddls:conn_fp"], "ddls:fingerprints": {"ddls:conn_fp": "fp_correct_123"}},
     )
 
     request_context = {"dedalus_mcp.auth": auth_context}
@@ -495,9 +427,7 @@ async def test_validate_fingerprint_from_token_claim(
 
 @pytest.mark.asyncio
 async def test_per_handle_scopes_validation(
-    resolver_config: ResolverConfig,
-    mock_vault: MockVaultConnector,
-    mock_driver: MockDriver,
+    resolver_config: ResolverConfig, mock_vault: MockVaultConnector, mock_driver: MockDriver
 ) -> None:
     """Test per-handle scope enforcement (future feature)."""
     # This test documents the intended per-handle scope validation
@@ -508,10 +438,7 @@ async def test_per_handle_scopes_validation(
     resolver.register_driver("postgres", mock_driver)
 
     mock_vault.add_connection(
-        handle="ddls:conn_scoped",
-        driver_type="postgres",
-        auth_type="org",
-        secret="postgres://user:pass@host/db",
+        handle="ddls:conn_scoped", driver_type="postgres", auth_type="org", secret="postgres://user:pass@host/db"
     )
 
     # Future: ddls:connection_scopes claim
@@ -519,7 +446,7 @@ async def test_per_handle_scopes_validation(
         subject="user_123",
         scopes=["mcp:tools:call"],
         claims={
-            "ddls:connectors": ["ddls:conn_scoped"],
+            "ddls:connectors": ["ddls:conn_scoped"]
             # Future: "ddls:connection_scopes": {
             #     "ddls:conn_scoped": ["read", "write"]
             # }
@@ -539,18 +466,14 @@ async def test_per_handle_scopes_validation(
 
 
 @pytest.mark.asyncio
-async def test_vault_disabled(
-    mock_driver: MockDriver,
-) -> None:
+async def test_vault_disabled(mock_driver: MockDriver) -> None:
     """Test error when vault disabled."""
     # Setup with vault disabled
     config = ResolverConfig(vault_enabled=False)
     resolver = ConnectionResolver(config, vault=None)
 
     auth_context = AuthorizationContext(
-        subject="user_123",
-        scopes=["mcp:tools:call"],
-        claims={"ddls:connectors": ["ddls:conn_test"]},
+        subject="user_123", scopes=["mcp:tools:call"], claims={"ddls:connectors": ["ddls:conn_test"]}
     )
 
     request_context = {"dedalus_mcp.auth": auth_context}
@@ -562,9 +485,7 @@ async def test_vault_disabled(
 
 @pytest.mark.asyncio
 async def test_vault_connection_not_found(
-    resolver_config: ResolverConfig,
-    mock_vault: MockVaultConnector,
-    auth_context: AuthorizationContext,
+    resolver_config: ResolverConfig, mock_vault: MockVaultConnector, auth_context: AuthorizationContext
 ) -> None:
     """Test error when connection not in vault."""
     # Setup
@@ -592,9 +513,7 @@ async def test_vault_secret_decryption_failure(
 
     # Add connection but not secret (will fail on decrypt)
     mock_vault.connections["ddls:conn_org"] = ConnectionMetadata(
-        handle="ddls:conn_org",
-        driver_type="postgres",
-        auth_type="org",
+        handle="ddls:conn_org", driver_type="postgres", auth_type="org"
     )
     # Don't add secret to mock_vault.secrets
 
@@ -611,10 +530,7 @@ async def test_vault_secret_decryption_failure(
 
 
 @pytest.mark.asyncio
-async def test_register_multiple_drivers(
-    resolver_config: ResolverConfig,
-    mock_vault: MockVaultConnector,
-) -> None:
+async def test_register_multiple_drivers(resolver_config: ResolverConfig, mock_vault: MockVaultConnector) -> None:
     """Test registering multiple drivers."""
     # Setup
     resolver = ConnectionResolver(resolver_config, vault=mock_vault)
@@ -630,16 +546,11 @@ async def test_register_multiple_drivers(
 
     # Verify registration through resolution
     mock_vault.add_connection(
-        handle="ddls:conn_postgres",
-        driver_type="postgres",
-        auth_type="org",
-        secret="postgres://...",
+        handle="ddls:conn_postgres", driver_type="postgres", auth_type="org", secret="postgres://..."
     )
 
     auth_context = AuthorizationContext(
-        subject="user_123",
-        scopes=["mcp:tools:call"],
-        claims={"ddls:connectors": ["ddls:conn_postgres"]},
+        subject="user_123", scopes=["mcp:tools:call"], claims={"ddls:connectors": ["ddls:conn_postgres"]}
     )
 
     request_context = {"dedalus_mcp.auth": auth_context}
@@ -651,32 +562,23 @@ async def test_register_multiple_drivers(
 
 @pytest.mark.asyncio
 async def test_driver_initialization_with_registry(
-    resolver_config: ResolverConfig,
-    mock_vault: MockVaultConnector,
+    resolver_config: ResolverConfig, mock_vault: MockVaultConnector
 ) -> None:
     """Test initializing resolver with driver registry."""
     # Setup with pre-populated driver registry
     postgres_driver = MockDriver()
     supabase_driver = MockDriver()
 
-    drivers = {
-        "postgres": postgres_driver,
-        "supabase": supabase_driver,
-    }
+    drivers = {"postgres": postgres_driver, "supabase": supabase_driver}
 
     resolver = ConnectionResolver(resolver_config, vault=mock_vault, drivers=drivers)
 
     mock_vault.add_connection(
-        handle="ddls:conn_supabase",
-        driver_type="supabase",
-        auth_type="org",
-        secret="supabase://...",
+        handle="ddls:conn_supabase", driver_type="supabase", auth_type="org", secret="supabase://..."
     )
 
     auth_context = AuthorizationContext(
-        subject="user_123",
-        scopes=["mcp:tools:call"],
-        claims={"ddls:connectors": ["ddls:conn_supabase"]},
+        subject="user_123", scopes=["mcp:tools:call"], claims={"ddls:connectors": ["ddls:conn_supabase"]}
     )
 
     request_context = {"dedalus_mcp.auth": auth_context}
@@ -706,10 +608,7 @@ async def test_audit_logging_enabled(
     resolver.register_driver("postgres", mock_driver)
 
     mock_vault.add_connection(
-        handle="ddls:conn_audit",
-        driver_type="postgres",
-        auth_type="org",
-        secret="postgres://...",
+        handle="ddls:conn_audit", driver_type="postgres", auth_type="org", secret="postgres://..."
     )
 
     # Update auth context with correct handle
@@ -738,10 +637,7 @@ async def test_audit_logging_disabled(
     resolver.register_driver("postgres", mock_driver)
 
     mock_vault.add_connection(
-        handle="ddls:conn_no_audit",
-        driver_type="postgres",
-        auth_type="org",
-        secret="postgres://...",
+        handle="ddls:conn_no_audit", driver_type="postgres", auth_type="org", secret="postgres://..."
     )
 
     auth_context.claims["ddls:connectors"] = ["ddls:conn_no_audit"]
@@ -761,9 +657,7 @@ async def test_audit_logging_disabled(
 
 @pytest.mark.asyncio
 async def test_end_to_end_org_credential_flow(
-    resolver_config: ResolverConfig,
-    mock_vault: MockVaultConnector,
-    mock_driver: MockDriver,
+    resolver_config: ResolverConfig, mock_vault: MockVaultConnector, mock_driver: MockDriver
 ) -> None:
     """Test complete org credential flow end-to-end."""
     # Setup complete system
@@ -805,9 +699,7 @@ async def test_end_to_end_org_credential_flow(
 
 @pytest.mark.asyncio
 async def test_end_to_end_user_credential_flow(
-    resolver_config: ResolverConfig,
-    mock_vault: MockVaultConnector,
-    mock_backend: MockExecutionBackend,
+    resolver_config: ResolverConfig, mock_vault: MockVaultConnector, mock_backend: MockExecutionBackend
 ) -> None:
     """Test complete user credential flow end-to-end."""
     # Setup complete system
@@ -829,20 +721,13 @@ async def test_end_to_end_user_credential_flow(
         claims={
             "ddls:connectors": ["ddls:conn_e2e_user"],
             "ddls:fingerprints": {"ddls:conn_e2e_user": "fp_user_e2e"},
-            "ddls:credential": {
-                "encrypted": "encrypted_user_cred_xyz",
-                "algorithm": "aes-256-gcm",
-            },
+            "ddls:credential": {"encrypted": "encrypted_user_cred_xyz", "algorithm": "aes-256-gcm"},
         },
     )
 
     request_context = {
         "dedalus_mcp.auth": auth_context,
-        "operation": {
-            "type": "rpc",
-            "function": "get_user_profile",
-            "args": {"user_id": "789"},
-        },
+        "operation": {"type": "rpc", "function": "get_user_profile", "args": {"user_id": "789"}},
     }
 
     # Execute
@@ -914,12 +799,7 @@ async def test_driver_client_creation_failure():
 @pytest.mark.asyncio
 async def test_backend_execution_failure():
     """Test backend execution failure is caught and wrapped in BackendError."""
-    from dedalus_mcp.server.resolver import (
-        BackendError,
-        ConnectionMetadata,
-        ConnectionResolver,
-        ResolverConfig,
-    )
+    from dedalus_mcp.server.resolver import BackendError, ConnectionMetadata, ConnectionResolver, ResolverConfig
 
     class MockVault:
         async def get_connection(self, handle: str) -> ConnectionMetadata:
@@ -935,9 +815,7 @@ async def test_backend_execution_failure():
     resolver = ConnectionResolver(config=config, vault=vault, backend=backend)
 
     auth_context = type(
-        "AuthContext",
-        (),
-        {"claims": {"ddls:connectors": ["ddls:conn_test"], "ddls:credential": {"encrypted": "data"}}},
+        "AuthContext", (), {"claims": {"ddls:connectors": ["ddls:conn_test"], "ddls:credential": {"encrypted": "data"}}}
     )()
     request_context = {"dedalus_mcp.auth": auth_context}
 

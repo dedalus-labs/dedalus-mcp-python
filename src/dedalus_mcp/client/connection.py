@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """High-level client entrypoint.
@@ -50,9 +50,7 @@ def _build_http_client(
     sse_timeout_sec = sse_read_timeout.total_seconds() if isinstance(sse_read_timeout, timedelta) else sse_read_timeout
 
     return create_mcp_http_client(
-        headers=base_headers,
-        timeout=httpx.Timeout(timeout_sec, read=sse_timeout_sec),
-        auth=auth,
+        headers=base_headers, timeout=httpx.Timeout(timeout_sec, read=sse_timeout_sec), auth=auth
     )
 
 
@@ -93,11 +91,11 @@ async def open_connection(
 
         async with client:
             async with (
-                streamable_http_client(
-                    url,
-                    http_client=client,
-                    terminate_on_close=terminate_on_close,
-                ) as (read_stream, write_stream, get_session_id),
+                streamable_http_client(url, http_client=client, terminate_on_close=terminate_on_close) as (
+                    read_stream,
+                    write_stream,
+                    get_session_id,
+                ),
                 MCPClient(
                     read_stream,
                     write_stream,
@@ -114,11 +112,11 @@ async def open_connection(
 
         async with client:
             async with (
-                lambda_http_client(
-                    url,
-                    http_client=client,
-                    terminate_on_close=terminate_on_close,
-                ) as (read_stream, write_stream, get_session_id),
+                lambda_http_client(url, http_client=client, terminate_on_close=terminate_on_close) as (
+                    read_stream,
+                    write_stream,
+                    get_session_id,
+                ),
                 MCPClient(
                     read_stream,
                     write_stream,

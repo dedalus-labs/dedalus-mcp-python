@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Internal models used by the dependency resolver."""
@@ -11,11 +11,13 @@ from typing import Any, Callable, Sequence
 
 class DependencyResolutionError(Exception):
     """Raised when a dependency cannot be resolved."""
+
     pass
 
 
 class CircularDependencyError(DependencyResolutionError):
     """Raised when circular dependencies are detected."""
+
     pass
 
 
@@ -41,4 +43,3 @@ class ResolvedDependency:
 
 
 CacheKey = tuple[int, ...]
-

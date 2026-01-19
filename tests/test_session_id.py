@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for session ID access in Context and MCPClient.
 
 Validates session ID properties follow MCP spec requirements:

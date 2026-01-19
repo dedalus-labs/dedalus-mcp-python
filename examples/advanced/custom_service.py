@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Custom capability service injection.
@@ -70,9 +70,7 @@ class MetricsService:
         avg_latency = self._total_latency_ms / self._request_count if self._request_count > 0 else 0.0
         error_rate = self._error_count / self._request_count if self._request_count > 0 else 0.0
         return MetricsSnapshot(
-            tools_called=sum(self._tool_calls.values()),
-            average_latency_ms=avg_latency,
-            error_rate=error_rate,
+            tools_called=sum(self._tool_calls.values()), average_latency_ms=avg_latency, error_rate=error_rate
         )
 
     def reset(self) -> None:

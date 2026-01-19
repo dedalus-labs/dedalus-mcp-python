@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Error extraction and conversion utilities for MCPClient.
@@ -179,9 +179,4 @@ def _handle_5xx(status: int, error_msg: str, headers: httpx.Headers) -> ServerEr
     return ServerError(msg, status_code=status, retry_after=retry_after)
 
 
-__all__ = [
-    "extract_http_error",
-    "extract_network_error",
-    "http_error_to_mcp_error",
-    "network_error_to_mcp_error",
-]
+__all__ = ["extract_http_error", "extract_network_error", "http_error_to_mcp_error", "network_error_to_mcp_error"]

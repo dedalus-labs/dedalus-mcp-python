@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Typed tools with automatic schema inference.
@@ -106,4 +106,3 @@ if __name__ == "__main__":
     print("  register_person(person: Person) -> dict")
     print("  search(query: str, limit: int = 10) -> SearchResult")
     asyncio.run(server.serve())
-

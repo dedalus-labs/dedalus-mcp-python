@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Driver protocols for third-party service integrations.
@@ -24,11 +24,7 @@ class Driver(Protocol):
     returns a ready-to-use client instance.
     """
 
-    async def create_client(
-        self,
-        config: dict[str, Any],
-        auth: dict[str, Any],
-    ) -> Any:
+    async def create_client(self, config: dict[str, Any], auth: dict[str, Any]) -> Any:
         """Create an authenticated client for the service.
 
         Args:
@@ -45,8 +41,4 @@ class Driver(Protocol):
         ...
 
 
-__all__ = [
-    "Driver",
-    "HTTPAPIDriver",
-    "HTTPAPIClient",
-]
+__all__ = ["Driver", "HTTPAPIDriver", "HTTPAPIClient"]

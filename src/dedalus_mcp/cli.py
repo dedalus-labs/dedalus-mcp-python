@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Dedalus MCP CLI utilities for local development and packaging checks."""
@@ -27,8 +27,7 @@ def _check_installation(package_root: Path) -> list[str]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="dedalus_mcp",
-        description="Dedalus MCP utilities for local development and packaging checks.",
+        prog="dedalus_mcp", description="Dedalus MCP utilities for local development and packaging checks."
     )
     subcommands = parser.add_subparsers(dest="command")
 

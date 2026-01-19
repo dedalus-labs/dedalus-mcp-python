@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """OAuth 2.0 Client Credentials Auth (RFC 6749 Section 4.4).
@@ -54,9 +54,7 @@ class ClientCredentialsAuth(httpx.Auth):
             AuthConfigError: If AS doesn't support client_credentials grant.
         """
         if not server_metadata.supports_grant_type("client_credentials"):
-            raise AuthConfigError(
-                "Authorization server does not support client_credentials grant type"
-            )
+            raise AuthConfigError("Authorization server does not support client_credentials grant type")
 
         self._server_metadata = server_metadata
         self._client_id = client_id
@@ -82,12 +80,7 @@ class ClientCredentialsAuth(httpx.Auth):
 
     @classmethod
     async def from_resource(
-        cls,
-        *,
-        resource_url: str,
-        client_id: str,
-        client_secret: str,
-        scope: str | None = None,
+        cls, *, resource_url: str, client_id: str, client_secret: str, scope: str | None = None
     ) -> ClientCredentialsAuth:
         """Create ClientCredentialsAuth via OAuth discovery.
 
@@ -135,9 +128,7 @@ class ClientCredentialsAuth(httpx.Auth):
         if self._cached_token is not None:
             return self._cached_token
 
-        data = {
-            "grant_type": "client_credentials",
-        }
+        data = {"grant_type": "client_credentials"}
         if self._scope:
             data["scope"] = self._scope
         if self._resource:
@@ -145,9 +136,7 @@ class ClientCredentialsAuth(httpx.Auth):
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                self._server_metadata.token_endpoint,
-                data=data,
-                auth=(self._client_id, self._client_secret),
+                self._server_metadata.token_endpoint, data=data, auth=(self._client_id, self._client_secret)
             )
 
         if response.status_code != 200:
@@ -165,9 +154,7 @@ class ClientCredentialsAuth(httpx.Auth):
         self._cached_token = token
         return token
 
-    def sync_auth_flow(
-        self, request: httpx.Request
-    ) -> Generator[httpx.Request, httpx.Response, None]:
+    def sync_auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response, None]:
         """Synchronous auth flow for httpx.Auth interface.
 
         Injects the Bearer token into the request. Token must be
@@ -177,9 +164,7 @@ class ClientCredentialsAuth(httpx.Auth):
             request.headers["Authorization"] = f"Bearer {self._cached_token.access_token}"
         yield request
 
-    async def async_auth_flow(
-        self, request: httpx.Request
-    ) -> Generator[httpx.Request, httpx.Response, None]:
+    async def async_auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response, None]:
         """Async auth flow for httpx.Auth interface.
 
         Injects the Bearer token into the request. Token must be

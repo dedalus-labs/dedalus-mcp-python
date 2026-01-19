@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Tests for the execution plan schema and builder."""
@@ -40,11 +40,7 @@ def test_build_plan_from_claims(claims, compute, workspace):
         handle="ddls:conn_supabase_01H",
         claims=claims,
         slug="supabase/generic",
-        target={
-            "kind": "rest",
-            "base": "https://abc.supabase.co",
-            "resource": "https://mcp.example.com/supabase",
-        },
+        target={"kind": "rest", "base": "https://abc.supabase.co", "resource": "https://mcp.example.com/supabase"},
         op={"method": "GET", "path": "/rest/v1/users", "query": {"select": "*"}},
         request_id="req-123",
         tool="query_users",

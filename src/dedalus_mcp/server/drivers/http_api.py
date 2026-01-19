@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Generic HTTP API driver helpers.
@@ -46,23 +46,11 @@ class HTTPAPIDriver(BaseDriver):
 
     SUPPORTED_AUTH_TYPES = ["service_credential", "user_token"]
 
-    def __init__(
-        self,
-        *,
-        header_name: str = "Authorization",
-        prefixes: dict[str, str] | None = None,
-    ) -> None:
+    def __init__(self, *, header_name: str = "Authorization", prefixes: dict[str, str] | None = None) -> None:
         self._header_name = header_name
-        self._prefixes = prefixes or {
-            "service_credential": "Bearer ",
-            "user_token": "Bearer ",
-        }
+        self._prefixes = prefixes or {"service_credential": "Bearer ", "user_token": "Bearer "}
 
-    async def create_client(
-        self,
-        config: Any,
-        auth: Any,
-    ) -> HTTPAPIClient:
+    async def create_client(self, config: Any, auth: Any) -> HTTPAPIClient:
         """Create a driver-specific client for HTTP APIs."""
 
         config_data = self._normalize_input(config)

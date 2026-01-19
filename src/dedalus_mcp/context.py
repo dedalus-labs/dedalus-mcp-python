@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Request context helpers for Dedalus MCP handlers.
@@ -226,12 +226,7 @@ class Context:
         request_payload = self._build_resolver_context(operation)
         return await resolver.resolve_client(handle, request_payload)
 
-    async def dispatch(
-        self,
-        target: "Connection | str | None" = None,
-        request: Any = None,
-        /,
-    ) -> "DispatchResponse":
+    async def dispatch(self, target: "Connection | str | None" = None, request: Any = None, /) -> "DispatchResponse":
         """Execute authenticated HTTP request through dispatch backend.
 
         Single-connection server (target omitted):
@@ -256,20 +251,17 @@ class Context:
             InvalidConnectionHandleError: If handle format is invalid
 
         Example:
-            >>> response = await ctx.dispatch(HttpRequest(
-            ...     method=HttpMethod.POST,
-            ...     path="/repos/owner/repo/issues",
-            ...     body={"title": "Bug", "body": "Description"},
-            ... ))
+            >>> response = await ctx.dispatch(
+            ...     HttpRequest(
+            ...         method=HttpMethod.POST,
+            ...         path="/repos/owner/repo/issues",
+            ...         body={"title": "Bug", "body": "Description"},
+            ...     )
+            ... )
             >>> if response.success:
             ...     print(response.response.body)
         """
-        from .dispatch import (
-            DispatchBackend,
-            DispatchResponse,
-            DispatchWireRequest,
-            HttpRequest,
-        )
+        from .dispatch import DispatchBackend, DispatchResponse, DispatchWireRequest, HttpRequest
         from .server.connectors import Connection
         from .server.services.connection_gate import validate_handle_format
 
@@ -350,7 +342,9 @@ class Context:
             if not authorization_token:
                 # Log all header names for debugging missing auth
                 header_names = [n.decode() if isinstance(n, bytes) else str(n) for n, _ in headers[:10]]
-                _ctx_logger.warning(f"No Authorization header in ASGI scope. Available headers: {', '.join(header_names)}")
+                _ctx_logger.warning(
+                    f"No Authorization header in ASGI scope. Available headers: {', '.join(header_names)}"
+                )
 
         # Dedalus-hosted MCP servers require Authorization tokens
         if os.getenv("DEDALUS_DISPATCH_URL") and not authorization_token:
@@ -364,9 +358,7 @@ class Context:
 
         # Build and execute wire request
         wire_request = DispatchWireRequest(
-            connection_handle=connection_handle,
-            request=http_request,
-            authorization=authorization_token,
+            connection_handle=connection_handle, request=http_request, authorization=authorization_token
         )
 
         return await backend.dispatch(wire_request)

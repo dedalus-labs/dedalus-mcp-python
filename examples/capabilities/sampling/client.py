@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Client that provides LLM completions to the server.
@@ -194,4 +194,3 @@ latency. Migration will begin Q1 next year.
 
 if __name__ == "__main__":
     asyncio.run(main())
-

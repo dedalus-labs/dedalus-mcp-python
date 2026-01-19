@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Custom transport registration pattern.
@@ -108,6 +108,7 @@ async def main() -> None:
 
 
 # Production patterns:
+
 
 # 1. Transport selection from config
 def create_server_with_config(config: dict[str, Any]) -> MCPServer:

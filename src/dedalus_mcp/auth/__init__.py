@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Dedalus MCP authentication primitives.
@@ -22,16 +22,6 @@ Usage:
 from __future__ import annotations
 
 # Re-export from server.connectors (canonical location)
-from ..server.connectors import (
-    Binding,
-    Connection,
-    SecretKeys,
-    SecretValues,
-)
+from ..server.connectors import Binding, Connection, SecretKeys, SecretValues
 
-__all__ = [
-    "Binding",
-    "Connection",
-    "SecretKeys",
-    "SecretValues",
-]
+__all__ = ["Binding", "Connection", "SecretKeys", "SecretValues"]

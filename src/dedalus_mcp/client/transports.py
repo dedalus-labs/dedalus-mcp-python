@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """HTTP transport helpers for :mod:`dedalus_mcp.client`.
@@ -28,10 +28,7 @@ from mcp.shared.message import SessionMessage
 
 @asynccontextmanager
 async def lambda_http_client(
-    url: str,
-    *,
-    http_client: httpx.AsyncClient | None = None,
-    terminate_on_close: bool = True,
+    url: str, *, http_client: httpx.AsyncClient | None = None, terminate_on_close: bool = True
 ) -> AsyncGenerator[
     tuple[
         MemoryObjectReceiveStream[SessionMessage | Exception],

@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Shared fixtures for DPoP tests."""
@@ -100,12 +100,7 @@ def build_dpop_proof(
     x_bytes = public_numbers.x.to_bytes(32, byteorder="big")
     y_bytes = public_numbers.y.to_bytes(32, byteorder="big")
 
-    jwk = {
-        "kty": "EC",
-        "crv": "P-256",
-        "x": b64url_encode(x_bytes),
-        "y": b64url_encode(y_bytes),
-    }
+    jwk = {"kty": "EC", "crv": "P-256", "x": b64url_encode(x_bytes), "y": b64url_encode(y_bytes)}
 
     if jwk_override:
         jwk.update(jwk_override)
@@ -135,9 +130,7 @@ def build_dpop_proof(
 def compute_jwk_thumbprint(jwk: dict[str, Any]) -> str:
     """Compute JWK thumbprint per RFC 7638."""
     canonical = json.dumps(
-        {"crv": jwk["crv"], "kty": jwk["kty"], "x": jwk["x"], "y": jwk["y"]},
-        separators=(",", ":"),
-        sort_keys=True,
+        {"crv": jwk["crv"], "kty": jwk["kty"], "x": jwk["x"], "y": jwk["y"]}, separators=(",", ":"), sort_keys=True
     )
     digest = hashlib.sha256(canonical.encode("utf-8")).digest()
     return b64url_encode(digest)

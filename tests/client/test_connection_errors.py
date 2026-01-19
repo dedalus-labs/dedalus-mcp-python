@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """TDD tests for MCPClient connection error handling.
@@ -98,10 +98,7 @@ class TestBadRequestErrors:
         respx.post("https://mcp.example.com/mcp").mock(
             return_value=httpx.Response(
                 400,
-                json={
-                    "error": "invalid_request",
-                    "error_description": "Unsupported MCP-Protocol-Version: 2023-01-01",
-                },
+                json={"error": "invalid_request", "error_description": "Unsupported MCP-Protocol-Version: 2023-01-01"},
             )
         )
 
@@ -120,12 +117,7 @@ class TestBadRequestErrors:
 
         respx.post("https://mcp.example.com/mcp").mock(
             return_value=httpx.Response(
-                400,
-                json={
-                    "jsonrpc": "2.0",
-                    "error": {"code": -32700, "message": "Parse error"},
-                    "id": None,
-                },
+                400, json={"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error"}, "id": None}
             )
         )
 
@@ -141,9 +133,7 @@ class TestBadRequestErrors:
         from dedalus_mcp.client import MCPClient
         from dedalus_mcp.client.errors import BadRequestError
 
-        respx.post("https://mcp.example.com/mcp").mock(
-            return_value=httpx.Response(400, text="Bad Request")
-        )
+        respx.post("https://mcp.example.com/mcp").mock(return_value=httpx.Response(400, text="Bad Request"))
 
         with pytest.raises(BadRequestError):
             await MCPClient.connect("https://mcp.example.com/mcp")
@@ -171,10 +161,7 @@ class TestAuthRequiredErrors:
 
         respx.post("https://mcp.example.com/mcp").mock(
             return_value=httpx.Response(
-                401,
-                headers={
-                    "WWW-Authenticate": 'Bearer resource_metadata="/.well-known/oauth-protected-resource"'
-                },
+                401, headers={"WWW-Authenticate": 'Bearer resource_metadata="/.well-known/oauth-protected-resource"'}
             )
         )
 
@@ -194,10 +181,7 @@ class TestAuthRequiredErrors:
 
         respx.post("https://mcp.example.com/mcp").mock(
             return_value=httpx.Response(
-                401,
-                headers={
-                    "WWW-Authenticate": 'Bearer error="invalid_token", error_description="Token has expired"'
-                },
+                401, headers={"WWW-Authenticate": 'Bearer error="invalid_token", error_description="Token has expired"'}
             )
         )
 
@@ -216,12 +200,7 @@ class TestAuthRequiredErrors:
         from dedalus_mcp.client.errors import AuthRequiredError
 
         respx.post("https://mcp.example.com/mcp").mock(
-            return_value=httpx.Response(
-                401,
-                headers={
-                    "WWW-Authenticate": 'Bearer realm="mcp", error="invalid_token"'
-                },
-            )
+            return_value=httpx.Response(401, headers={"WWW-Authenticate": 'Bearer realm="mcp", error="invalid_token"'})
         )
 
         with pytest.raises(AuthRequiredError) as exc_info:
@@ -253,10 +232,7 @@ class TestForbiddenErrors:
 
         respx.post("https://mcp.example.com/mcp").mock(
             return_value=httpx.Response(
-                403,
-                headers={
-                    "WWW-Authenticate": 'Bearer error="insufficient_scope", scope="mcp:admin"'
-                },
+                403, headers={"WWW-Authenticate": 'Bearer error="insufficient_scope", scope="mcp:admin"'}
             )
         )
 
@@ -274,9 +250,7 @@ class TestForbiddenErrors:
         from dedalus_mcp.client import MCPClient
         from dedalus_mcp.client.errors import ForbiddenError
 
-        respx.post("https://mcp.example.com/mcp").mock(
-            return_value=httpx.Response(403, text="Forbidden")
-        )
+        respx.post("https://mcp.example.com/mcp").mock(return_value=httpx.Response(403, text="Forbidden"))
 
         with pytest.raises(ForbiddenError) as exc_info:
             await MCPClient.connect("https://mcp.example.com/mcp")
@@ -306,8 +280,7 @@ class TestSessionExpiredErrors:
 
         respx.post("https://mcp.example.com/mcp").mock(
             return_value=httpx.Response(
-                404,
-                json={"error": "session_not_found", "message": "Session has been terminated"},
+                404, json={"error": "session_not_found", "message": "Session has been terminated"}
             )
         )
 
@@ -325,9 +298,7 @@ class TestSessionExpiredErrors:
         from dedalus_mcp.client import MCPClient
         from dedalus_mcp.client.errors import MCPConnectionError
 
-        respx.post("https://mcp.example.com/mcp").mock(
-            return_value=httpx.Response(404, text="Not Found")
-        )
+        respx.post("https://mcp.example.com/mcp").mock(return_value=httpx.Response(404, text="Not Found"))
 
         with pytest.raises(MCPConnectionError) as exc_info:
             await MCPClient.connect("https://mcp.example.com/mcp")
@@ -358,11 +329,7 @@ class TestMethodNotAllowedErrors:
         from dedalus_mcp.client.errors import TransportError
 
         respx.post("https://mcp.example.com/mcp").mock(
-            return_value=httpx.Response(
-                405,
-                headers={"Allow": "GET"},
-                text="Method Not Allowed",
-            )
+            return_value=httpx.Response(405, headers={"Allow": "GET"}, text="Method Not Allowed")
         )
 
         with pytest.raises(TransportError) as exc_info:
@@ -392,10 +359,7 @@ class TestUnsupportedMediaTypeErrors:
         from dedalus_mcp.client.errors import TransportError
 
         respx.post("https://mcp.example.com/mcp").mock(
-            return_value=httpx.Response(
-                415,
-                json={"error": "Expected application/json"},
-            )
+            return_value=httpx.Response(415, json={"error": "Expected application/json"})
         )
 
         with pytest.raises(TransportError) as exc_info:
@@ -428,12 +392,7 @@ class TestUnprocessableEntityErrors:
 
         respx.post("https://mcp.example.com/mcp").mock(
             return_value=httpx.Response(
-                422,
-                json={
-                    "jsonrpc": "2.0",
-                    "error": {"code": -32600, "message": "Invalid Request"},
-                    "id": None,
-                },
+                422, json={"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid Request"}, "id": None}
             )
         )
 
@@ -459,9 +418,7 @@ class TestServerErrors:
         from dedalus_mcp.client import MCPClient
         from dedalus_mcp.client.errors import ServerError
 
-        respx.post("https://mcp.example.com/mcp").mock(
-            return_value=httpx.Response(500, text="Internal Server Error")
-        )
+        respx.post("https://mcp.example.com/mcp").mock(return_value=httpx.Response(500, text="Internal Server Error"))
 
         with pytest.raises(ServerError) as exc_info:
             await MCPClient.connect("https://mcp.example.com/mcp")
@@ -476,9 +433,7 @@ class TestServerErrors:
         from dedalus_mcp.client import MCPClient
         from dedalus_mcp.client.errors import ServerError
 
-        respx.post("https://mcp.example.com/mcp").mock(
-            return_value=httpx.Response(502, text="Bad Gateway")
-        )
+        respx.post("https://mcp.example.com/mcp").mock(return_value=httpx.Response(502, text="Bad Gateway"))
 
         with pytest.raises(ServerError) as exc_info:
             await MCPClient.connect("https://mcp.example.com/mcp")
@@ -494,11 +449,7 @@ class TestServerErrors:
         from dedalus_mcp.client.errors import ServerError
 
         respx.post("https://mcp.example.com/mcp").mock(
-            return_value=httpx.Response(
-                503,
-                headers={"Retry-After": "30"},
-                text="Service Unavailable",
-            )
+            return_value=httpx.Response(503, headers={"Retry-After": "30"}, text="Service Unavailable")
         )
 
         with pytest.raises(ServerError) as exc_info:
@@ -515,9 +466,7 @@ class TestServerErrors:
         from dedalus_mcp.client import MCPClient
         from dedalus_mcp.client.errors import ServerError
 
-        respx.post("https://mcp.example.com/mcp").mock(
-            return_value=httpx.Response(504, text="Gateway Timeout")
-        )
+        respx.post("https://mcp.example.com/mcp").mock(return_value=httpx.Response(504, text="Gateway Timeout"))
 
         with pytest.raises(ServerError) as exc_info:
             await MCPClient.connect("https://mcp.example.com/mcp")
@@ -541,9 +490,7 @@ class TestErrorAttributes:
         from dedalus_mcp.client import MCPClient
         from dedalus_mcp.client.errors import MCPConnectionError
 
-        respx.post("https://mcp.example.com/mcp").mock(
-            return_value=httpx.Response(418, text="I'm a teapot")
-        )
+        respx.post("https://mcp.example.com/mcp").mock(return_value=httpx.Response(418, text="I'm a teapot"))
 
         with pytest.raises(MCPConnectionError) as exc_info:
             await MCPClient.connect("https://mcp.example.com/mcp")
@@ -558,10 +505,7 @@ class TestErrorAttributes:
         from dedalus_mcp.client.errors import AuthRequiredError
 
         respx.post("https://mcp.example.com/mcp").mock(
-            return_value=httpx.Response(
-                401,
-                headers={"WWW-Authenticate": 'Bearer realm="mcp"'},
-            )
+            return_value=httpx.Response(401, headers={"WWW-Authenticate": 'Bearer realm="mcp"'})
         )
 
         with pytest.raises(AuthRequiredError) as exc_info:
@@ -577,11 +521,7 @@ class TestErrorAttributes:
         from dedalus_mcp.client.errors import ServerError
 
         respx.post("https://mcp.example.com/mcp").mock(
-            return_value=httpx.Response(
-                503,
-                headers={"Retry-After": "60"},
-                text="Service Unavailable",
-            )
+            return_value=httpx.Response(503, headers={"Retry-After": "60"}, text="Service Unavailable")
         )
 
         with pytest.raises(ServerError) as exc_info:
@@ -605,9 +545,7 @@ class TestNetworkErrors:
         from dedalus_mcp.client import MCPClient
         from dedalus_mcp.client.errors import MCPConnectionError
 
-        respx.post("https://mcp.example.com/mcp").mock(
-            side_effect=httpx.ConnectError("Connection refused")
-        )
+        respx.post("https://mcp.example.com/mcp").mock(side_effect=httpx.ConnectError("Connection refused"))
 
         with pytest.raises(MCPConnectionError) as exc_info:
             await MCPClient.connect("https://mcp.example.com/mcp")
@@ -622,9 +560,7 @@ class TestNetworkErrors:
         from dedalus_mcp.client import MCPClient
         from dedalus_mcp.client.errors import MCPConnectionError
 
-        respx.post("https://nonexistent.invalid/mcp").mock(
-            side_effect=httpx.ConnectError("Name or service not known")
-        )
+        respx.post("https://nonexistent.invalid/mcp").mock(side_effect=httpx.ConnectError("Name or service not known"))
 
         with pytest.raises(MCPConnectionError) as exc_info:
             await MCPClient.connect("https://nonexistent.invalid/mcp")
@@ -639,9 +575,7 @@ class TestNetworkErrors:
         from dedalus_mcp.client import MCPClient
         from dedalus_mcp.client.errors import MCPConnectionError
 
-        respx.post("https://mcp.example.com/mcp").mock(
-            side_effect=httpx.TimeoutException("Request timed out")
-        )
+        respx.post("https://mcp.example.com/mcp").mock(side_effect=httpx.TimeoutException("Request timed out"))
 
         with pytest.raises(MCPConnectionError) as exc_info:
             await MCPClient.connect("https://mcp.example.com/mcp")

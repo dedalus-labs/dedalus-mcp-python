@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Supabase REST demo protected by the Dedalus MCP Authorization Server.
@@ -86,18 +86,11 @@ audience_candidates = _audiences(MCP_RESOURCE_URL)
 server = MCPServer(
     name="supabase-connector-demo",
     instructions="OAuth 2.1 protected Supabase connector (service-key stays server-side)",
-    authorization=AuthorizationConfig(
-        enabled=True,
-        authorization_servers=[AS_ISSUER],
-        required_scopes=REQUIRED_SCOPES,
-    ),
+    authorization=AuthorizationConfig(enabled=True, authorization_servers=[AS_ISSUER], required_scopes=REQUIRED_SCOPES),
 )
 
 jwt_config = JWTValidatorConfig(
-    jwks_uri=JWKS_URI,
-    issuer=AS_ISSUER,
-    audience=audience_candidates,
-    required_scopes=REQUIRED_SCOPES,
+    jwks_uri=JWKS_URI, issuer=AS_ISSUER, audience=audience_candidates, required_scopes=REQUIRED_SCOPES
 )
 server.set_authorization_provider(JWTValidator(jwt_config))
 
@@ -105,11 +98,7 @@ server.set_authorization_provider(JWTValidator(jwt_config))
 with server.binding():
 
     @tool(description="Execute a Supabase REST query using the configured service role key.")
-    async def supabase_select_live(
-        table: str = "users",
-        columns: str = "*",
-        limit: int | None = 5,
-    ) -> dict[str, Any]:
+    async def supabase_select_live(table: str = "users", columns: str = "*", limit: int | None = 5) -> dict[str, Any]:
         ctx = get_context()
         auth_ctx = ctx.auth_context
         subject = getattr(auth_ctx, "subject", None) if auth_ctx else None
@@ -154,11 +143,7 @@ with server.binding():
             row_count = len(body) if isinstance(body, list) else None
             server._logger.info("supabase request succeeded", extra={"context": extra | {"row_count": row_count}})
 
-        result = {
-            "url": url,
-            "status": response.status_code,
-            "body": body,
-        }
+        result = {"url": url, "status": response.status_code, "body": body}
         if subject or scopes:
             result["_meta"] = {"subject": subject, "scopes": scopes}
         return result
@@ -170,10 +155,7 @@ async def main() -> None:
         f"issuer={AS_ISSUER}, resource={MCP_RESOURCE_URL}, scopes={','.join(REQUIRED_SCOPES)}"
     )
     await server.serve(
-        transport="streamable-http",
-        verbose=False,
-        log_level="info",
-        uvicorn_options={"access_log": False},
+        transport="streamable-http", verbose=False, log_level="info", uvicorn_options={"access_log": False}
     )
 
 

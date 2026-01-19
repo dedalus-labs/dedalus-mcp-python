@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Simplified MCP client for the Supabase REST demo.
@@ -66,10 +66,7 @@ async def run_client(args: argparse.Namespace) -> None:
         if tool_name not in {tool.name for tool in tools_result.tools}:
             raise SystemExit(f"Tool '{tool_name}' not found in server response.")
 
-        call_arguments: dict[str, Any] = {
-            "table": args.table,
-            "columns": args.columns,
-        }
+        call_arguments: dict[str, Any] = {"table": args.table, "columns": args.columns}
         if args.limit is not None:
             call_arguments["limit"] = args.limit
 
@@ -108,12 +105,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--table", default="users", help="Supabase table name (default: %(default)s)")
     parser.add_argument("--columns", default="*", help="Column selection for Supabase query")
-    parser.add_argument(
-        "--limit",
-        type=int,
-        default=5,
-        help="Row limit for Supabase query; use -1 to omit",
-    )
+    parser.add_argument("--limit", type=int, default=5, help="Row limit for Supabase query; use -1 to omit")
     return parser
 
 

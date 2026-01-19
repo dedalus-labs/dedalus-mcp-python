@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Ping service tests (docs/mcp/spec/schema-reference/ping.md)."""
@@ -184,9 +184,7 @@ async def test_ping_roundtrip_and_server_initiated_ping() -> None:
 
             assert server.active_sessions(), "server did not record the session after initialize"
 
-            client_result = await client_session.send_request(
-                ClientRequest(PingRequest()), EmptyResult
-            )
+            client_result = await client_session.send_request(ClientRequest(PingRequest()), EmptyResult)
             assert isinstance(client_result, EmptyResult)
 
             server_session = server.active_sessions()[0]

@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """OAuth discovery (RFC 9728, RFC 8414).
@@ -16,11 +16,7 @@ from urllib.parse import urljoin, urlparse
 
 import httpx
 
-from .models import (
-    AuthorizationServerMetadata,
-    ResourceMetadata,
-    parse_www_authenticate,
-)
+from .models import AuthorizationServerMetadata, ResourceMetadata, parse_www_authenticate
 
 
 class DiscoveryError(Exception):
@@ -134,10 +130,7 @@ async def fetch_authorization_server_metadata(client: httpx.AsyncClient, issuer:
     return AuthorizationServerMetadata.from_dict(data)
 
 
-async def discover_authorization_server(
-    client: httpx.AsyncClient,
-    resource_url: str,
-) -> DiscoveryResult:
+async def discover_authorization_server(client: httpx.AsyncClient, resource_url: str) -> DiscoveryResult:
     """Perform full OAuth discovery flow.
 
     This implements the MCP spec-compliant discovery:
@@ -180,6 +173,5 @@ async def discover_authorization_server(
     authorization_server_metadata = await fetch_authorization_server_metadata(client, as_url)
 
     return DiscoveryResult(
-        resource_metadata=resource_metadata,
-        authorization_server_metadata=authorization_server_metadata,
+        resource_metadata=resource_metadata, authorization_server_metadata=authorization_server_metadata
     )

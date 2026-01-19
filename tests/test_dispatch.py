@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Tests for dispatch backend implementations.
@@ -43,14 +43,9 @@ class TestDispatchWireRequestModel:
         from dedalus_mcp.dispatch import DispatchWireRequest, HttpMethod, HttpRequest
 
         http_req = HttpRequest(
-            method=HttpMethod.POST,
-            path="/repos/owner/repo/issues",
-            body={"title": "Bug", "body": "Description"},
+            method=HttpMethod.POST, path="/repos/owner/repo/issues", body={"title": "Bug", "body": "Description"}
         )
-        request = DispatchWireRequest(
-            connection_handle="ddls:conn:01ABC-github",
-            request=http_req,
-        )
+        request = DispatchWireRequest(connection_handle="ddls:conn:01ABC-github", request=http_req)
 
         assert request.connection_handle == "ddls:conn:01ABC-github"
         assert request.request.method == HttpMethod.POST
@@ -89,11 +84,7 @@ class TestDispatchResponseModel:
         """Failed dispatch should have success=False and DispatchError."""
         from dedalus_mcp.dispatch import DispatchErrorCode, DispatchResponse
 
-        result = DispatchResponse.fail(
-            DispatchErrorCode.DOWNSTREAM_UNREACHABLE,
-            "Connection refused",
-            retryable=True,
-        )
+        result = DispatchResponse.fail(DispatchErrorCode.DOWNSTREAM_UNREACHABLE, "Connection refused", retryable=True)
 
         assert result.success is False
         assert result.response is None
@@ -130,17 +121,10 @@ class TestDirectDispatchBackend:
         """Direct dispatch should use credential resolver and make HTTP request."""
         import httpx
 
-        from dedalus_mcp.dispatch import (
-            DirectDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import DirectDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
         # Mock the downstream API
-        respx_mock.get("https://api.github.com/user").mock(
-            return_value=httpx.Response(200, json={"login": "testuser"})
-        )
+        respx_mock.get("https://api.github.com/user").mock(return_value=httpx.Response(200, json={"login": "testuser"}))
 
         # Credential resolver returns (base_url, header_name, header_value)
         def resolver(handle: str) -> tuple[str, str, str]:
@@ -150,8 +134,7 @@ class TestDirectDispatchBackend:
 
         result = await backend.dispatch(
             DispatchWireRequest(
-                connection_handle="ddls:conn:github",
-                request=HttpRequest(method=HttpMethod.GET, path="/user"),
+                connection_handle="ddls:conn:github", request=HttpRequest(method=HttpMethod.GET, path="/user")
             )
         )
 
@@ -162,19 +145,13 @@ class TestDirectDispatchBackend:
     @pytest.mark.asyncio
     async def test_direct_dispatch_no_resolver(self):
         """Dispatch without credential resolver should fail."""
-        from dedalus_mcp.dispatch import (
-            DirectDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import DirectDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
         backend = DirectDispatchBackend(credential_resolver=None)
 
         result = await backend.dispatch(
             DispatchWireRequest(
-                connection_handle="ddls:conn:github",
-                request=HttpRequest(method=HttpMethod.GET, path="/user"),
+                connection_handle="ddls:conn:github", request=HttpRequest(method=HttpMethod.GET, path="/user")
             )
         )
 
@@ -184,12 +161,7 @@ class TestDirectDispatchBackend:
     @pytest.mark.asyncio
     async def test_direct_dispatch_resolver_exception(self):
         """Resolver exceptions should be caught and returned as error."""
-        from dedalus_mcp.dispatch import (
-            DirectDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import DirectDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
         def failing_resolver(handle: str) -> tuple[str, str, str]:
             raise RuntimeError("Credentials not found")
@@ -198,8 +170,7 @@ class TestDirectDispatchBackend:
 
         result = await backend.dispatch(
             DispatchWireRequest(
-                connection_handle="ddls:conn:github",
-                request=HttpRequest(method=HttpMethod.GET, path="/user"),
+                connection_handle="ddls:conn:github", request=HttpRequest(method=HttpMethod.GET, path="/user")
             )
         )
 
@@ -220,37 +191,21 @@ class TestEnclaveDispatchBackend:
         """Enclave dispatch should POST to /dispatch with response envelope."""
         import httpx
 
-        from dedalus_mcp.dispatch import (
-            EnclaveDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
         # Mock the enclave endpoint - returns DispatchResponse envelope
         respx_mock.post("https://enclave.example.com/dispatch").mock(
             return_value=httpx.Response(
-                200,
-                json={
-                    "success": True,
-                    "response": {"status": 201, "headers": {}, "body": {"created": True}},
-                },
+                200, json={"success": True, "response": {"status": 201, "headers": {}, "body": {"created": True}}}
             )
         )
 
-        backend = EnclaveDispatchBackend(
-            enclave_url="https://enclave.example.com",
-            access_token="test_token",
-        )
+        backend = EnclaveDispatchBackend(enclave_url="https://enclave.example.com", access_token="test_token")
 
         result = await backend.dispatch(
             DispatchWireRequest(
                 connection_handle="ddls:conn:01ABC-github",
-                request=HttpRequest(
-                    method=HttpMethod.POST,
-                    path="/repos/owner/repo/issues",
-                    body={"title": "Test"},
-                ),
+                request=HttpRequest(method=HttpMethod.POST, path="/repos/owner/repo/issues", body={"title": "Test"}),
             )
         )
 
@@ -265,12 +220,7 @@ class TestEnclaveDispatchBackend:
         from cryptography.hazmat.backends import default_backend
         from cryptography.hazmat.primitives.asymmetric import ec
 
-        from dedalus_mcp.dispatch import (
-            EnclaveDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
         # Generate ES256 key for DPoP
         dpop_key = ec.generate_private_key(ec.SECP256R1(), default_backend())
@@ -280,17 +230,12 @@ class TestEnclaveDispatchBackend:
         def capture_request(request):
             nonlocal captured_request
             captured_request = request
-            return httpx.Response(
-                200,
-                json={"success": True, "response": {"status": 201, "headers": {}, "body": {}}},
-            )
+            return httpx.Response(200, json={"success": True, "response": {"status": 201, "headers": {}, "body": {}}})
 
         respx_mock.post("https://enclave.example.com/dispatch").mock(side_effect=capture_request)
 
         backend = EnclaveDispatchBackend(
-            enclave_url="https://enclave.example.com",
-            access_token="test_token",
-            dpop_key=dpop_key,
+            enclave_url="https://enclave.example.com", access_token="test_token", dpop_key=dpop_key
         )
 
         await backend.dispatch(
@@ -309,21 +254,13 @@ class TestEnclaveDispatchBackend:
         """401 from enclave should result in auth error."""
         import httpx
 
-        from dedalus_mcp.dispatch import (
-            EnclaveDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
         respx_mock.post("https://enclave.example.com/dispatch").mock(
             return_value=httpx.Response(401, json={"error": "token_expired"})
         )
 
-        backend = EnclaveDispatchBackend(
-            enclave_url="https://enclave.example.com",
-            access_token="expired_token",
-        )
+        backend = EnclaveDispatchBackend(enclave_url="https://enclave.example.com", access_token="expired_token")
 
         result = await backend.dispatch(
             DispatchWireRequest(
@@ -340,21 +277,11 @@ class TestEnclaveDispatchBackend:
         """Timeout should be handled gracefully."""
         import httpx
 
-        from dedalus_mcp.dispatch import (
-            EnclaveDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
-        respx_mock.post("https://enclave.example.com/dispatch").mock(
-            side_effect=httpx.TimeoutException("timeout")
-        )
+        respx_mock.post("https://enclave.example.com/dispatch").mock(side_effect=httpx.TimeoutException("timeout"))
 
-        backend = EnclaveDispatchBackend(
-            enclave_url="https://enclave.example.com",
-            access_token="test_token",
-        )
+        backend = EnclaveDispatchBackend(enclave_url="https://enclave.example.com", access_token="test_token")
 
         result = await backend.dispatch(
             DispatchWireRequest(
@@ -388,9 +315,7 @@ class TestHttpRequestValidation:
         from dedalus_mcp.dispatch import HttpMethod, HttpRequest
 
         req = HttpRequest(
-            method=HttpMethod.GET,
-            path="/user",
-            headers={"apikey": "key123", "Accept": "application/json"},
+            method=HttpMethod.GET, path="/user", headers={"apikey": "key123", "Accept": "application/json"}
         )
         assert req.headers["apikey"] == "key123"
 
@@ -403,12 +328,7 @@ class TestDirectDispatchBackendHTTPErrors:
         """4xx responses should return success=True with error status."""
         import httpx
 
-        from dedalus_mcp.dispatch import (
-            DirectDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import DirectDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
         respx_mock.get("https://api.github.com/user").mock(
             return_value=httpx.Response(404, json={"message": "Not found"})
@@ -420,8 +340,7 @@ class TestDirectDispatchBackendHTTPErrors:
         backend = DirectDispatchBackend(credential_resolver=resolver)
         result = await backend.dispatch(
             DispatchWireRequest(
-                connection_handle="ddls:conn:github",
-                request=HttpRequest(method=HttpMethod.GET, path="/user"),
+                connection_handle="ddls:conn:github", request=HttpRequest(method=HttpMethod.GET, path="/user")
             )
         )
 
@@ -434,12 +353,7 @@ class TestDirectDispatchBackendHTTPErrors:
         """5xx responses should return success=True with error status."""
         import httpx
 
-        from dedalus_mcp.dispatch import (
-            DirectDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import DirectDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
         respx_mock.post("https://api.service.com/endpoint").mock(
             return_value=httpx.Response(503, text="Service unavailable")
@@ -465,12 +379,7 @@ class TestDirectDispatchBackendHTTPErrors:
         """Non-JSON responses should be returned as text."""
         import httpx
 
-        from dedalus_mcp.dispatch import (
-            DirectDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import DirectDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
         respx_mock.get("https://api.example.com/health").mock(
             return_value=httpx.Response(200, text="OK", headers={"content-type": "text/plain"})
@@ -482,8 +391,7 @@ class TestDirectDispatchBackendHTTPErrors:
         backend = DirectDispatchBackend(credential_resolver=resolver)
         result = await backend.dispatch(
             DispatchWireRequest(
-                connection_handle="ddls:conn:api",
-                request=HttpRequest(method=HttpMethod.GET, path="/health"),
+                connection_handle="ddls:conn:api", request=HttpRequest(method=HttpMethod.GET, path="/health")
             )
         )
 
@@ -495,16 +403,9 @@ class TestDirectDispatchBackendHTTPErrors:
         """Connection errors should return retryable failure."""
         import httpx
 
-        from dedalus_mcp.dispatch import (
-            DirectDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import DirectDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
-        respx_mock.get("https://api.offline.com/endpoint").mock(
-            side_effect=httpx.ConnectError("Connection refused")
-        )
+        respx_mock.get("https://api.offline.com/endpoint").mock(side_effect=httpx.ConnectError("Connection refused"))
 
         def resolver(handle: str) -> tuple[str, str, str]:
             return ("https://api.offline.com", "Authorization", "Bearer token")
@@ -512,8 +413,7 @@ class TestDirectDispatchBackendHTTPErrors:
         backend = DirectDispatchBackend(credential_resolver=resolver)
         result = await backend.dispatch(
             DispatchWireRequest(
-                connection_handle="ddls:conn:offline",
-                request=HttpRequest(method=HttpMethod.GET, path="/endpoint"),
+                connection_handle="ddls:conn:offline", request=HttpRequest(method=HttpMethod.GET, path="/endpoint")
             )
         )
 
@@ -527,12 +427,7 @@ class TestDirectDispatchBackendHTTPErrors:
         """Timeout errors should return retryable failure."""
         import httpx
 
-        from dedalus_mcp.dispatch import (
-            DirectDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import DirectDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
         respx_mock.get("https://api.slow.com/endpoint").mock(side_effect=httpx.TimeoutException("timeout"))
 
@@ -557,12 +452,7 @@ class TestDirectDispatchBackendHTTPErrors:
         """Custom non-auth headers should be forwarded."""
         import httpx
 
-        from dedalus_mcp.dispatch import (
-            DirectDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import DirectDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
         captured = None
 
@@ -598,12 +488,7 @@ class TestDirectDispatchBackendHTTPErrors:
         """String body should be sent as content, not JSON."""
         import httpx
 
-        from dedalus_mcp.dispatch import (
-            DirectDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import DirectDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
         captured = None
 
@@ -633,19 +518,10 @@ class TestDirectDispatchBackendHTTPErrors:
         """Malformed JSON should fallback to text."""
         import httpx
 
-        from dedalus_mcp.dispatch import (
-            DirectDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import DirectDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
         respx_mock.get("https://api.example.com/endpoint").mock(
-            return_value=httpx.Response(
-                200,
-                text="{invalid json",
-                headers={"content-type": "application/json"},
-            )
+            return_value=httpx.Response(200, text="{invalid json", headers={"content-type": "application/json"})
         )
 
         def resolver(handle: str) -> tuple[str, str, str]:
@@ -654,8 +530,7 @@ class TestDirectDispatchBackendHTTPErrors:
         backend = DirectDispatchBackend(credential_resolver=resolver)
         result = await backend.dispatch(
             DispatchWireRequest(
-                connection_handle="ddls:conn:api",
-                request=HttpRequest(method=HttpMethod.GET, path="/endpoint"),
+                connection_handle="ddls:conn:api", request=HttpRequest(method=HttpMethod.GET, path="/endpoint")
             )
         )
 
@@ -672,22 +547,14 @@ class TestEnclaveDispatchBackendAdvanced:
         import base64
         import httpx
 
-        from dedalus_mcp.dispatch import (
-            EnclaveDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
         captured = None
 
         def capture(request):
             nonlocal captured
             captured = request
-            return httpx.Response(
-                200,
-                json={"success": True, "response": {"status": 200, "headers": {}, "body": {}}},
-            )
+            return httpx.Response(200, json={"success": True, "response": {"status": 200, "headers": {}, "body": {}}})
 
         respx_mock.post("https://enclave.example.com/dispatch").mock(side_effect=capture)
 
@@ -701,8 +568,7 @@ class TestEnclaveDispatchBackendAdvanced:
 
         await backend.dispatch(
             DispatchWireRequest(
-                connection_handle="ddls:conn:github",
-                request=HttpRequest(method=HttpMethod.GET, path="/user"),
+                connection_handle="ddls:conn:github", request=HttpRequest(method=HttpMethod.GET, path="/user")
             )
         )
 
@@ -717,26 +583,17 @@ class TestEnclaveDispatchBackendAdvanced:
         """403 from enclave should result in authorization error."""
         import httpx
 
-        from dedalus_mcp.dispatch import (
-            EnclaveDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
         respx_mock.post("https://enclave.example.com/dispatch").mock(
             return_value=httpx.Response(403, json={"error": "forbidden"})
         )
 
-        backend = EnclaveDispatchBackend(
-            enclave_url="https://enclave.example.com",
-            access_token="test_token",
-        )
+        backend = EnclaveDispatchBackend(enclave_url="https://enclave.example.com", access_token="test_token")
 
         result = await backend.dispatch(
             DispatchWireRequest(
-                connection_handle="ddls:conn:github",
-                request=HttpRequest(method=HttpMethod.GET, path="/user"),
+                connection_handle="ddls:conn:github", request=HttpRequest(method=HttpMethod.GET, path="/user")
             )
         )
 
@@ -749,26 +606,17 @@ class TestEnclaveDispatchBackendAdvanced:
         """5xx from enclave should result in downstream error."""
         import httpx
 
-        from dedalus_mcp.dispatch import (
-            EnclaveDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
         respx_mock.post("https://enclave.example.com/dispatch").mock(
             return_value=httpx.Response(500, text="Internal server error")
         )
 
-        backend = EnclaveDispatchBackend(
-            enclave_url="https://enclave.example.com",
-            access_token="test_token",
-        )
+        backend = EnclaveDispatchBackend(enclave_url="https://enclave.example.com", access_token="test_token")
 
         result = await backend.dispatch(
             DispatchWireRequest(
-                connection_handle="ddls:conn:github",
-                request=HttpRequest(method=HttpMethod.GET, path="/user"),
+                connection_handle="ddls:conn:github", request=HttpRequest(method=HttpMethod.GET, path="/user")
             )
         )
 
@@ -781,36 +629,23 @@ class TestEnclaveDispatchBackendAdvanced:
         """Enclave error responses should be properly handled."""
         import httpx
 
-        from dedalus_mcp.dispatch import (
-            EnclaveDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
         respx_mock.post("https://enclave.example.com/dispatch").mock(
             return_value=httpx.Response(
                 200,
                 json={
                     "success": False,
-                    "error": {
-                        "code": "DOWNSTREAM_TIMEOUT",
-                        "message": "Request timed out",
-                        "retryable": True,
-                    },
+                    "error": {"code": "DOWNSTREAM_TIMEOUT", "message": "Request timed out", "retryable": True},
                 },
             )
         )
 
-        backend = EnclaveDispatchBackend(
-            enclave_url="https://enclave.example.com",
-            access_token="test_token",
-        )
+        backend = EnclaveDispatchBackend(enclave_url="https://enclave.example.com", access_token="test_token")
 
         result = await backend.dispatch(
             DispatchWireRequest(
-                connection_handle="ddls:conn:github",
-                request=HttpRequest(method=HttpMethod.GET, path="/user"),
+                connection_handle="ddls:conn:github", request=HttpRequest(method=HttpMethod.GET, path="/user")
             )
         )
 
@@ -824,26 +659,15 @@ class TestEnclaveDispatchBackendAdvanced:
         """Network errors should be handled gracefully."""
         import httpx
 
-        from dedalus_mcp.dispatch import (
-            EnclaveDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
-        respx_mock.post("https://enclave.example.com/dispatch").mock(
-            side_effect=httpx.RequestError("Network error")
-        )
+        respx_mock.post("https://enclave.example.com/dispatch").mock(side_effect=httpx.RequestError("Network error"))
 
-        backend = EnclaveDispatchBackend(
-            enclave_url="https://enclave.example.com",
-            access_token="test_token",
-        )
+        backend = EnclaveDispatchBackend(enclave_url="https://enclave.example.com", access_token="test_token")
 
         result = await backend.dispatch(
             DispatchWireRequest(
-                connection_handle="ddls:conn:github",
-                request=HttpRequest(method=HttpMethod.GET, path="/user"),
+                connection_handle="ddls:conn:github", request=HttpRequest(method=HttpMethod.GET, path="/user")
             )
         )
 
@@ -856,35 +680,24 @@ class TestEnclaveDispatchBackendAdvanced:
         """Without DPoP key, should use Bearer auth."""
         import httpx
 
-        from dedalus_mcp.dispatch import (
-            EnclaveDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
         captured = None
 
         def capture(request):
             nonlocal captured
             captured = request
-            return httpx.Response(
-                200,
-                json={"success": True, "response": {"status": 200, "headers": {}, "body": {}}},
-            )
+            return httpx.Response(200, json={"success": True, "response": {"status": 200, "headers": {}, "body": {}}})
 
         respx_mock.post("https://enclave.example.com/dispatch").mock(side_effect=capture)
 
         backend = EnclaveDispatchBackend(
-            enclave_url="https://enclave.example.com",
-            access_token="test_token",
-            dpop_key=None,
+            enclave_url="https://enclave.example.com", access_token="test_token", dpop_key=None
         )
 
         await backend.dispatch(
             DispatchWireRequest(
-                connection_handle="ddls:conn:github",
-                request=HttpRequest(method=HttpMethod.GET, path="/user"),
+                connection_handle="ddls:conn:github", request=HttpRequest(method=HttpMethod.GET, path="/user")
             )
         )
 
@@ -912,16 +725,9 @@ class TestDirectDispatchBackendEdgeCases:
         """Unexpected exceptions should be caught and logged."""
         import httpx
 
-        from dedalus_mcp.dispatch import (
-            DirectDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import DirectDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
-        respx_mock.get("https://api.example.com/endpoint").mock(
-            side_effect=RuntimeError("Unexpected error in httpx")
-        )
+        respx_mock.get("https://api.example.com/endpoint").mock(side_effect=RuntimeError("Unexpected error in httpx"))
 
         def resolver(handle: str) -> tuple[str, str, str]:
             return ("https://api.example.com", "Authorization", "Bearer token")
@@ -929,8 +735,7 @@ class TestDirectDispatchBackendEdgeCases:
         backend = DirectDispatchBackend(credential_resolver=resolver)
         result = await backend.dispatch(
             DispatchWireRequest(
-                connection_handle="ddls:conn:api",
-                request=HttpRequest(method=HttpMethod.GET, path="/endpoint"),
+                connection_handle="ddls:conn:api", request=HttpRequest(method=HttpMethod.GET, path="/endpoint")
             )
         )
 
@@ -947,26 +752,15 @@ class TestEnclaveDispatchBackendEdgeCases:
         """Unexpected exceptions should be caught and logged."""
         import httpx
 
-        from dedalus_mcp.dispatch import (
-            EnclaveDispatchBackend,
-            DispatchWireRequest,
-            HttpMethod,
-            HttpRequest,
-        )
+        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
-        respx_mock.post("https://enclave.example.com/dispatch").mock(
-            side_effect=RuntimeError("Unexpected error")
-        )
+        respx_mock.post("https://enclave.example.com/dispatch").mock(side_effect=RuntimeError("Unexpected error"))
 
-        backend = EnclaveDispatchBackend(
-            enclave_url="https://enclave.example.com",
-            access_token="test_token",
-        )
+        backend = EnclaveDispatchBackend(enclave_url="https://enclave.example.com", access_token="test_token")
 
         result = await backend.dispatch(
             DispatchWireRequest(
-                connection_handle="ddls:conn:github",
-                request=HttpRequest(method=HttpMethod.GET, path="/user"),
+                connection_handle="ddls:conn:github", request=HttpRequest(method=HttpMethod.GET, path="/user")
             )
         )
 
@@ -978,10 +772,7 @@ class TestEnclaveDispatchBackendEdgeCases:
         from dedalus_mcp.dispatch import EnclaveDispatchBackend
 
         backend = EnclaveDispatchBackend(
-            enclave_url="https://enclave.example.com",
-            access_token="test_token",
-            deployment_id=None,
-            auth_secret=None,
+            enclave_url="https://enclave.example.com", access_token="test_token", deployment_id=None, auth_secret=None
         )
 
         headers = backend._sign_request(b"test body")
@@ -992,9 +783,7 @@ class TestEnclaveDispatchBackendEdgeCases:
         from dedalus_mcp.dispatch import EnclaveDispatchBackend
 
         backend = EnclaveDispatchBackend(
-            enclave_url="https://enclave.example.com",
-            access_token="test_token",
-            dpop_key=None,
+            enclave_url="https://enclave.example.com", access_token="test_token", dpop_key=None
         )
 
         proof = backend._generate_dpop_proof("https://example.com/api", "POST")
@@ -1049,24 +838,16 @@ class TestDispatchResponseConformance:
                 200,
                 json={
                     "success": False,
-                    "error": {
-                        "code": "SOME_FUTURE_ERROR_CODE",
-                        "message": "Some new error",
-                        "retryable": False,
-                    },
+                    "error": {"code": "SOME_FUTURE_ERROR_CODE", "message": "Some new error", "retryable": False},
                 },
             )
         )
 
-        backend = EnclaveDispatchBackend(
-            enclave_url="https://enclave.example.com",
-            access_token="test_token",
-        )
+        backend = EnclaveDispatchBackend(enclave_url="https://enclave.example.com", access_token="test_token")
 
         result = await backend.dispatch(
             DispatchWireRequest(
-                connection_handle="ddls:conn:github",
-                request=HttpRequest(method=HttpMethod.GET, path="/user"),
+                connection_handle="ddls:conn:github", request=HttpRequest(method=HttpMethod.GET, path="/user")
             )
         )
 
@@ -1090,10 +871,7 @@ class TestDispatchIntegration:
     @pytest.mark.asyncio
     async def test_dispatch_validates_handle_format(self):
         """Dispatch should validate handle format before forwarding."""
-        from dedalus_mcp.server.services.connection_gate import (
-            InvalidConnectionHandleError,
-            validate_handle_format,
-        )
+        from dedalus_mcp.server.services.connection_gate import InvalidConnectionHandleError, validate_handle_format
 
         # Valid handles should pass format check
         validate_handle_format("ddls:conn:github")  # No raise

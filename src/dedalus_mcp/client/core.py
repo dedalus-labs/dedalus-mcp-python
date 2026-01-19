@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """High-level MCP client wrapper built on the reference SDK.
@@ -231,9 +231,7 @@ class MCPClient:
                     base_headers.update(headers)
 
                 http_client = create_mcp_http_client(
-                    headers=base_headers,
-                    timeout=httpx.Timeout(timeout, read=sse_read_timeout),
-                    auth=auth,
+                    headers=base_headers, timeout=httpx.Timeout(timeout, read=sse_read_timeout), auth=auth
                 )
                 await exit_stack.enter_async_context(http_client)
 

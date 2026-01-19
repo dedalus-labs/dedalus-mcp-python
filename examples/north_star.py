@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """
@@ -22,6 +22,7 @@ from dedalus_mcp.auth import Connection, Credential, Credentials
 
 
 # --- Response Models ---------------------------------------------------------
+
 
 class UserProfile(BaseModel):
     """GitHub user profile response."""
@@ -71,17 +72,11 @@ async def whoami() -> UserProfile | ErrorResponse:
 async def list_repos(per_page: int = 5) -> list[Repository]:
     ctx = get_context()
 
-    request = HttpRequest(
-        method=HttpMethod.GET,
-        path=f"/user/repos?per_page={per_page}&sort=updated",
-    )
+    request = HttpRequest(method=HttpMethod.GET, path=f"/user/repos?per_page={per_page}&sort=updated")
     response = await ctx.dispatch(request=request)
 
     if response.success:
-        return [
-            Repository(name=r.get("name", ""), stars=r.get("stargazers_count", 0))
-            for r in response.response.body
-        ]
+        return [Repository(name=r.get("name", ""), stars=r.get("stargazers_count", 0)) for r in response.response.body]
 
     return []
 
@@ -89,6 +84,7 @@ async def list_repos(per_page: int = 5) -> list[Repository]:
 server.collect(whoami, list_repos)
 
 # --- SDK initialization -------------------------------------------------------
+
 
 async def main() -> None:
     token = os.environ.get("GITHUB_TOKEN")

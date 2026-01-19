@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """DPoP proof generation (client-side) per RFC 9449.
@@ -67,8 +67,10 @@ def generate_dpop_proof(
         >>>
         >>> # For resource server (with access token)
         >>> proof = generate_dpop_proof(
-        ...     key, "POST", "https://mcp.example.com/messages",
-        ...     access_token="eyJ..."
+        ...     key,
+        ...     "POST",
+        ...     "https://mcp.example.com/messages",
+        ...     access_token="eyJ...",
         ... )
     """
     import jwt
@@ -93,12 +95,7 @@ def generate_dpop_proof(
         htu += "/"
 
     # Payload per RFC 9449 Section 4.2
-    payload: dict[str, Any] = {
-        "jti": str(uuid.uuid4()),
-        "htm": method.upper(),
-        "htu": htu,
-        "iat": int(time.time()),
-    }
+    payload: dict[str, Any] = {"jti": str(uuid.uuid4()), "htm": method.upper(), "htu": htu, "iat": int(time.time())}
 
     # RFC 9449 Section 7: ath MUST be present when sending to resource server
     if access_token is not None:
@@ -146,12 +143,7 @@ class DPoPAuth(httpx.Auth):
 
     requires_response_body = False
 
-    def __init__(
-        self,
-        access_token: str,
-        dpop_key: "EllipticCurvePrivateKey",
-        nonce: str | None = None,
-    ) -> None:
+    def __init__(self, access_token: str, dpop_key: "EllipticCurvePrivateKey", nonce: str | None = None) -> None:
         """Initialize DPoP auth handler.
 
         Args:
@@ -256,8 +248,4 @@ class BearerAuth(httpx.Auth):
         yield request
 
 
-__all__ = [
-    "generate_dpop_proof",
-    "DPoPAuth",
-    "BearerAuth",
-]
+__all__ = ["generate_dpop_proof", "DPoPAuth", "BearerAuth"]

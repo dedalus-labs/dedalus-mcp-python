@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Tests for DPoP middleware integration with AuthorizationManager."""
@@ -71,7 +71,9 @@ def _compute_jwk_thumbprint(private_key) -> str:
     x_bytes = public_numbers.x.to_bytes(32, byteorder="big")
     y_bytes = public_numbers.y.to_bytes(32, byteorder="big")
     jwk = {"kty": "EC", "crv": "P-256", "x": _b64url_encode(x_bytes), "y": _b64url_encode(y_bytes)}
-    canonical = json.dumps({"crv": jwk["crv"], "kty": jwk["kty"], "x": jwk["x"], "y": jwk["y"]}, separators=(",", ":"), sort_keys=True)
+    canonical = json.dumps(
+        {"crv": jwk["crv"], "kty": jwk["kty"], "x": jwk["x"], "y": jwk["y"]}, separators=(",", ":"), sort_keys=True
+    )
     return _b64url_encode(hashlib.sha256(canonical.encode()).digest())
 
 
@@ -108,6 +110,7 @@ class TestDPoPMiddleware:
 
         async def handler(request):
             from starlette.responses import JSONResponse
+
             return JSONResponse({"status": "ok"})
 
         app = Starlette(routes=[Route("/messages", handler, methods=["POST"])])
@@ -126,6 +129,7 @@ class TestDPoPMiddleware:
 
         async def handler(request):
             from starlette.responses import JSONResponse
+
             return JSONResponse({"status": "ok"})
 
         app = Starlette(routes=[Route("/messages", handler, methods=["POST"])])
@@ -146,6 +150,7 @@ class TestDPoPMiddleware:
 
         async def handler(request):
             from starlette.responses import JSONResponse
+
             auth = request.scope.get("dedalus_mcp.auth")
             return JSONResponse({"subject": auth.subject if auth else None})
 
@@ -157,13 +162,7 @@ class TestDPoPMiddleware:
         proof = _build_dpop_proof(es256_keypair, htm="POST", htu="http://testserver/messages", ath=ath)
 
         client = TestClient(app, raise_server_exceptions=False)
-        response = client.post(
-            "/messages",
-            headers={
-                "Authorization": f"DPoP {access_token}",
-                "DPoP": proof,
-            },
-        )
+        response = client.post("/messages", headers={"Authorization": f"DPoP {access_token}", "DPoP": proof})
 
         assert response.status_code == 200
         assert response.json()["subject"] == "user123"
@@ -176,6 +175,7 @@ class TestDPoPMiddleware:
 
         async def handler(request):
             from starlette.responses import JSONResponse
+
             return JSONResponse({"status": "ok"})
 
         app = Starlette(routes=[Route("/messages", handler, methods=["POST"])])
@@ -187,13 +187,7 @@ class TestDPoPMiddleware:
         proof = _build_dpop_proof(es256_keypair, htm="GET", htu="http://testserver/messages", ath=ath)
 
         client = TestClient(app, raise_server_exceptions=False)
-        response = client.post(
-            "/messages",
-            headers={
-                "Authorization": f"DPoP {access_token}",
-                "DPoP": proof,
-            },
-        )
+        response = client.post("/messages", headers={"Authorization": f"DPoP {access_token}", "DPoP": proof})
 
         assert response.status_code == 401
         assert "DPoP" in response.json().get("detail", "")
@@ -205,6 +199,7 @@ class TestDPoPMiddleware:
 
         async def handler(request):
             from starlette.responses import JSONResponse
+
             auth = request.scope.get("dedalus_mcp.auth")
             return JSONResponse({"subject": auth.subject if auth else None})
 
@@ -216,4 +211,3 @@ class TestDPoPMiddleware:
 
         assert response.status_code == 200
         assert response.json()["subject"] == "user123"
-

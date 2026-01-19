@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Connection handle authorization gate.
@@ -79,9 +79,4 @@ def validate_handle_format(handle: str) -> None:
         raise InvalidConnectionHandleError(handle)
 
 
-__all__ = [
-    "ConnectionHandleError",
-    "InvalidConnectionHandleError",
-    "is_valid_handle_format",
-    "validate_handle_format",
-]
+__all__ = ["ConnectionHandleError", "InvalidConnectionHandleError", "is_valid_handle_format", "validate_handle_format"]

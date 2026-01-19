@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 from __future__ import annotations
@@ -59,11 +59,7 @@ def test_setup_logger_plain_stdout(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_setup_logger_json_with_custom_serializer(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("DEDALUS_MCP_LOG_JSON", "1")
 
-    lines = _capture_logging(
-        logging.INFO,
-        use_json=True,
-        json_serializer=lambda payload: json.dumps(payload),
-    )
+    lines = _capture_logging(logging.INFO, use_json=True, json_serializer=lambda payload: json.dumps(payload))
 
     assert len(lines) == 1
     payload = json.loads(lines[0])
@@ -76,10 +72,7 @@ def test_payload_transformer_applied() -> None:
         logging.INFO,
         use_json=True,
         json_serializer=lambda payload: json.dumps(payload),
-        payload_transformer=lambda payload: {
-            **payload,
-            "context": {"transformed": payload.get("context", {})},
-        },
+        payload_transformer=lambda payload: {**payload, "context": {"transformed": payload.get("context", {})}},
     )
 
     assert len(lines) == 1

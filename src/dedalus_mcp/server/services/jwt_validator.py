@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """JWT validation service for OAuth 2.1 resource servers.
@@ -140,10 +140,7 @@ class JWTValidator(AuthorizationProvider):
 
     def __init__(self, config: JWTValidatorConfig) -> None:
         if httpx is None or jwt is None:
-            raise ImportError(
-                "JWT validation requires httpx and pyjwt. "
-                "Install with: uv add httpx pyjwt cryptography"
-            )
+            raise ImportError("JWT validation requires httpx and pyjwt. Install with: uv add httpx pyjwt cryptography")
 
         self.config = config
         self._logger = get_logger("dedalus_mcp.jwt_validator")
@@ -200,11 +197,7 @@ class JWTValidator(AuthorizationProvider):
             if self.config.required_scopes:
                 self._validate_scopes(scopes, self.config.required_scopes)
 
-            return AuthorizationContext(
-                subject=claims.get("sub"),
-                scopes=scopes,
-                claims=claims,
-            )
+            return AuthorizationContext(subject=claims.get("sub"), scopes=scopes, claims=claims)
 
         except InvalidSignatureError as exc:
             self._logger.warning(
@@ -213,10 +206,7 @@ class JWTValidator(AuthorizationProvider):
             )
             raise InvalidJWTSignatureError("invalid JWT signature") from exc
         except InvalidTokenError as exc:
-            self._logger.warning(
-                "JWT validation failed",
-                extra={"event": "jwt.validation.failed", "error": str(exc)},
-            )
+            self._logger.warning("JWT validation failed", extra={"event": "jwt.validation.failed", "error": str(exc)})
             raise JWTValidationError(f"JWT validation failed: {exc}") from exc
 
     async def _get_public_key(self, kid: str) -> Any:
@@ -234,10 +224,7 @@ class JWTValidator(AuthorizationProvider):
             # Expired entry – drop so we refetch below.
             self._jwks_cache.pop(kid, None)
 
-        needs_refresh = (
-            cached_entry is None
-            or now - self._jwks_cache_time >= self.config.jwks_cache_ttl
-        )
+        needs_refresh = cached_entry is None or now - self._jwks_cache_time >= self.config.jwks_cache_ttl
 
         if needs_refresh:
             await self._refresh_jwks_cache()
@@ -282,14 +269,12 @@ class JWTValidator(AuthorizationProvider):
                 self._jwks_cache[kid_val] = (public_key, now)
 
             self._logger.debug(
-                "JWKS cache refreshed",
-                extra={"event": "jwks.cache.refresh", "key_count": len(self._jwks_cache)},
+                "JWKS cache refreshed", extra={"event": "jwks.cache.refresh", "key_count": len(self._jwks_cache)}
             )
 
         except Exception as e:
             self._logger.error(
-                "JWKS fetch failed",
-                extra={"event": "jwks.fetch.failed", "error": str(e), "uri": self.config.jwks_uri},
+                "JWKS fetch failed", extra={"event": "jwks.fetch.failed", "error": str(e), "uri": self.config.jwks_uri}
             )
             raise JWKSFetchError(f"failed to fetch JWKS: {e}") from e
 

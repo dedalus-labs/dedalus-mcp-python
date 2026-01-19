@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Streamable HTTP auth enforcement tests."""
@@ -10,7 +10,12 @@ import pytest
 from starlette.applications import Starlette
 
 from dedalus_mcp import MCPServer, tool
-from dedalus_mcp.server.authorization import AuthorizationConfig, AuthorizationContext, AuthorizationError, AuthorizationProvider
+from dedalus_mcp.server.authorization import (
+    AuthorizationConfig,
+    AuthorizationContext,
+    AuthorizationError,
+    AuthorizationProvider,
+)
 from dedalus_mcp.server.transports import StreamableHTTPTransport
 
 
@@ -26,12 +31,10 @@ class DummyProvider(AuthorizationProvider):
 
 @pytest.fixture
 async def server() -> MCPServer:
-    srv = MCPServer(
-        "auth-demo",
-        authorization=AuthorizationConfig(enabled=True),
-    )
+    srv = MCPServer("auth-demo", authorization=AuthorizationConfig(enabled=True))
 
     with srv.binding():
+
         @tool(description="Ping")
         async def ping() -> str:
             return "pong"
@@ -77,10 +80,7 @@ async def test_valid_bearer_allows_request(server: MCPServer) -> None:
 
     async with lifespan:
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
-            headers = {
-                "Authorization": "Bearer valid",
-                "Accept": "application/json, text/event-stream",
-            }
+            headers = {"Authorization": "Bearer valid", "Accept": "application/json, text/event-stream"}
 
             resp = await client.post(
                 "/mcp",

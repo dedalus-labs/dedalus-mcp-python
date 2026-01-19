@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """MCP server chaining: LLM → MCP → MCP → Client
@@ -174,9 +174,15 @@ async def summarize(text: str) -> dict:
         return {"error": "LLM client not connected"}
 
     # Call Server A's generate tool
-    result = await mcp_llm_client.call_tool("generate", {"prompt": f"Summarize this text:\n\n{text}", "max_tokens": 100})
+    result = await mcp_llm_client.call_tool(
+        "generate", {"prompt": f"Summarize this text:\n\n{text}", "max_tokens": 100}
+    )
 
-    return {"original_length": len(text), "summary": result.structuredContent.get("response", ""), "chain": "Client → Server B → Server A → LLM SSE"}
+    return {
+        "original_length": len(text),
+        "summary": result.structuredContent.get("response", ""),
+        "chain": "Client → Server B → Server A → LLM SSE",
+    }
 
 
 @tool(description="Analyze text with multi-hop reasoning")
@@ -256,7 +262,9 @@ async def run_demo() -> None:
 
     # Call summarize (single hop through chain)
     print("--- Calling summarize (single hop) ---")
-    text = "MCP enables composable AI systems. Servers can be clients to other servers. This creates powerful pipelines."
+    text = (
+        "MCP enables composable AI systems. Servers can be clients to other servers. This creates powerful pipelines."
+    )
     result = await client.call_tool("summarize", {"text": text})
     print(f"Chain: {result.structuredContent.get('chain')}")
     print(f"Summary: {result.structuredContent.get('summary')}\n")
@@ -298,4 +306,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

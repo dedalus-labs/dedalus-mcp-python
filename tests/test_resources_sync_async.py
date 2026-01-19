@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
+# SPDX-License-Identifier: MIT
+
 """Test sync/async resource function support.
 
 Verifies that ResourcesService correctly handles both synchronous and asynchronous

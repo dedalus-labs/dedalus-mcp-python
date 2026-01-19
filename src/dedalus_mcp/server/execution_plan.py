@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Execution plan models and builders for delegated connectors."""
@@ -26,12 +26,10 @@ class ConnectionReference(_BaseModel):
     """Reference to a connection handle that the token authorised."""
 
     id: str = Field(..., min_length=1, description="Connection handle identifier (e.g. ddls:conn_supabase_01H…)")
-    auth_type: str = Field(..., min_length=1, description="Authentication method (service_role_key, user_oauth_token, …)")
-    fingerprint: str | None = Field(
-        None,
-        min_length=1,
-        description="Optional fingerprint used to detect tampering.",
+    auth_type: str = Field(
+        ..., min_length=1, description="Authentication method (service_role_key, user_oauth_token, …)"
     )
+    fingerprint: str | None = Field(None, min_length=1, description="Optional fingerprint used to detect tampering.")
     version: int | None = Field(None, ge=0, description="Metadata version for rolling connector updates.")
     scope: list[str] | None = Field(None, description="Scopes granted for this handle (parsed from the JWT claim).")
 
@@ -40,16 +38,13 @@ class TargetSpec(_BaseModel):
     """Describes the upstream surface contacted by the execution backend."""
 
     kind: constr(strip_whitespace=True, min_length=1) = Field(
-        ...,
-        description="Target type: rest, graphql, sql, or service:<slug> for bespoke drivers.",
+        ..., description="Target type: rest, graphql, sql, or service:<slug> for bespoke drivers."
     )
     base: HttpUrl | constr(strip_whitespace=True, min_length=1) | None = Field(
-        None,
-        description="Base URL (REST/GraphQL) or DSN / host identifier (SQL/custom).",
+        None, description="Base URL (REST/GraphQL) or DSN / host identifier (SQL/custom)."
     )
     resource: HttpUrl | constr(strip_whitespace=True, min_length=1) | None = Field(
-        None,
-        description="Audience/resource URI used for downstream authorization decisions.",
+        None, description="Audience/resource URI used for downstream authorization decisions."
     )
 
 
@@ -69,8 +64,7 @@ class ComputeHint(_BaseModel):
         description="Stateless workloads map to short-lived compute (e.g. Lambda); stateful requires longer-lived containers.",
     )
     profile: Literal["bursty", "durable"] | None = Field(
-        None,
-        description="High-level workload shape; bursty pairs with serverless, durable with provisioned compute.",
+        None, description="High-level workload shape; bursty pairs with serverless, durable with provisioned compute."
     )
     max_duration_ms: int | None = Field(None, ge=1, description="Upper bound on runtime before the task should abort.")
 
@@ -172,9 +166,7 @@ def build_plan_from_claims(
     )
 
     aad_payload = AdditionalAuthenticatedData(
-        request_id=request_id,
-        tool=tool,
-        extra=dict(aad_extra) if aad_extra else None,
+        request_id=request_id, tool=tool, extra=dict(aad_extra) if aad_extra else None
     )
 
     plan = ExecutionPlan(

@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Tests for OAuth 2.0 Token Exchange Auth (RFC 8693).
@@ -34,9 +34,7 @@ class TestTokenExchangeAuthConstruction:
         )
 
         auth = TokenExchangeAuth(
-            server_metadata=server_metadata,
-            client_id="dedalus-sdk",
-            subject_token="eyJhbGciOiJSUzI1NiIs...",
+            server_metadata=server_metadata, client_id="dedalus-sdk", subject_token="eyJhbGciOiJSUzI1NiIs..."
         )
 
         assert auth.client_id == "dedalus-sdk"
@@ -44,10 +42,7 @@ class TestTokenExchangeAuthConstruction:
 
     def test_construction_validates_grant_type_support(self):
         """TokenExchangeAuth raises if AS doesn't support token-exchange."""
-        from dedalus_mcp.client.auth.token_exchange import (
-            TokenExchangeAuth,
-            AuthConfigError,
-        )
+        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth, AuthConfigError
         from dedalus_mcp.client.auth.models import AuthorizationServerMetadata
 
         server_metadata = AuthorizationServerMetadata(
@@ -57,11 +52,7 @@ class TestTokenExchangeAuthConstruction:
         )
 
         with pytest.raises(AuthConfigError, match="token-exchange"):
-            TokenExchangeAuth(
-                server_metadata=server_metadata,
-                client_id="dedalus-sdk",
-                subject_token="token",
-            )
+            TokenExchangeAuth(server_metadata=server_metadata, client_id="dedalus-sdk", subject_token="token")
 
     def test_construction_with_subject_token_type(self):
         """TokenExchangeAuth accepts subject_token_type parameter."""
@@ -94,11 +85,7 @@ class TestTokenExchangeAuthConstruction:
             grant_types_supported=["urn:ietf:params:oauth:grant-type:token-exchange"],
         )
 
-        auth = TokenExchangeAuth(
-            server_metadata=server_metadata,
-            client_id="dedalus-sdk",
-            subject_token="token",
-        )
+        auth = TokenExchangeAuth(server_metadata=server_metadata, client_id="dedalus-sdk", subject_token="token")
 
         assert auth.subject_token_type == "urn:ietf:params:oauth:token-type:access_token"
 
@@ -120,21 +107,14 @@ class TestTokenExchangeAuthFromResource:
         # Mock initial 401 response
         respx.get("https://mcp.example.com/mcp").mock(
             return_value=httpx.Response(
-                401,
-                headers={
-                    "WWW-Authenticate": 'Bearer resource_metadata="/.well-known/oauth-protected-resource"'
-                },
+                401, headers={"WWW-Authenticate": 'Bearer resource_metadata="/.well-known/oauth-protected-resource"'}
             )
         )
 
         # Mock PRM endpoint
         respx.get("https://mcp.example.com/.well-known/oauth-protected-resource").mock(
             return_value=httpx.Response(
-                200,
-                json={
-                    "resource": "https://mcp.example.com",
-                    "authorization_servers": ["https://as.example.com"],
-                },
+                200, json={"resource": "https://mcp.example.com", "authorization_servers": ["https://as.example.com"]}
             )
         )
 
@@ -151,9 +131,7 @@ class TestTokenExchangeAuthFromResource:
         )
 
         auth = await TokenExchangeAuth.from_resource(
-            resource_url="https://mcp.example.com/mcp",
-            client_id="dedalus-sdk",
-            subject_token="user_token_from_clerk",
+            resource_url="https://mcp.example.com/mcp", client_id="dedalus-sdk", subject_token="user_token_from_clerk"
         )
 
         assert auth.client_id == "dedalus-sdk"
@@ -194,9 +172,7 @@ class TestTokenExchangeAuthTokenAcquisition:
         )
 
         auth = TokenExchangeAuth(
-            server_metadata=server_metadata,
-            client_id="dedalus-sdk",
-            subject_token="user_id_token",
+            server_metadata=server_metadata, client_id="dedalus-sdk", subject_token="user_id_token"
         )
 
         token = await auth.get_token()
@@ -218,13 +194,7 @@ class TestTokenExchangeAuthTokenAcquisition:
         )
 
         route = respx.post("https://as.example.com/oauth2/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "access_token": "token",
-                    "token_type": "Bearer",
-                },
-            )
+            return_value=httpx.Response(200, json={"access_token": "token", "token_type": "Bearer"})
         )
 
         auth = TokenExchangeAuth(
@@ -258,13 +228,7 @@ class TestTokenExchangeAuthTokenAcquisition:
         )
 
         route = respx.post("https://as.example.com/oauth2/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "access_token": "token",
-                    "token_type": "Bearer",
-                },
-            )
+            return_value=httpx.Response(200, json={"access_token": "token", "token_type": "Bearer"})
         )
 
         auth = TokenExchangeAuth(
@@ -294,20 +258,11 @@ class TestTokenExchangeAuthTokenAcquisition:
         )
 
         route = respx.post("https://as.example.com/oauth2/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "access_token": "token",
-                    "token_type": "Bearer",
-                },
-            )
+            return_value=httpx.Response(200, json={"access_token": "token", "token_type": "Bearer"})
         )
 
         auth = TokenExchangeAuth(
-            server_metadata=server_metadata,
-            client_id="dedalus-sdk",
-            subject_token="token",
-            scope="openid mcp:read",
+            server_metadata=server_metadata, client_id="dedalus-sdk", subject_token="token", scope="openid mcp:read"
         )
 
         await auth.get_token()
@@ -331,18 +286,12 @@ class TestTokenExchangeAuthTokenAcquisition:
 
         respx.post("https://as.example.com/oauth2/token").mock(
             return_value=httpx.Response(
-                400,
-                json={
-                    "error": "invalid_grant",
-                    "error_description": "Subject token is expired",
-                },
+                400, json={"error": "invalid_grant", "error_description": "Subject token is expired"}
             )
         )
 
         auth = TokenExchangeAuth(
-            server_metadata=server_metadata,
-            client_id="dedalus-sdk",
-            subject_token="expired_token",
+            server_metadata=server_metadata, client_id="dedalus-sdk", subject_token="expired_token"
         )
 
         with pytest.raises(TokenError, match="invalid_grant"):
@@ -372,13 +321,7 @@ class TestTokenExchangeAuthHttpxInterface:
 
         # Mock token endpoint
         respx.post("https://as.example.com/oauth2/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "access_token": "exchanged_token",
-                    "token_type": "Bearer",
-                },
-            )
+            return_value=httpx.Response(200, json={"access_token": "exchanged_token", "token_type": "Bearer"})
         )
 
         # Mock protected resource
@@ -386,11 +329,7 @@ class TestTokenExchangeAuthHttpxInterface:
             return_value=httpx.Response(200, json={"result": "success"})
         )
 
-        auth = TokenExchangeAuth(
-            server_metadata=server_metadata,
-            client_id="dedalus-sdk",
-            subject_token="user_token",
-        )
+        auth = TokenExchangeAuth(server_metadata=server_metadata, client_id="dedalus-sdk", subject_token="user_token")
 
         # Pre-fetch token
         await auth.get_token()
@@ -449,13 +388,7 @@ class TestTokenExchangeAuthActorToken:
         )
 
         route = respx.post("https://as.example.com/oauth2/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "access_token": "token",
-                    "token_type": "Bearer",
-                },
-            )
+            return_value=httpx.Response(200, json={"access_token": "token", "token_type": "Bearer"})
         )
 
         auth = TokenExchangeAuth(
