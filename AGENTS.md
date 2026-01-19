@@ -96,6 +96,8 @@ Core deps: `mcp`, `pydantic`. Everything else is optional. Before adding a depen
 - Is it only needed for one feature? Make it an optional extra.
 - Is it a dev/test dependency? Keep it out of the main install.
 
+**Prefer enums over constants.** Use `Enum`/`StrEnum`/`IntEnum` instead of module-level constants or raw dicts. Enums give you type safety, autocomplete, exhaustiveness checking in `match` statements, and self-documentation. See `docs/style/best-practices.md` for examples.
+
 ## Registration Pattern
 
 Decorators attach metadata. `collect()` registers.
