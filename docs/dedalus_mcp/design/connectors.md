@@ -1,202 +1,93 @@
-# Connector Framework
+# Connections
 
-This document describes the connector and credential binding framework used to securely configure MCP servers with external service credentials.
-
-## Overview
-
-The connector framework provides a declarative way to:
-
-1. Define connection types with typed parameters and auth methods
-2. Bind environment variables to credentials at runtime
-3. Serialize server configuration for SDK transport
-
-## Core Components
-
-### ConnectorDefinition
-
-Declares a connection type with required parameters and supported auth methods:
+Declare external API dependencies. Credentials bind at runtime.
 
 ```python
-from dedalus_mcp.server.connectors import define
+from dedalus_mcp import MCPServer
+from dedalus_mcp.auth import Connection, SecretKeys
 
-OpenAIConn = define(
-    kind="openai",
-    params={"model": str, "base_url": str},
-    auth=["api_key", "azure_ad"],
-    description="OpenAI API connection"
+github = Connection(
+    name="github",
+    secrets=SecretKeys(token="GITHUB_TOKEN"),
+    auth_header_format="token {api_key}",
 )
+
+server = MCPServer(name="my-server", connections=[github])
 ```
 
-### EnvironmentBindings
-
-Maps credential fields to environment variable names. Accepts unlimited kwargs:
+Use in tools via `ctx.dispatch()`:
 
 ```python
-from dedalus_mcp.server.connectors import EnvironmentBindings, EnvironmentBinding
+@tool(description="Get GitHub user")
+async def get_user() -> dict:
+    ctx = get_context()
+    resp = await ctx.dispatch("github", HttpRequest(method=HttpMethod.GET, path="/user"))
+    return resp.response.body
+```
 
-bindings = EnvironmentBindings(
+## Connection
+
+| Parameter            | Default              | Description                              |
+| -------------------- | -------------------- | ---------------------------------------- |
+| `name`               | required             | Used in `ctx.dispatch("name", ...)`      |
+| `secrets`            | required             | Field names → env var names              |
+| `auth_header_name`   | `"Authorization"`    | HTTP header name                         |
+| `auth_header_format` | `"Bearer {api_key}"` | `{api_key}` replaced with secret value   |
+| `base_url`           | `None`               | Override provider URL                    |
+| `timeout_ms`         | `30000`              | 1000–300000 ms                           |
+
+## SecretKeys
+
+Maps field names to environment variable names:
+
+```python
+SecretKeys(token="GITHUB_TOKEN")                    # reads $GITHUB_TOKEN
+SecretKeys(key="SUPABASE_KEY", url="SUPABASE_URL")  # multiple
+```
+
+For optional fields or defaults, use `Binding`:
+
+```python
+SecretKeys(
     api_key="OPENAI_API_KEY",
-    org_id=EnvironmentBinding("OPENAI_ORG_ID", optional=True),
-    base_url=EnvironmentBinding("OPENAI_BASE_URL", default="https://api.openai.com/v1"),
+    org=Binding("OPENAI_ORG", optional=True),
+    timeout=Binding("TIMEOUT", cast=int, default=30),
 )
 ```
 
-Each entry is either:
-- A string (shorthand for `EnvironmentBinding(name)`)
-- An `EnvironmentBinding` with options: `name`, `cast`, `default`, `optional`
+## Examples
 
-### EnvironmentCredentials
-
-Groups config and secret bindings for an auth method:
+**GitHub** — `Authorization: token xxx`
 
 ```python
-from dedalus_mcp.server.connectors import EnvironmentCredentials, EnvironmentBindings
-
-api_key_auth = EnvironmentCredentials(
-    config=EnvironmentBindings(
-        base_url="OPENAI_BASE_URL",
-    ),
-    secrets=EnvironmentBindings(
-        api_key="OPENAI_API_KEY",
-    ),
-)
+Connection(name="github", secrets=SecretKeys(token="GITHUB_TOKEN"), auth_header_format="token {api_key}")
 ```
 
-### EnvironmentCredentialLoader
-
-Loads credentials from environment for a connector type:
+**Supabase** — `apikey: xxx`
 
 ```python
-from dedalus_mcp.server.connectors import EnvironmentCredentialLoader
-
-loader = EnvironmentCredentialLoader(
-    connector=OpenAIConn,
-    variants={
-        "api_key": EnvironmentCredentials(
-            config=EnvironmentBindings(base_url="OPENAI_BASE_URL"),
-            secrets=EnvironmentBindings(api_key="OPENAI_API_KEY"),
-        ),
-    },
-)
-
-# Load at runtime
-resolved = loader.load("api_key")
-# resolved.handle -> ConnectorHandle
-# resolved.config -> typed Pydantic model
-# resolved.auth -> typed Pydantic model with secrets
+Connection(name="supabase", secrets=SecretKeys(key="SUPABASE_KEY"), auth_header_name="apikey", auth_header_format="{api_key}")
 ```
 
-## MCPServer Integration
-
-When configuring an MCP server for SDK transport:
+**OpenAI** — `Authorization: Bearer xxx` (default)
 
 ```python
-from dedalus_mcp import MCPServer
-from dedalus_mcp.server.connectors import EnvironmentBindings
-
-server = MCPServer(
-    name="openai-chat",
-    env=EnvironmentBindings(
-        api_key="OPENAI_API_KEY",
-        org_id="OPENAI_ORG_ID",
-    ),
-)
+Connection(name="openai", secrets=SecretKeys(api_key="OPENAI_API_KEY"), base_url="https://api.openai.com/v1")
 ```
 
-The `env` parameter defines how credentials map to environment variables when the server runs in the enclave.
+## SecretValues (SDK side)
 
-## SDK Serialization
-
-When the Dedalus SDK initializes with MCP servers, it:
-
-1. Reads `server.env.entries` to get credential bindings
-2. Matches credential names to `secrets` dict passed to SDK
-3. Builds connection record with encrypted credentials + env bindings
+SDK users bind actual credentials:
 
 ```python
-from dedalus import Dedalus
-from dedalus_mcp import MCPServer
-from dedalus_mcp.server.connectors import EnvironmentBindings
+from dedalus_mcp.auth import SecretValues
 
-server = MCPServer(
-    name="chat",
-    env=EnvironmentBindings(api_key="OPENAI_API_KEY"),
-)
-
-client = Dedalus(
-    api_key="dsk-...",
-    secrets={"openai": {"api_key": "sk-..."}},
-    mcp_servers=[server],
-)
+creds = SecretValues(connection=github, token="ghp_xxxxxxxxxxxx")
 ```
 
-The SDK serializes:
-
-```json
-{
-  "handle": "ddls:conn:uuid7",
-  "encrypted_credentials": "...",
-  "env_bindings": {
-    "api_key": "OPENAI_API_KEY"
-  }
-}
-```
-
-**Note:** MCP server capabilities (tools, prompts, resources) are *not* stored with the connection. They are discovered at runtime via the MCP protocol (`tools/list`, `prompts/list`, `resources/list`). The connection stores only credentials and how to inject them.
-
-At dispatch time, the enclave:
-
-1. Decrypts credentials
-2. Injects values into env vars per `env_bindings`
-3. Connects to MCP server, discovers available tools/prompts/resources
-4. MCP server code reads `os.environ["OPENAI_API_KEY"]`
-
-## Serialization Protocol
-
-For SDK transport, the **stored payload** contains only credential bindings:
-
-| Field | Source | Description |
-|-------|--------|-------------|
-| `name` | `server.name` | Server identifier |
-| `env_bindings` | `server.env.entries` | Credential → env var mapping |
-
-For local introspection (debugging, validation), servers can also expose:
-
-| Field | Source | Description |
-|-------|--------|-------------|
-| `tools` | `server.tools._tool_specs` | Tool definitions (runtime-discovered) |
-| `prompts` | `server.prompts._prompt_specs` | Prompt definitions (runtime-discovered) |
-| `resources` | `server.resources._resource_specs` | Resource definitions (runtime-discovered) |
-
-### to_dict() Method
-
-Servers should implement serialization for introspection:
-
-```python
-def to_dict(self) -> dict:
-    return {
-        "name": self.name,
-        "env_bindings": {
-            name: binding.name
-            for name, binding in self.env.entries.items()
-        } if self.env else {},
-        # Tools included for local introspection only, not stored
-        "tools": [
-            {"name": name, "description": spec.description, "schema": spec.input_schema}
-            for name, spec in self.tools._tool_specs.items()
-        ],
-    }
-```
-
-## Security Considerations
-
-1. **Secrets never in server code**: Server defines env var names, not values
-2. **Enclave injection**: Credentials injected at runtime by trusted enclave
-3. **Binding validation**: `EnvironmentCredentialLoader` validates bindings match connector definition
-4. **Type safety**: Pydantic models enforce credential structure
+Server code never sees raw credentials. The enclave decrypts and injects them at runtime.
 
 ## See Also
 
-- [Authorization Design](authorization.md) - OAuth 2.1 token flow
-- [Server Manual](../manual/server.md) - Server configuration
-- `src/dedalus_mcp/server/connectors.py` - Implementation
+- [Authorization](authorization.md)
+- [Server Manual](../manual/server.md)
