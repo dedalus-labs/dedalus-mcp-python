@@ -17,4 +17,3 @@ model.
   * Allow users to view and edit prompts before sending
   * Present generated responses for review before delivery
 </Warning>
-

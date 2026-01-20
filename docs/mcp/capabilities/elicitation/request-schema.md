@@ -81,4 +81,3 @@ Clients can use this schema to:
 3. Provide better guidance to users
 
 Note that complex nested structures, arrays of objects, and other advanced JSON Schema features are intentionally not supported to simplify client implementation.
-

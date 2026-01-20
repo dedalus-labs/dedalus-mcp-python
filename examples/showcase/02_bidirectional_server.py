@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Server that asks the client for LLM completions.
@@ -18,8 +18,10 @@ Usage:
 
 import asyncio
 import logging
+
 from dedalus_mcp import MCPServer, get_context, tool
 from dedalus_mcp.types import CreateMessageRequestParams, SamplingMessage, TextContent
+
 
 # Suppress log noise
 for name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):

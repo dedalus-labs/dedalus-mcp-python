@@ -104,4 +104,3 @@ The process involves configuring Claude Desktop to automatically start the Files
     If the server indicator doesn't appear, refer to the [Troubleshooting](../build-an-mcp-server/troubleshooting.md#troubleshooting) section for debugging steps.
   </Step>
 </Steps>
-

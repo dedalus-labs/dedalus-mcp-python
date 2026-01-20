@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Prompts — reusable message templates for LLMs.
@@ -12,11 +12,12 @@ Usage:
 """
 
 import asyncio
-import logging
 from datetime import datetime
+import logging
 
 from dedalus_mcp import MCPServer, prompt
 from dedalus_mcp.types import PromptMessage, TextContent
+
 
 for name in ("mcp", "httpx", "uvicorn"):
     logging.getLogger(name).setLevel(logging.WARNING)

@@ -14,4 +14,3 @@ The Model Context Protocol is rapidly evolving. This page outlines our current t
 We value community participation! Each section links to relevant discussions where you can learn more and contribute your thoughts.
 
 For a technical view of our standardization process, visit the [Standards Track](https://github.com/orgs/modelcontextprotocol/projects/2/views/2) on GitHub, which tracks how proposals progress toward inclusion in the official [MCP specification](https://spec.modelcontextprotocol.io).
-

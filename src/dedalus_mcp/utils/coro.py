@@ -1,13 +1,7 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Coroutine helpers shared across Dedalus MCP services.
-
-These utilities collapse the "maybe await" pattern that appears throughout the
-framework: callables may be synchronous, asynchronous, or already-evaluated
-values.  Centralising the logic keeps capability services tidy and avoids
-re-implementing the same inspect/await checks repeatedly.
-"""
+"""Coroutine utilities for sync/async callable handling."""
 
 from __future__ import annotations
 

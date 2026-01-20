@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Shared types used across MCP protocol."""
@@ -7,6 +7,7 @@ from .base import *
 from .capabilities import *
 from .content import *
 from .primitives import *
+
 
 __all__ = [
     # From base

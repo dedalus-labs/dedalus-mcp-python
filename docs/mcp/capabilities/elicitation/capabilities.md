@@ -10,4 +10,3 @@ Clients that support elicitation **MUST** declare the `elicitation` capability d
   }
 }
 ```
-

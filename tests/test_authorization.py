@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ def auth_config() -> AuthorizationConfig:
     return AuthorizationConfig(
         enabled=True,
         authorization_servers=["https://as.example"],
-        required_scopes=["mcp:read", "mcp:write"],
+        required_scopes=["read", "write"],
         cache_ttl=123,
     )
 
@@ -40,7 +40,8 @@ def dummy_provider():
     class DummyProvider:
         async def validate(self, token: str) -> AuthorizationContext:
             if token == "good-token":
-                return AuthorizationContext(subject="user", scopes=["mcp:read"], claims={})
+                # Return both required scopes to pass scope enforcement
+                return AuthorizationContext(subject="user", scopes=["read", "write"], claims={})
             raise AuthorizationError("invalid token")
 
     return DummyProvider()
@@ -84,7 +85,7 @@ def test_prm_includes_scopes_supported(metadata_manager: AuthorizationManager) -
     assert resp.status_code == 200
     data = resp.json()
     assert "scopes_supported" in data
-    assert data["scopes_supported"] == ["mcp:read", "mcp:write"]
+    assert data["scopes_supported"] == ["read", "write"]
 
 
 def test_prm_cache_control_header(metadata_manager: AuthorizationManager) -> None:
@@ -248,7 +249,7 @@ def test_middleware_stores_auth_context_in_scope(metadata_manager: Authorization
     assert resp.status_code == 200
     data = resp.json()
     assert data["subject"] == "user"
-    assert data["scopes"] == ["mcp:read"]
+    assert data["scopes"] == ["read", "write"]
     assert data["claims"] == {}
 
 
@@ -375,10 +376,10 @@ def test_manager_get_required_scopes(auth_config: AuthorizationConfig) -> None:
     """AuthorizationManager.get_required_scopes() returns configured scopes."""
     manager = AuthorizationManager(auth_config)
     scopes = manager.get_required_scopes()
-    assert scopes == ["mcp:read", "mcp:write"]
+    assert scopes == ["read", "write"]
     # Ensure it returns a copy, not the original list
     scopes.append("extra")
-    assert manager.get_required_scopes() == ["mcp:read", "mcp:write"]
+    assert manager.get_required_scopes() == ["read", "write"]
 
 
 def test_fail_open_allows_request(metadata_manager: AuthorizationManager) -> None:
@@ -424,21 +425,24 @@ def test_fail_closed_rejects_request(metadata_manager: AuthorizationManager) -> 
     assert resp.status_code == 401
 
 
-def test_provider_delegation(metadata_manager: AuthorizationManager) -> None:
+def test_provider_delegation() -> None:
     """AuthorizationManager delegates validation to provider."""
+    # Use config without required_scopes to test pure delegation behavior
+    config = AuthorizationConfig(enabled=True, authorization_servers=["https://as.example"])
+    manager = AuthorizationManager(config)
 
     class CustomProvider:
         async def validate(self, token: str) -> AuthorizationContext:
             return AuthorizationContext(subject=f"user-{token}", scopes=["custom:scope"], claims={"custom": "claim"})
 
-    metadata_manager.set_provider(CustomProvider())
+    manager.set_provider(CustomProvider())
 
     async def endpoint(request):
         ctx = request.scope.get("dedalus_mcp.auth")
         return JSONResponse({"subject": ctx.subject, "scopes": ctx.scopes})
 
     app = Starlette(routes=[Route("/mcp", endpoint, methods=["GET"])])
-    wrapped = metadata_manager.wrap_asgi(app)
+    wrapped = manager.wrap_asgi(app)
     client = TestClient(wrapped)
 
     resp = client.get("/mcp", headers={"Authorization": "Bearer token123"})
@@ -589,3 +593,243 @@ def test_error_response_format(metadata_manager: AuthorizationManager) -> None:
     assert "error" in data
     assert "detail" in data
     assert data["error"] == "unauthorized"
+
+
+# ==============================================================================
+# OAuth 2.1 Scope Compliance Tests (MCP 2025-11-25 spec)
+# ==============================================================================
+
+
+def test_www_authenticate_includes_scope_hint(auth_config: AuthorizationConfig) -> None:
+    """401 response includes scope parameter per RFC 6750 Section 3.
+
+    MCP spec lines 105-129: Servers SHOULD include scope parameter in
+    WWW-Authenticate header to guide clients on required scopes.
+    """
+    manager = AuthorizationManager(auth_config)
+
+    async def endpoint(request):
+        return JSONResponse({"ok": True})
+
+    app = Starlette(routes=[Route("/mcp", endpoint, methods=["GET"])])
+    wrapped = manager.wrap_asgi(app)
+    client = TestClient(wrapped)
+
+    resp = client.get("/mcp")
+    assert resp.status_code == 401
+    www_auth = resp.headers["WWW-Authenticate"]
+    # Should include scope hint per MCP spec
+    assert 'scope="read write"' in www_auth
+
+
+def test_insufficient_scope_returns_403(metadata_manager: AuthorizationManager) -> None:
+    """Token with insufficient scopes returns 403 per RFC 6750 Section 3.1.
+
+    MCP spec lines 499-541: When token has wrong scopes, return 403 with
+    error="insufficient_scope" and required scopes in WWW-Authenticate.
+    """
+
+    class InsufficientScopeProvider:
+        async def validate(self, token: str) -> AuthorizationContext:
+            # Token is valid but missing required scopes
+            return AuthorizationContext(subject="user", scopes=["read"], claims={})
+
+    metadata_manager.set_provider(InsufficientScopeProvider())
+    metadata_manager.config.required_scopes = ["read", "admin"]  # Requires admin
+
+    async def endpoint(request):
+        return JSONResponse({"ok": True})
+
+    app = Starlette(routes=[Route("/mcp", endpoint, methods=["GET"])])
+    wrapped = metadata_manager.wrap_asgi(app)
+    client = TestClient(wrapped)
+
+    resp = client.get("/mcp", headers={"Authorization": "Bearer valid-but-missing-scopes"})
+    # Should be 403 Forbidden, not 401 Unauthorized (token IS valid, scopes aren't)
+    assert resp.status_code == 403
+    www_auth = resp.headers["WWW-Authenticate"]
+    assert 'error="insufficient_scope"' in www_auth
+    assert "admin" in www_auth  # Missing scope should be indicated
+
+
+def test_403_response_includes_resource_metadata(metadata_manager: AuthorizationManager) -> None:
+    """403 insufficient_scope includes resource_metadata for consistency.
+
+    MCP spec lines 511-513: For consistency with 401 responses, include
+    resource_metadata in 403 insufficient_scope responses.
+    """
+
+    class InsufficientScopeProvider:
+        async def validate(self, token: str) -> AuthorizationContext:
+            return AuthorizationContext(subject="user", scopes=["read"], claims={})
+
+    metadata_manager.set_provider(InsufficientScopeProvider())
+    metadata_manager.config.required_scopes = ["read", "write"]
+
+    async def endpoint(request):
+        return JSONResponse({"ok": True})
+
+    app = Starlette(routes=[Route("/mcp", endpoint, methods=["GET"])])
+    wrapped = metadata_manager.wrap_asgi(app)
+    client = TestClient(wrapped)
+
+    resp = client.get("/mcp", headers={"Authorization": "Bearer token"})
+    assert resp.status_code == 403
+    www_auth = resp.headers["WWW-Authenticate"]
+    assert "resource_metadata=" in www_auth
+
+
+def test_valid_scopes_allows_request(metadata_manager: AuthorizationManager) -> None:
+    """Token with all required scopes passes validation."""
+
+    class ValidScopeProvider:
+        async def validate(self, token: str) -> AuthorizationContext:
+            return AuthorizationContext(
+                subject="user", scopes=["read", "write", "extra"], claims={}
+            )
+
+    metadata_manager.set_provider(ValidScopeProvider())
+    metadata_manager.config.required_scopes = ["read", "write"]
+
+    async def endpoint(request):
+        return JSONResponse({"ok": True})
+
+    app = Starlette(routes=[Route("/mcp", endpoint, methods=["GET"])])
+    wrapped = metadata_manager.wrap_asgi(app)
+    client = TestClient(wrapped)
+
+    resp = client.get("/mcp", headers={"Authorization": "Bearer token"})
+    assert resp.status_code == 200
+
+
+# ==============================================================================
+# Version-Aware Scope Tests (AUTH_INCREMENTAL_SCOPE)
+# ==============================================================================
+
+
+def test_scope_enforcement_auto_mode_new_client() -> None:
+    """Auto mode enables scope features for clients >= 2025-11-25."""
+    config = AuthorizationConfig(
+        enabled=True,
+        authorization_servers=["https://as.example"],
+        required_scopes=["read"],
+        scope_enforcement="auto",
+    )
+    manager = AuthorizationManager(config)
+
+    class InsufficientScopeProvider:
+        async def validate(self, token: str) -> AuthorizationContext:
+            return AuthorizationContext(subject="user", scopes=["other:scope"], claims={})
+
+    manager.set_provider(InsufficientScopeProvider())
+
+    async def endpoint(request):
+        return JSONResponse({"ok": True})
+
+    app = Starlette(routes=[Route("/mcp", endpoint, methods=["GET"])])
+    wrapped = manager.wrap_asgi(app)
+    client = TestClient(wrapped)
+
+    # Client with 2025-11-25 protocol version should get 403
+    resp = client.get(
+        "/mcp",
+        headers={"Authorization": "Bearer token", "Mcp-Protocol-Version": "2025-11-25"},
+    )
+    assert resp.status_code == 403
+    assert "insufficient_scope" in resp.headers["www-authenticate"]
+
+
+def test_scope_enforcement_auto_mode_old_client() -> None:
+    """Auto mode falls back to 401 for clients < 2025-11-25."""
+    config = AuthorizationConfig(
+        enabled=True,
+        authorization_servers=["https://as.example"],
+        required_scopes=["read"],
+        scope_enforcement="auto",
+    )
+    manager = AuthorizationManager(config)
+
+    class InsufficientScopeProvider:
+        async def validate(self, token: str) -> AuthorizationContext:
+            return AuthorizationContext(subject="user", scopes=["other:scope"], claims={})
+
+    manager.set_provider(InsufficientScopeProvider())
+
+    async def endpoint(request):
+        return JSONResponse({"ok": True})
+
+    app = Starlette(routes=[Route("/mcp", endpoint, methods=["GET"])])
+    wrapped = manager.wrap_asgi(app)
+    client = TestClient(wrapped)
+
+    # Client with older protocol version should get 401 (no 403 insufficient_scope)
+    resp = client.get(
+        "/mcp",
+        headers={"Authorization": "Bearer token", "Mcp-Protocol-Version": "2025-06-18"},
+    )
+    assert resp.status_code == 401
+    assert "insufficient_scope" not in resp.headers["www-authenticate"]
+
+
+def test_scope_enforcement_never_mode() -> None:
+    """Never mode disables scope features regardless of version."""
+    config = AuthorizationConfig(
+        enabled=True,
+        authorization_servers=["https://as.example"],
+        required_scopes=["read"],
+        scope_enforcement="never",
+    )
+    manager = AuthorizationManager(config)
+
+    class InsufficientScopeProvider:
+        async def validate(self, token: str) -> AuthorizationContext:
+            return AuthorizationContext(subject="user", scopes=["other:scope"], claims={})
+
+    manager.set_provider(InsufficientScopeProvider())
+
+    async def endpoint(request):
+        return JSONResponse({"ok": True})
+
+    app = Starlette(routes=[Route("/mcp", endpoint, methods=["GET"])])
+    wrapped = manager.wrap_asgi(app)
+    client = TestClient(wrapped)
+
+    # Even new client should get 401 when scope_enforcement="never"
+    resp = client.get(
+        "/mcp",
+        headers={"Authorization": "Bearer token", "Mcp-Protocol-Version": "2025-11-25"},
+    )
+    assert resp.status_code == 401
+    assert "scope=" not in resp.headers["www-authenticate"]
+
+
+def test_scope_enforcement_always_mode() -> None:
+    """Always mode enables scope features regardless of version."""
+    config = AuthorizationConfig(
+        enabled=True,
+        authorization_servers=["https://as.example"],
+        required_scopes=["read"],
+        scope_enforcement="always",
+    )
+    manager = AuthorizationManager(config)
+
+    class InsufficientScopeProvider:
+        async def validate(self, token: str) -> AuthorizationContext:
+            return AuthorizationContext(subject="user", scopes=["other:scope"], claims={})
+
+    manager.set_provider(InsufficientScopeProvider())
+
+    async def endpoint(request):
+        return JSONResponse({"ok": True})
+
+    app = Starlette(routes=[Route("/mcp", endpoint, methods=["GET"])])
+    wrapped = manager.wrap_asgi(app)
+    client = TestClient(wrapped)
+
+    # Old client should still get 403 when scope_enforcement="always"
+    resp = client.get(
+        "/mcp",
+        headers={"Authorization": "Bearer token", "Mcp-Protocol-Version": "2024-11-05"},
+    )
+    assert resp.status_code == 403
+    assert "insufficient_scope" in resp.headers["www-authenticate"]

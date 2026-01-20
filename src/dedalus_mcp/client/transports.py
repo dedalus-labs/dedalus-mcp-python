@@ -1,26 +1,17 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""HTTP transport helpers for :mod:`dedalus_mcp.client`.
-
-This module provides variants of the streamable HTTP transport described in the
-Model Context Protocol specification. ``lambda_http_client`` mirrors
-the reference SDK implementation but deliberately avoids registering a
-server-push GET stream so that it works with stateless environments such as AWS
-Lambda. The behavior aligns with the "POST-only" pattern noted in the spec's
-server guidance.
-"""
+"""HTTP transport helpers for MCP clients."""
 
 from __future__ import annotations
 
-import contextlib
 from collections.abc import AsyncGenerator
+import contextlib
 from contextlib import asynccontextmanager
 
 import anyio
-import httpx
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
-
+import httpx
 from mcp.client.streamable_http import GetSessionIdCallback, StreamableHTTPTransport
 from mcp.shared._httpx_utils import create_mcp_http_client
 from mcp.shared.message import SessionMessage
@@ -28,10 +19,7 @@ from mcp.shared.message import SessionMessage
 
 @asynccontextmanager
 async def lambda_http_client(
-    url: str,
-    *,
-    http_client: httpx.AsyncClient | None = None,
-    terminate_on_close: bool = True,
+    url: str, *, http_client: httpx.AsyncClient | None = None, terminate_on_close: bool = True
 ) -> AsyncGenerator[
     tuple[
         MemoryObjectReceiveStream[SessionMessage | Exception],

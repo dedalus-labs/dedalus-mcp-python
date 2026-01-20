@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Sync/async function support tests for prompts.
@@ -147,10 +147,7 @@ async def test_sync_prompt_with_tuple_messages():
         @prompt("tutorial")
         def tutorial(arguments: dict[str, str]):
             step = arguments.get("step", "1")
-            return [
-                ("assistant", "I'll explain the steps."),
-                ("user", f"Explain step {step}"),
-            ]
+            return [("assistant", "I'll explain the steps."), ("user", f"Explain step {step}")]
 
     result = await server.invoke_prompt("tutorial", arguments={"step": "3"})
     assert len(result.messages) == 2
@@ -170,10 +167,7 @@ async def test_async_prompt_with_tuple_messages():
         async def tutorial_async(arguments: dict[str, str]):
             await asyncio.sleep(0)
             step = arguments.get("step", "1")
-            return [
-                ("assistant", "I'll provide the tutorial."),
-                ("user", f"Explain step {step}"),
-            ]
+            return [("assistant", "I'll provide the tutorial."), ("user", f"Explain step {step}")]
 
     result = await server.invoke_prompt("tutorial_async", arguments={"step": "5"})
     assert len(result.messages) == 2

@@ -79,4 +79,3 @@ For example:
 The client processes these preferences to select an appropriate model from its available
 options. For instance, if the client doesn't have access to Claude models but has Gemini,
 it might map the sonnet hint to `gemini-1.5-pro` based on similar capabilities.
-

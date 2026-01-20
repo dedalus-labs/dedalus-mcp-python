@@ -67,4 +67,3 @@ The receiver **MUST NOT** send a response.
 ```
 
 * Notifications **MUST NOT** include an ID.
-

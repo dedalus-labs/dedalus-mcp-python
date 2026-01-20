@@ -24,4 +24,3 @@ application.
 These protocol layers establish clear separation of concerns while enabling rich
 interactions between clients and servers. The modular design allows implementations to
 support exactly the features they need.
-

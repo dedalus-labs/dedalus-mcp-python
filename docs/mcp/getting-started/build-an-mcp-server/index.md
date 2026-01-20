@@ -1750,4 +1750,3 @@ If the tool settings icon has shown up, you can now test your server by running 
 <Note>
   Since this is the US National Weather service, the queries will only work for US locations.
 </Note>
-

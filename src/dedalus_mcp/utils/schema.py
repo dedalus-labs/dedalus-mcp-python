@@ -1,13 +1,7 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Ensure JSON Schema values satisfy MCP's object-shaped contract.
-
-The Model Context Protocol requires structured tool payloads to be JSON
-objects.  This module keeps schema generation aligned with that rule by
-delegating to Pydantic for canonical definitions, pruning cosmetic metadata,
-and marking scalar boxing with a vendor extension that clients can reverse.
-"""
+"""JSON Schema generation utilities for MCP tool arguments."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Connection error types for MCPClient.
@@ -23,12 +23,7 @@ class MCPConnectionError(Exception):
         message: Human-readable error description.
     """
 
-    def __init__(
-        self,
-        message: str,
-        *,
-        status_code: int | None = None,
-    ) -> None:
+    def __init__(self, message: str, *, status_code: int | None = None) -> None:
         super().__init__(message)
         self.status_code = status_code
         self.message = message
@@ -48,12 +43,7 @@ class BadRequestError(MCPConnectionError):
     - Invalid request parameters (422)
     """
 
-    def __init__(
-        self,
-        message: str = "Bad request to MCP server",
-        *,
-        status_code: int = 400,
-    ) -> None:
+    def __init__(self, message: str = "Bad request to MCP server", *, status_code: int = 400) -> None:
         super().__init__(message, status_code=status_code)
 
 
@@ -70,11 +60,7 @@ class AuthRequiredError(MCPConnectionError):
     """
 
     def __init__(
-        self,
-        message: str = "Authentication required",
-        *,
-        status_code: int = 401,
-        www_authenticate: str | None = None,
+        self, message: str = "Authentication required", *, status_code: int = 401, www_authenticate: str | None = None
     ) -> None:
         super().__init__(message, status_code=status_code)
         self.www_authenticate = www_authenticate
@@ -88,12 +74,7 @@ class ForbiddenError(MCPConnectionError):
     - User/client lacks permission for the requested operation
     """
 
-    def __init__(
-        self,
-        message: str = "Access forbidden - insufficient permissions",
-        *,
-        status_code: int = 403,
-    ) -> None:
+    def __init__(self, message: str = "Access forbidden - insufficient permissions", *, status_code: int = 403) -> None:
         super().__init__(message, status_code=status_code)
 
 
@@ -108,12 +89,7 @@ class SessionExpiredError(MCPConnectionError):
     - Server terminated the session
     """
 
-    def __init__(
-        self,
-        message: str = "Session expired or terminated",
-        *,
-        status_code: int = 404,
-    ) -> None:
+    def __init__(self, message: str = "Session expired or terminated", *, status_code: int = 404) -> None:
         super().__init__(message, status_code=status_code)
 
 
@@ -126,12 +102,7 @@ class TransportError(MCPConnectionError):
     - Transport type incompatibility
     """
 
-    def __init__(
-        self,
-        message: str = "Transport error - protocol mismatch",
-        *,
-        status_code: int | None = None,
-    ) -> None:
+    def __init__(self, message: str = "Transport error - protocol mismatch", *, status_code: int | None = None) -> None:
         super().__init__(message, status_code=status_code)
 
 
@@ -149,11 +120,7 @@ class ServerError(MCPConnectionError):
     """
 
     def __init__(
-        self,
-        message: str = "Server error",
-        *,
-        status_code: int = 500,
-        retry_after: str | None = None,
+        self, message: str = "Server error", *, status_code: int = 500, retry_after: str | None = None
     ) -> None:
         super().__init__(message, status_code=status_code)
         self.retry_after = retry_after

@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Tests for completion capability.
@@ -12,9 +12,9 @@ from __future__ import annotations
 import pytest
 
 from dedalus_mcp import MCPServer, completion
+from dedalus_mcp.completion import CompletionResult
 from dedalus_mcp.types.server.completions import CompletionArgument, CompletionContext, ResourceTemplateReference
 from dedalus_mcp.types.server.prompts import PromptReference
-from dedalus_mcp.completion import CompletionResult
 
 
 @pytest.mark.anyio

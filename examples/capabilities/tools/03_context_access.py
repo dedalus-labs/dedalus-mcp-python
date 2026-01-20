@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Accessing request context from tools.
@@ -14,6 +14,7 @@ import asyncio
 import logging
 
 from dedalus_mcp import MCPServer, get_context, tool
+
 
 for name in ("mcp", "httpx", "uvicorn"):
     logging.getLogger(name).setLevel(logging.WARNING)

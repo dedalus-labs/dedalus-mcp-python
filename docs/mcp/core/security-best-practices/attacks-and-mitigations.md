@@ -217,5 +217,3 @@ MCP servers **SHOULD** bind session IDs to user-specific information.
 When storing or transmitting session-related data (e.g., in a queue), combine the session ID with information unique to the authorized user, such as their internal user ID. Use a key format like `<user_id>:<session_id>`. This ensures that even if an attacker guesses a session ID, they cannot impersonate another user as the user ID is derived from the user token and not provided by the client.
 
 MCP servers can optionally leverage additional unique identifiers.
-
-

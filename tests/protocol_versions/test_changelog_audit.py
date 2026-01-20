@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Audit versioning infrastructure against MCP spec changelogs.
@@ -18,7 +18,7 @@ from enum import Enum, auto
 
 import pytest
 
-from dedalus_mcp.versioning import MIGRATIONS, FeatureId, ProtocolVersion, V_2025_03_26, V_2025_06_18, V_2025_11_25
+from dedalus_mcp.versioning import MIGRATIONS, V_2025_03_26, V_2025_06_18, V_2025_11_25, FeatureId, ProtocolVersion
 
 
 # --- Typed changelog structures ------------------------------------------------

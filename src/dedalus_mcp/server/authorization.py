@@ -1,17 +1,12 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Authorization scaffolding for Streamable HTTP transports.
+"""OAuth 2.1 authorization for MCP servers.
 
-This module prepares Dedalus MCP for an OAuth 2.1 protected-resource flow without
-requiring the authorization server to be available at development time.
-
-Key pieces:
-
-* :class:`AuthorizationConfig` – opt-in server configuration.
-* :class:`AuthorizationProvider` protocol – pluggable token validation.
-* :class:`AuthorizationManager` – serves protected-resource metadata and wraps ASGI apps with
-  bearer-token enforcement.
+Components:
+- AuthorizationConfig: Server configuration
+- AuthorizationProvider: Token validation protocol
+- AuthorizationManager: ASGI middleware and metadata endpoint
 
 Implementations can supply their own provider that validates tokens against a
 real authorization server once available.
@@ -24,6 +19,7 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 from ..utils import get_logger
+from ..versioning import FeatureId, ProtocolProfile
 
 
 try:  # starlette is optional – only required for streamable HTTP deployments
@@ -41,7 +37,22 @@ except ImportError:
 
 @dataclass(slots=True)
 class AuthorizationConfig:
-    """Server-side authorization configuration."""
+    """Server-side authorization configuration.
+
+    Enable token-based authorization:
+
+        >>> from dedalus_mcp import MCPServer
+        >>> from dedalus_mcp.server.auth import AuthorizationConfig
+        >>>
+        >>> server = MCPServer(
+        ...     "protected-server",
+        ...     authorization=AuthorizationConfig(
+        ...         enabled=True,
+        ...         authorization_servers=["https://as.dedaluslabs.ai"],
+        ...         required_scopes=["tools:call"],
+        ...     ),
+        ... )
+    """
 
     enabled: bool = False
     metadata_path: str = "/.well-known/oauth-protected-resource"
@@ -50,9 +61,8 @@ class AuthorizationConfig:
     cache_ttl: int = 300
     fail_open: bool = False
     require_dpop: bool = False
-    """If True, require DPoP-bound tokens (Authorization: DPoP) instead of Bearer."""
     dpop_leeway: float = 60.0
-    """Clock skew tolerance for DPoP proof validation."""
+    scope_enforcement: str = "auto"  # "auto" | "always" | "never"
 
 
 @dataclass(slots=True)
@@ -118,6 +128,27 @@ class AuthorizationManager:
         """Return the list of required scopes for this server."""
         return list(self.config.required_scopes)
 
+    def _scope_features_enabled(self, request: Request | None = None) -> bool:
+        """Check if incremental scope features should be enabled for this request."""
+        mode = self.config.scope_enforcement
+        if mode == "always":
+            return True
+        if mode == "never":
+            return False
+
+        if request is None:
+            return True
+
+        version_header = request.headers.get("mcp-protocol-version")
+        if not version_header:
+            return True
+
+        profile = ProtocolProfile.parse(version_header)
+        if profile is None:
+            return True
+
+        return profile.supports(FeatureId.AUTH_INCREMENTAL_SCOPE)
+
     # ------------------------------------------------------------------
     # Starlette integration helpers (lazy imports to avoid hard deps)
     # ------------------------------------------------------------------
@@ -151,20 +182,20 @@ class AuthorizationManager:
 
                 auth_header = request.headers.get("authorization")
                 if not auth_header:
-                    return manager._challenge_response("missing authorization header")
+                    return manager._challenge_response("missing authorization header", request)
 
                 # Parse authorization scheme
                 auth_lower = auth_header.lower()
                 if manager.config.require_dpop:
                     if not auth_lower.startswith("dpop "):
-                        return manager._challenge_response("DPoP-bound token required")
+                        return manager._challenge_response("DPoP-bound token required", request)
                     token = auth_header[5:].strip()
                     dpop_proof = request.headers.get("dpop")
                     if not dpop_proof:
-                        return manager._challenge_response("missing DPoP proof header")
+                        return manager._challenge_response("missing DPoP proof header", request)
                 else:
                     if not auth_lower.startswith("bearer "):
-                        return manager._challenge_response("missing bearer token")
+                        return manager._challenge_response("missing bearer token", request)
                     token = auth_header[7:].strip()
                     dpop_proof = None
 
@@ -174,6 +205,19 @@ class AuthorizationManager:
                     # If DPoP required, validate the proof
                     if manager.config.require_dpop and dpop_proof:
                         await manager._validate_dpop_proof(request, dpop_proof, token, context.claims)
+
+                    if manager.config.required_scopes:
+                        granted = set(context.scopes)
+                        required = set(manager.config.required_scopes)
+                        missing = required - granted
+                        if missing:
+                            manager._logger.warning(
+                                "insufficient scopes",
+                                extra={"event": "auth.scope.reject", "missing": list(missing), "granted": list(granted)},
+                            )
+                            return manager._insufficient_scope_response(
+                                missing=list(missing), required=list(required), request=request
+                            )
 
                     request.scope["dedalus_mcp.auth"] = context
                     return await call_next(request)
@@ -187,7 +231,7 @@ class AuthorizationManager:
                         )
                         request.scope["dedalus_mcp.auth"] = None
                         return await call_next(request)
-                    return manager._challenge_response(str(exc))
+                    return manager._challenge_response(str(exc), request)
 
         return _Middleware(app)
 
@@ -195,7 +239,7 @@ class AuthorizationManager:
         self, request: Request, proof: str, access_token: str, claims: dict[str, Any]
     ) -> None:
         """Validate DPoP proof against request and token binding."""
-        from dedalus_mcp.dpop import DPoPValidator, DPoPValidatorConfig, DPoPValidationError
+        from dedalus_mcp.auth.dpop import DPoPValidationError, DPoPValidator, DPoPValidatorConfig
 
         config = DPoPValidatorConfig(leeway=self.config.dpop_leeway)
         validator = DPoPValidator(config)
@@ -222,27 +266,50 @@ class AuthorizationManager:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _challenge_response(self, reason: str | None = None) -> Response:
+    def _challenge_response(self, reason: str | None = None, request: Request | None = None) -> Response:
+        """Return 401 Unauthorized with WWW-Authenticate header."""
         if JSONResponse is None:
             msg = "starlette must be installed to use HTTP authorization"
             raise RuntimeError(msg)
 
-        # RFC 9728 Protected Resource Metadata (MCP 2025-06-18+).
-        # For MCP 2025-03-26, clients would use /.well-known/oauth-authorization-server.
-        # We emit resource_metadata unconditionally because:
-        # 1. The 401 happens before MCP protocol negotiation (no version yet)
-        # 2. RFC 6750 says clients SHOULD ignore unknown WWW-Authenticate parameters
         scheme = "DPoP" if self.config.require_dpop else "Bearer"
         challenge = f'{scheme} error="invalid_token", resource_metadata="{self.config.metadata_path}"'
 
+        if self.config.required_scopes and self._scope_features_enabled(request):
+            scope_str = " ".join(self.config.required_scopes)
+            challenge += f', scope="{scope_str}"'
+
         if reason:
-            # Escape quotes in error_description
             safe_reason = reason.replace('"', '\\"')
             challenge += f', error_description="{safe_reason}"'
 
         headers = {"WWW-Authenticate": challenge}
         payload = {"error": "unauthorized", "detail": reason}
         return JSONResponse(payload, status_code=401, headers=headers)
+
+    def _insufficient_scope_response(
+        self, missing: list[str], required: list[str], request: Request | None = None
+    ) -> Response:
+        """Return 403 Forbidden with insufficient_scope error."""
+        if JSONResponse is None:
+            msg = "starlette must be installed to use HTTP authorization"
+            raise RuntimeError(msg)
+
+        if not self._scope_features_enabled(request):
+            return self._challenge_response(f"insufficient scopes: {missing}", request)
+
+        scheme = "DPoP" if self.config.require_dpop else "Bearer"
+        scope_str = " ".join(required)
+        challenge = (
+            f'{scheme} error="insufficient_scope", '
+            f'scope="{scope_str}", '
+            f'resource_metadata="{self.config.metadata_path}", '
+            f'error_description="missing scopes: {" ".join(missing)}"'
+        )
+
+        headers = {"WWW-Authenticate": challenge}
+        payload = {"error": "insufficient_scope", "detail": f"missing scopes: {missing}"}
+        return JSONResponse(payload, status_code=403, headers=headers)
 
     def _canonical_resource(self, request: Request) -> str:
         # Construct scheme://host[:port] without trailing slash

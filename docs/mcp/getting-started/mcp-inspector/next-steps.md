@@ -9,5 +9,3 @@
     Learn about broader debugging strategies
   </Card>
 </CardGroup>
-
-

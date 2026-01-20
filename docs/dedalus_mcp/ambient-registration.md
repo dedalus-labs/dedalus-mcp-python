@@ -144,7 +144,7 @@ async def add_tool_from_config(config: dict):
         @tool(description=config["description"])
         def dynamic_tool(**kwargs) -> str:
             return config["response"]
-    
+
     await server.notify_tools_list_changed()
 ```
 

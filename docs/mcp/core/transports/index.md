@@ -19,4 +19,3 @@ Clients **SHOULD** support stdio whenever possible.
 
 It is also possible for clients and servers to implement
 [custom transports](custom-transports.md#custom-transports) in a pluggable fashion.
-

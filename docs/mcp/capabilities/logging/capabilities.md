@@ -9,4 +9,3 @@ Servers that emit log message notifications **MUST** declare the `logging` capab
   }
 }
 ```
-

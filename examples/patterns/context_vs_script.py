@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Context manager vs script-style client usage.
@@ -29,6 +29,7 @@ import asyncio
 import logging
 
 from dedalus_mcp.client import MCPClient
+
 
 for name in ("mcp", "httpx"):
     logging.getLogger(name).setLevel(logging.WARNING)
@@ -147,4 +148,3 @@ Both work. Both are correct. Pick what fits your code.
 
 if __name__ == "__main__":
     asyncio.run(main())
-

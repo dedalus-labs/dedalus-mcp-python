@@ -14,4 +14,3 @@
    * Consider the connection stale
    * Terminate the connection
    * Attempt reconnection procedures
-

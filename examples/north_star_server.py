@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc.
+# Copyright (c) 2026 Dedalus Labs, Inc.
 # SPDX-License-Identifier: MIT
 
 """Minimal Dedalus MCP server example."""
@@ -7,8 +7,11 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+
 from dotenv import load_dotenv
+
 from dedalus_mcp import MCPServer, tool
+
 
 load_dotenv()
 

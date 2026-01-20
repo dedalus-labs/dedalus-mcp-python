@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Client implementing sampling capability for MCP servers.
@@ -31,35 +31,23 @@ from __future__ import annotations
 
 import os
 
-import anyio
 import anthropic
+import anyio
 
 from dedalus_mcp.client import ClientCapabilitiesConfig, open_connection
-from dedalus_mcp.types import (
-    CreateMessageRequestParams,
-    CreateMessageResult,
-    ErrorData,
-    Role,
-    StopReason,
-    TextContent,
-)
+from dedalus_mcp.types import CreateMessageRequestParams, CreateMessageResult, ErrorData, Role, StopReason, TextContent
 
 
 SERVER_URL = "http://127.0.0.1:8000/mcp"
 
 
-async def sampling_handler(
-    _context: object, params: CreateMessageRequestParams
-) -> CreateMessageResult | ErrorData:
+async def sampling_handler(_context: object, params: CreateMessageRequestParams) -> CreateMessageResult | ErrorData:
     """Handle sampling/createMessage requests by invoking Anthropic API."""
     try:
         client = anthropic.AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
         messages = [
-            {
-                "role": msg.role,
-                "content": msg.content.text if hasattr(msg.content, "text") else str(msg.content),
-            }
+            {"role": msg.role, "content": msg.content.text if hasattr(msg.content, "text") else str(msg.content)}
             for msg in params.messages
         ]
 
@@ -67,18 +55,14 @@ async def sampling_handler(
         if params.modelPreferences and params.modelPreferences.hints:
             model = params.modelPreferences.hints[0].name
 
-        response = await client.messages.create(
-            model=model, messages=messages, max_tokens=params.maxTokens or 1024
-        )
+        response = await client.messages.create(model=model, messages=messages, max_tokens=params.maxTokens or 1024)
 
         text_content = response.content[0].text if response.content else ""
         return CreateMessageResult(
             model=response.model,
             content=TextContent(type="text", text=text_content),
             role=Role.assistant,
-            stopReason=(
-                StopReason.endTurn if response.stop_reason == "end_turn" else StopReason.maxTokens
-            ),
+            stopReason=(StopReason.endTurn if response.stop_reason == "end_turn" else StopReason.maxTokens),
         )
 
     except Exception as e:
@@ -89,9 +73,7 @@ async def main() -> None:
     """Connect to a server that uses sampling and handle its requests."""
     capabilities = ClientCapabilitiesConfig(sampling=sampling_handler)
 
-    async with open_connection(
-        url=SERVER_URL, transport="streamable-http", capabilities=capabilities
-    ) as client:
+    async with open_connection(url=SERVER_URL, transport="streamable-http", capabilities=capabilities) as client:
         print("Connected with sampling capability enabled")
         print(f"Server info: {client.initialize_result.serverInfo.name}")
         await anyio.sleep(60)

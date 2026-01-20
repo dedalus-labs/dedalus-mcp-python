@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Base driver implementation with common validation logic."""
@@ -21,7 +21,6 @@ class BaseDriver:
     @staticmethod
     def _normalize_input(data: Any) -> dict[str, Any]:
         """Coerce BaseModel/mapping inputs into plain dictionaries."""
-
         if isinstance(data, BaseModel):
             return data.model_dump()
         if hasattr(data, "model_dump"):
@@ -60,10 +59,7 @@ class BaseDriver:
         if not auth_type:
             raise ValueError("Missing 'type' field in auth parameters")
         if auth_type not in supported_types:
-            raise ValueError(
-                f"Unsupported auth type '{auth_type}'. "
-                f"Supported types: {', '.join(supported_types)}"
-            )
+            raise ValueError(f"Unsupported auth type '{auth_type}'. Supported types: {', '.join(supported_types)}")
 
     @staticmethod
     def _get_required_auth_field(auth: dict[str, Any], field: str) -> Any:

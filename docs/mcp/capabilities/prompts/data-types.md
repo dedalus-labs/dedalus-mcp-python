@@ -91,4 +91,3 @@ Resources can contain either text or binary (blob) data and **MUST** include:
 Embedded resources enable prompts to seamlessly incorporate server-managed content like
 documentation, code samples, or other reference materials directly into the conversation
 flow.
-

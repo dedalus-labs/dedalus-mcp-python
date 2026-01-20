@@ -1,22 +1,13 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Shared ASGI transport primitives.
-
-This module provides reusable building blocks for transports that expose an
-``MCPServer`` over an ASGI-compatible surface.  Concrete subclasses supply the
-session manager implementation and route configuration while this base class
-handles lifecycle management, optional authorization wrapping, and startup of
-the underlying ASGI server runtime.
-"""
+"""ASGI transport primitives for MCP servers."""
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-import asyncio
 from collections.abc import AsyncIterator, Callable, Iterable, Mapping  # noqa: TC003
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
-import contextlib
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -30,8 +21,8 @@ if TYPE_CHECKING:
     from starlette.routing import BaseRoute
     from starlette.types import Receive, Scope, Send
 
-    from ..core import MCPServer
     from ..authorization import AuthorizationManager
+    from ..core import MCPServer
 
 
 @dataclass(slots=True)
@@ -93,9 +84,7 @@ class SessionManagerHandler:
         """Return an ASGI lifespan hook bound to the session manager."""
 
         @asynccontextmanager
-        async def _lifespan(
-            _app: Starlette,
-        ) -> AsyncIterator[None]:
+        async def _lifespan(_app: Starlette) -> AsyncIterator[None]:
             async with self.session_manager.run():
                 yield
 
@@ -130,18 +119,15 @@ class ASGITransportBase(BaseTransport, ABC):
         resolved = self._resolve_run_config(config=config, legacy_kwargs=legacy_kwargs)
         await self._serve(resolved)
 
-    def _resolve_run_config(
-        self,
-        *,
-        config: ASGIRunConfig | None,
-        legacy_kwargs: dict[str, Any],
-    ) -> _ResolvedRunConfig:
+    def _resolve_run_config(self, *, config: ASGIRunConfig | None, legacy_kwargs: dict[str, Any]) -> _ResolvedRunConfig:
         if config is not None and legacy_kwargs:
             raise TypeError("Cannot mix 'config' with legacy keyword arguments.")
 
         if config is None:
             if legacy_kwargs:
-                extracted = {k: legacy_kwargs.pop(k) for k in ("host", "port", "path", "log_level") if k in legacy_kwargs}
+                extracted = {
+                    k: legacy_kwargs.pop(k) for k in ("host", "port", "path", "log_level") if k in legacy_kwargs
+                }
                 config = ASGIRunConfig(
                     host=extracted.get("host"),
                     port=extracted.get("port"),
@@ -163,13 +149,7 @@ class ASGITransportBase(BaseTransport, ABC):
         extra_options = dict(config.uvicorn_options)
         extra_options.update(legacy_kwargs)
 
-        return _ResolvedRunConfig(
-            host=host,
-            port=port,
-            path=path,
-            log_level=log_level,
-            uvicorn_options=extra_options,
-        )
+        return _ResolvedRunConfig(host=host, port=port, path=path, log_level=log_level, uvicorn_options=extra_options)
 
     async def _serve(self, run_config: _ResolvedRunConfig) -> None:
         manager = self._build_session_manager()
@@ -211,9 +191,7 @@ class ASGITransportBase(BaseTransport, ABC):
     def _build_handler(self, manager: SessionManagerProtocol) -> SessionManagerHandler:
         """Construct the default ASGI handler for the provided session manager."""
         return SessionManagerHandler(
-            session_manager=manager,
-            transport_label=self.transport_display_name,
-            allowed_scopes=self.ALLOWED_SCOPES,
+            session_manager=manager, transport_label=self.transport_display_name, allowed_scopes=self.ALLOWED_SCOPES
         )
 
     def _to_asgi(self, app: Starlette) -> Starlette:
@@ -232,9 +210,4 @@ class ASGITransportBase(BaseTransport, ABC):
     def _build_routes(self, *, path: str, handler: SessionManagerHandler) -> Iterable[BaseRoute]: ...
 
 
-__all__ = [
-    "ASGITransportBase",
-    "ASGITransportConfig",
-    "ASGIRunConfig",
-    "SessionManagerHandler",
-]
+__all__ = ["ASGITransportBase", "ASGITransportConfig", "ASGIRunConfig", "SessionManagerHandler"]

@@ -16,5 +16,3 @@ When documenting decisions, we will retain as much context as possible:
 * Implementation steps
 
 [discord-join]: https://discord.gg/6CSzBmMkjX
-
-

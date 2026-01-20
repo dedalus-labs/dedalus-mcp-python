@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Tests for versioning system invariants."""
@@ -8,13 +8,13 @@ from __future__ import annotations
 from dedalus_mcp.versioning import (
     ALL_VERSIONS,
     MIGRATIONS,
-    Availability,
-    FeatureId,
-    ProtocolProfile,
     V_2024_11_05,
     V_2025_03_26,
     V_2025_06_18,
     V_2025_11_25,
+    Availability,
+    FeatureId,
+    ProtocolProfile,
     capabilities_for,
     features_changed,
 )

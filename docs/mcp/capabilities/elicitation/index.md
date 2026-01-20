@@ -16,4 +16,3 @@ information from users through the client during interactions. This flow allows 
 maintain control over user interactions and data sharing while enabling servers to gather
 necessary information dynamically.
 Servers request structured data from users with JSON schemas to validate responses.
-

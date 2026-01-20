@@ -85,14 +85,14 @@ from dedalus_mcp.server.authorization import AuthorizationContext, Authorization
 
 server = MCPServer(
     "auth-demo",
-    authorization=AuthorizationConfig(enabled=True, required_scopes=["mcp:read"]),
+    authorization=AuthorizationConfig(enabled=True, required_scopes=["read"]),
 )
 
 class DemoProvider:
     async def validate(self, token: str) -> AuthorizationContext:
         if token != "demo-token":
             raise AuthorizationError("invalid token")
-        return AuthorizationContext(subject="demo", scopes=["mcp:read"], claims={})
+        return AuthorizationContext(subject="demo", scopes=["read"], claims={})
 
 server.set_authorization_provider(DemoProvider())
 ```

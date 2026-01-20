@@ -14,4 +14,3 @@
    * The request cannot be cancelled
 5. The sender of the cancellation notification **SHOULD** ignore any response to the
    request that arrives afterward
-

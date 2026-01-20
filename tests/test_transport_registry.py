@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 from __future__ import annotations
@@ -69,8 +69,7 @@ def test_http_security_params_override_env(monkeypatch: pytest.MonkeyPatch) -> N
 
     # Params should override env
     settings = MCPServer._default_http_security_settings(  # noqa: SLF001
-        enable_dns_rebinding_protection=False,
-        allowed_hosts=["param-host:443"],
+        enable_dns_rebinding_protection=False, allowed_hosts=["param-host:443"]
     )
 
     assert settings.enable_dns_rebinding_protection is False

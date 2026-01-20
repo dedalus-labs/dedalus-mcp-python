@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Server with rich progress reporting.
@@ -14,7 +14,9 @@ Usage:
 """
 
 import asyncio
-from dedalus_mcp import MCPServer, tool, get_context
+
+from dedalus_mcp import MCPServer, get_context, tool
+
 
 server = MCPServer("progress", instructions="I report progress on long operations")
 
@@ -50,11 +52,7 @@ async def analyze_data(dataset: str) -> dict:
 
     await ctx.progress(current=len(stages), total=len(stages), message="Done!")
 
-    return {
-        "dataset": dataset,
-        "stages_completed": len(stages),
-        "summary": f"Analysis of {dataset} complete",
-    }
+    return {"dataset": dataset, "stages_completed": len(stages), "summary": f"Analysis of {dataset} complete"}
 
 
 @tool(description="Download with byte-level progress")
@@ -83,4 +81,3 @@ server.collect(process_batch, analyze_data, download_file)
 
 if __name__ == "__main__":
     asyncio.run(server.serve())
-

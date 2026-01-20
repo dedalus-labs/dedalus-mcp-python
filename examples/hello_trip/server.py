@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Minimal end-to-end MCP server demo.
@@ -32,6 +32,7 @@ import logging
 from typing import Any
 
 from dedalus_mcp import MCPServer, get_context, prompt, resource, tool
+
 
 # Suppress logs for cleaner demo output
 for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):

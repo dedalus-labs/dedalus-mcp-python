@@ -9,4 +9,3 @@ A ping request is a standard JSON-RPC request with no parameters:
   "method": "ping"
 }
 ```
-

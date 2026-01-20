@@ -12,4 +12,3 @@ filesystem "roots" to servers. Roots define the boundaries of where servers can 
 within the filesystem, allowing them to understand which directories and files they have
 access to. Servers can request the list of roots from supporting clients and receive
 notifications when that list changes.
-

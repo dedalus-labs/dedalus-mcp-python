@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """DPoP proof generation (client-side) per RFC 9449.
@@ -20,21 +20,23 @@ References:
 
 from __future__ import annotations
 
+from collections.abc import Generator
 import time
-import uuid
-from typing import TYPE_CHECKING, Any, Generator
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
+import uuid
+
 
 if TYPE_CHECKING:
     from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 
 import httpx
 
-from dedalus_mcp.dpop.thumbprint import b64url_encode, compute_access_token_hash, compute_jwk_thumbprint
+from dedalus_mcp.auth.dpop.thumbprint import b64url_encode, compute_access_token_hash, compute_jwk_thumbprint
 
 
 def generate_dpop_proof(
-    private_key: "EllipticCurvePrivateKey",
+    private_key: EllipticCurvePrivateKey,
     method: str,
     url: str,
     access_token: str | None = None,
@@ -67,8 +69,10 @@ def generate_dpop_proof(
         >>>
         >>> # For resource server (with access token)
         >>> proof = generate_dpop_proof(
-        ...     key, "POST", "https://mcp.example.com/messages",
-        ...     access_token="eyJ..."
+        ...     key,
+        ...     "POST",
+        ...     "https://mcp.example.com/messages",
+        ...     access_token="eyJ...",
         ... )
     """
     import jwt
@@ -93,12 +97,7 @@ def generate_dpop_proof(
         htu += "/"
 
     # Payload per RFC 9449 Section 4.2
-    payload: dict[str, Any] = {
-        "jti": str(uuid.uuid4()),
-        "htm": method.upper(),
-        "htu": htu,
-        "iat": int(time.time()),
-    }
+    payload: dict[str, Any] = {"jti": str(uuid.uuid4()), "htm": method.upper(), "htu": htu, "iat": int(time.time())}
 
     # RFC 9449 Section 7: ath MUST be present when sending to resource server
     if access_token is not None:
@@ -129,7 +128,7 @@ class DPoPAuth(httpx.Auth):
         nonce: Optional server-provided nonce for replay prevention
 
     Example:
-        >>> from dedalus_mcp.dpop import generate_dpop_keypair, DPoPAuth
+        >>> from dedalus_mcp.auth.dpop import generate_dpop_keypair, DPoPAuth
         >>>
         >>> private_key, _ = generate_dpop_keypair()
         >>> auth = DPoPAuth(access_token="eyJ...", dpop_key=private_key)
@@ -146,12 +145,7 @@ class DPoPAuth(httpx.Auth):
 
     requires_response_body = False
 
-    def __init__(
-        self,
-        access_token: str,
-        dpop_key: "EllipticCurvePrivateKey",
-        nonce: str | None = None,
-    ) -> None:
+    def __init__(self, access_token: str, dpop_key: EllipticCurvePrivateKey, nonce: str | None = None) -> None:
         """Initialize DPoP auth handler.
 
         Args:
@@ -256,8 +250,4 @@ class BearerAuth(httpx.Auth):
         yield request
 
 
-__all__ = [
-    "generate_dpop_proof",
-    "DPoPAuth",
-    "BearerAuth",
-]
+__all__ = ["generate_dpop_proof", "DPoPAuth", "BearerAuth"]

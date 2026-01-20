@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Tests for DPoP proof validation per RFC 9449 Section 4.3.
@@ -24,26 +24,19 @@ import uuid
 
 import pytest
 
-from dedalus_mcp.dpop import (
+from dedalus_mcp.auth.dpop import (
+    DPoPExpiredError,
+    DPoPMethodMismatchError,
+    DPoPNonceMismatchError,
+    DPoPReplayError,
+    DPoPThumbprintMismatchError,
+    DPoPUrlMismatchError,
     DPoPValidator,
     DPoPValidatorConfig,
     InvalidDPoPProofError,
-    DPoPReplayError,
-    DPoPMethodMismatchError,
-    DPoPUrlMismatchError,
-    DPoPExpiredError,
-    DPoPThumbprintMismatchError,
-    DPoPNonceMismatchError,
 )
 
-from .conftest import (
-    FakeClock,
-    b64url_encode,
-    build_dpop_proof,
-    compute_ath,
-    compute_jwk_thumbprint,
-    get_thumbprint_from_proof,
-)
+from .conftest import b64url_encode, build_dpop_proof, compute_ath, get_thumbprint_from_proof
 
 
 # =============================================================================
@@ -56,21 +49,12 @@ class TestWellFormedJWT:
 
     def test_valid_proof_parses_successfully(self, es256_keypair, clock):
         """A well-formed DPoP proof with valid signature should parse."""
-        proof = build_dpop_proof(
-            es256_keypair,
-            htm="POST",
-            htu="https://mcp.example.com/messages",
-            iat=clock.now(),
-        )
+        proof = build_dpop_proof(es256_keypair, htm="POST", htu="https://mcp.example.com/messages", iat=clock.now())
 
         config = DPoPValidatorConfig(clock=clock)
         validator = DPoPValidator(config)
 
-        result = validator.validate_proof(
-            proof=proof,
-            method="POST",
-            url="https://mcp.example.com/messages",
-        )
+        result = validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
 
         assert result.jti is not None
         assert result.htm == "POST"
@@ -82,11 +66,7 @@ class TestWellFormedJWT:
         validator = DPoPValidator(config)
 
         with pytest.raises(InvalidDPoPProofError, match="invalid proof header"):
-            validator.validate_proof(
-                proof="not-a-jwt",
-                method="POST",
-                url="https://mcp.example.com/messages",
-            )
+            validator.validate_proof(proof="not-a-jwt", method="POST", url="https://mcp.example.com/messages")
 
     def test_empty_string_rejected(self, clock):
         """Empty string should be rejected."""
@@ -94,11 +74,7 @@ class TestWellFormedJWT:
         validator = DPoPValidator(config)
 
         with pytest.raises(InvalidDPoPProofError):
-            validator.validate_proof(
-                proof="",
-                method="POST",
-                url="https://mcp.example.com/messages",
-            )
+            validator.validate_proof(proof="", method="POST", url="https://mcp.example.com/messages")
 
 
 # =============================================================================
@@ -118,12 +94,7 @@ class TestRequiredClaims:
         public_numbers = public_key.public_numbers()
         x_bytes = public_numbers.x.to_bytes(32, byteorder="big")
         y_bytes = public_numbers.y.to_bytes(32, byteorder="big")
-        jwk = {
-            "kty": "EC",
-            "crv": "P-256",
-            "x": b64url_encode(x_bytes),
-            "y": b64url_encode(y_bytes),
-        }
+        jwk = {"kty": "EC", "crv": "P-256", "x": b64url_encode(x_bytes), "y": b64url_encode(y_bytes)}
 
         header = {"typ": "dpop+jwt", "alg": "ES256", "jwk": jwk}
         payload = {
@@ -138,11 +109,7 @@ class TestRequiredClaims:
         validator = DPoPValidator(config)
 
         with pytest.raises(InvalidDPoPProofError, match="jti"):
-            validator.validate_proof(
-                proof=proof,
-                method="POST",
-                url="https://mcp.example.com/messages",
-            )
+            validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
 
     def test_missing_htm_rejected(self, es256_keypair, clock):
         """Proof without htm claim should be rejected."""
@@ -152,12 +119,7 @@ class TestRequiredClaims:
         public_numbers = public_key.public_numbers()
         x_bytes = public_numbers.x.to_bytes(32, byteorder="big")
         y_bytes = public_numbers.y.to_bytes(32, byteorder="big")
-        jwk = {
-            "kty": "EC",
-            "crv": "P-256",
-            "x": b64url_encode(x_bytes),
-            "y": b64url_encode(y_bytes),
-        }
+        jwk = {"kty": "EC", "crv": "P-256", "x": b64url_encode(x_bytes), "y": b64url_encode(y_bytes)}
 
         header = {"typ": "dpop+jwt", "alg": "ES256", "jwk": jwk}
         payload = {
@@ -172,11 +134,7 @@ class TestRequiredClaims:
         validator = DPoPValidator(config)
 
         with pytest.raises(InvalidDPoPProofError, match="htm"):
-            validator.validate_proof(
-                proof=proof,
-                method="POST",
-                url="https://mcp.example.com/messages",
-            )
+            validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
 
     def test_missing_htu_rejected(self, es256_keypair, clock):
         """Proof without htu claim should be rejected."""
@@ -186,12 +144,7 @@ class TestRequiredClaims:
         public_numbers = public_key.public_numbers()
         x_bytes = public_numbers.x.to_bytes(32, byteorder="big")
         y_bytes = public_numbers.y.to_bytes(32, byteorder="big")
-        jwk = {
-            "kty": "EC",
-            "crv": "P-256",
-            "x": b64url_encode(x_bytes),
-            "y": b64url_encode(y_bytes),
-        }
+        jwk = {"kty": "EC", "crv": "P-256", "x": b64url_encode(x_bytes), "y": b64url_encode(y_bytes)}
 
         header = {"typ": "dpop+jwt", "alg": "ES256", "jwk": jwk}
         payload = {
@@ -206,11 +159,7 @@ class TestRequiredClaims:
         validator = DPoPValidator(config)
 
         with pytest.raises(InvalidDPoPProofError, match="htu"):
-            validator.validate_proof(
-                proof=proof,
-                method="POST",
-                url="https://mcp.example.com/messages",
-            )
+            validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
 
     def test_missing_iat_rejected(self, es256_keypair, clock):
         """Proof without iat claim should be rejected."""
@@ -220,12 +169,7 @@ class TestRequiredClaims:
         public_numbers = public_key.public_numbers()
         x_bytes = public_numbers.x.to_bytes(32, byteorder="big")
         y_bytes = public_numbers.y.to_bytes(32, byteorder="big")
-        jwk = {
-            "kty": "EC",
-            "crv": "P-256",
-            "x": b64url_encode(x_bytes),
-            "y": b64url_encode(y_bytes),
-        }
+        jwk = {"kty": "EC", "crv": "P-256", "x": b64url_encode(x_bytes), "y": b64url_encode(y_bytes)}
 
         header = {"typ": "dpop+jwt", "alg": "ES256", "jwk": jwk}
         payload = {
@@ -240,11 +184,7 @@ class TestRequiredClaims:
         validator = DPoPValidator(config)
 
         with pytest.raises(InvalidDPoPProofError, match="iat"):
-            validator.validate_proof(
-                proof=proof,
-                method="POST",
-                url="https://mcp.example.com/messages",
-            )
+            validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
 
 
 # =============================================================================
@@ -262,11 +202,7 @@ class TestTypHeader:
         config = DPoPValidatorConfig(clock=clock)
         validator = DPoPValidator(config)
 
-        result = validator.validate_proof(
-            proof=proof,
-            method="POST",
-            url="https://mcp.example.com/messages",
-        )
+        result = validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
         assert result is not None
 
     def test_wrong_typ_rejected(self, es256_keypair, clock):
@@ -277,11 +213,7 @@ class TestTypHeader:
         validator = DPoPValidator(config)
 
         with pytest.raises(InvalidDPoPProofError, match="typ"):
-            validator.validate_proof(
-                proof=proof,
-                method="POST",
-                url="https://mcp.example.com/messages",
-            )
+            validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
 
     def test_missing_typ_rejected(self, es256_keypair, clock):
         """Missing typ header should be rejected."""
@@ -292,12 +224,7 @@ class TestTypHeader:
         public_numbers = public_key.public_numbers()
         x_bytes = public_numbers.x.to_bytes(32, byteorder="big")
         y_bytes = public_numbers.y.to_bytes(32, byteorder="big")
-        jwk = {
-            "kty": "EC",
-            "crv": "P-256",
-            "x": b64url_encode(x_bytes),
-            "y": b64url_encode(y_bytes),
-        }
+        jwk = {"kty": "EC", "crv": "P-256", "x": b64url_encode(x_bytes), "y": b64url_encode(y_bytes)}
 
         # No typ in header
         header = {"alg": "ES256", "jwk": jwk}
@@ -313,11 +240,7 @@ class TestTypHeader:
         validator = DPoPValidator(config)
 
         with pytest.raises(InvalidDPoPProofError, match="typ"):
-            validator.validate_proof(
-                proof=proof,
-                method="POST",
-                url="https://mcp.example.com/messages",
-            )
+            validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
 
 
 # =============================================================================
@@ -335,11 +258,7 @@ class TestAlgorithm:
         config = DPoPValidatorConfig(clock=clock, allowed_algorithms=["ES256"])
         validator = DPoPValidator(config)
 
-        result = validator.validate_proof(
-            proof=proof,
-            method="POST",
-            url="https://mcp.example.com/messages",
-        )
+        result = validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
         assert result is not None
 
     def test_unsupported_algorithm_rejected(self, es256_keypair, clock):
@@ -352,11 +271,7 @@ class TestAlgorithm:
         validator = DPoPValidator(config)
 
         with pytest.raises(InvalidDPoPProofError, match="algorithm"):
-            validator.validate_proof(
-                proof=proof,
-                method="POST",
-                url="https://mcp.example.com/messages",
-            )
+            validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
 
 
 # =============================================================================
@@ -374,11 +289,7 @@ class TestSignatureVerification:
         config = DPoPValidatorConfig(clock=clock)
         validator = DPoPValidator(config)
 
-        result = validator.validate_proof(
-            proof=proof,
-            method="POST",
-            url="https://mcp.example.com/messages",
-        )
+        result = validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
         assert result is not None
 
     def test_tampered_proof_rejected(self, es256_keypair, clock):
@@ -394,11 +305,7 @@ class TestSignatureVerification:
         validator = DPoPValidator(config)
 
         with pytest.raises(InvalidDPoPProofError, match="signature"):
-            validator.validate_proof(
-                proof=tampered_proof,
-                method="POST",
-                url="https://mcp.example.com/messages",
-            )
+            validator.validate_proof(proof=tampered_proof, method="POST", url="https://mcp.example.com/messages")
 
 
 # =============================================================================
@@ -444,11 +351,7 @@ class TestNoPrivateKeyInJWK:
         validator = DPoPValidator(config)
 
         with pytest.raises(InvalidDPoPProofError, match="private key"):
-            validator.validate_proof(
-                proof=proof,
-                method="POST",
-                url="https://mcp.example.com/messages",
-            )
+            validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
 
 
 # =============================================================================
@@ -466,11 +369,7 @@ class TestMethodBinding:
         config = DPoPValidatorConfig(clock=clock)
         validator = DPoPValidator(config)
 
-        result = validator.validate_proof(
-            proof=proof,
-            method="POST",
-            url="https://mcp.example.com/messages",
-        )
+        result = validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
         assert result.htm == "POST"
 
     def test_method_mismatch_rejected(self, es256_keypair, clock):
@@ -481,11 +380,7 @@ class TestMethodBinding:
         validator = DPoPValidator(config)
 
         with pytest.raises(DPoPMethodMismatchError):
-            validator.validate_proof(
-                proof=proof,
-                method="GET",
-                url="https://mcp.example.com/messages",
-            )
+            validator.validate_proof(proof=proof, method="GET", url="https://mcp.example.com/messages")
 
     def test_method_case_insensitive(self, es256_keypair, clock):
         """Method comparison should be case-insensitive."""
@@ -494,11 +389,7 @@ class TestMethodBinding:
         config = DPoPValidatorConfig(clock=clock)
         validator = DPoPValidator(config)
 
-        result = validator.validate_proof(
-            proof=proof,
-            method="POST",
-            url="https://mcp.example.com/messages",
-        )
+        result = validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
         assert result is not None
 
 
@@ -512,112 +403,64 @@ class TestURLBinding:
 
     def test_url_match_accepted(self, es256_keypair, clock):
         """Proof bound to URL should validate for same URL."""
-        proof = build_dpop_proof(
-            es256_keypair,
-            htu="https://mcp.example.com/messages",
-            iat=clock.now(),
-        )
+        proof = build_dpop_proof(es256_keypair, htu="https://mcp.example.com/messages", iat=clock.now())
 
         config = DPoPValidatorConfig(clock=clock)
         validator = DPoPValidator(config)
 
-        result = validator.validate_proof(
-            proof=proof,
-            method="POST",
-            url="https://mcp.example.com/messages",
-        )
+        result = validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
         assert result.htu == "https://mcp.example.com/messages"
 
     def test_url_mismatch_rejected(self, es256_keypair, clock):
         """Proof bound to one URL should not validate for different URL."""
-        proof = build_dpop_proof(
-            es256_keypair,
-            htu="https://mcp.example.com/messages",
-            iat=clock.now(),
-        )
+        proof = build_dpop_proof(es256_keypair, htu="https://mcp.example.com/messages", iat=clock.now())
 
         config = DPoPValidatorConfig(clock=clock)
         validator = DPoPValidator(config)
 
         with pytest.raises(DPoPUrlMismatchError):
-            validator.validate_proof(
-                proof=proof,
-                method="POST",
-                url="https://different.example.com/messages",
-            )
+            validator.validate_proof(proof=proof, method="POST", url="https://different.example.com/messages")
 
     def test_url_scheme_case_insensitive(self, es256_keypair, clock):
         """URL scheme comparison should be case-insensitive."""
-        proof = build_dpop_proof(
-            es256_keypair,
-            htu="HTTPS://mcp.example.com/messages",
-            iat=clock.now(),
-        )
+        proof = build_dpop_proof(es256_keypair, htu="HTTPS://mcp.example.com/messages", iat=clock.now())
 
         config = DPoPValidatorConfig(clock=clock)
         validator = DPoPValidator(config)
 
-        result = validator.validate_proof(
-            proof=proof,
-            method="POST",
-            url="https://mcp.example.com/messages",
-        )
+        result = validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
         assert result is not None
 
     def test_url_host_case_insensitive(self, es256_keypair, clock):
         """URL host comparison should be case-insensitive."""
-        proof = build_dpop_proof(
-            es256_keypair,
-            htu="https://MCP.Example.COM/messages",
-            iat=clock.now(),
-        )
+        proof = build_dpop_proof(es256_keypair, htu="https://MCP.Example.COM/messages", iat=clock.now())
 
         config = DPoPValidatorConfig(clock=clock)
         validator = DPoPValidator(config)
 
-        result = validator.validate_proof(
-            proof=proof,
-            method="POST",
-            url="https://mcp.example.com/messages",
-        )
+        result = validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
         assert result is not None
 
     def test_url_strips_query(self, es256_keypair, clock):
         """Per RFC 9449, htu should match without query."""
-        proof = build_dpop_proof(
-            es256_keypair,
-            htu="https://mcp.example.com/messages",
-            iat=clock.now(),
-        )
+        proof = build_dpop_proof(es256_keypair, htu="https://mcp.example.com/messages", iat=clock.now())
 
         config = DPoPValidatorConfig(clock=clock)
         validator = DPoPValidator(config)
 
         # Request URL has query - should still match
-        result = validator.validate_proof(
-            proof=proof,
-            method="POST",
-            url="https://mcp.example.com/messages?foo=bar",
-        )
+        result = validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages?foo=bar")
         assert result is not None
 
     def test_url_strips_fragment(self, es256_keypair, clock):
         """Per RFC 9449, htu should match without fragment."""
-        proof = build_dpop_proof(
-            es256_keypair,
-            htu="https://mcp.example.com/messages",
-            iat=clock.now(),
-        )
+        proof = build_dpop_proof(es256_keypair, htu="https://mcp.example.com/messages", iat=clock.now())
 
         config = DPoPValidatorConfig(clock=clock)
         validator = DPoPValidator(config)
 
         # Request URL has fragment - should still match
-        result = validator.validate_proof(
-            proof=proof,
-            method="POST",
-            url="https://mcp.example.com/messages#section",
-        )
+        result = validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages#section")
         assert result is not None
 
 
@@ -638,10 +481,7 @@ class TestNonceValidation:
         validator = DPoPValidator(config)
 
         result = validator.validate_proof(
-            proof=proof,
-            method="POST",
-            url="https://mcp.example.com/messages",
-            expected_nonce=nonce,
+            proof=proof, method="POST", url="https://mcp.example.com/messages", expected_nonce=nonce
         )
         assert result.nonce == nonce
 
@@ -654,10 +494,7 @@ class TestNonceValidation:
 
         with pytest.raises(DPoPNonceMismatchError):
             validator.validate_proof(
-                proof=proof,
-                method="POST",
-                url="https://mcp.example.com/messages",
-                expected_nonce="correct-nonce",
+                proof=proof, method="POST", url="https://mcp.example.com/messages", expected_nonce="correct-nonce"
             )
 
     def test_missing_nonce_rejected_when_required(self, es256_keypair, clock):
@@ -669,10 +506,7 @@ class TestNonceValidation:
 
         with pytest.raises(DPoPNonceMismatchError):
             validator.validate_proof(
-                proof=proof,
-                method="POST",
-                url="https://mcp.example.com/messages",
-                expected_nonce="required-nonce",
+                proof=proof, method="POST", url="https://mcp.example.com/messages", expected_nonce="required-nonce"
             )
 
     def test_nonce_optional_when_not_required(self, es256_keypair, clock):
@@ -683,11 +517,7 @@ class TestNonceValidation:
         validator = DPoPValidator(config)
 
         # No expected_nonce - server doesn't require it
-        result = validator.validate_proof(
-            proof=proof,
-            method="POST",
-            url="https://mcp.example.com/messages",
-        )
+        result = validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
         assert result.nonce == "optional-nonce"
 
 
@@ -706,11 +536,7 @@ class TestTimestampValidation:
         config = DPoPValidatorConfig(clock=clock, leeway=60)
         validator = DPoPValidator(config)
 
-        result = validator.validate_proof(
-            proof=proof,
-            method="POST",
-            url="https://mcp.example.com/messages",
-        )
+        result = validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
         assert result is not None
 
     def test_within_leeway_accepted(self, es256_keypair, clock):
@@ -721,11 +547,7 @@ class TestTimestampValidation:
         config = DPoPValidatorConfig(clock=clock, leeway=60)
         validator = DPoPValidator(config)
 
-        result = validator.validate_proof(
-            proof=proof,
-            method="POST",
-            url="https://mcp.example.com/messages",
-        )
+        result = validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
         assert result is not None
 
     def test_expired_proof_rejected(self, es256_keypair, clock):
@@ -737,11 +559,7 @@ class TestTimestampValidation:
         validator = DPoPValidator(config)
 
         with pytest.raises(DPoPExpiredError):
-            validator.validate_proof(
-                proof=proof,
-                method="POST",
-                url="https://mcp.example.com/messages",
-            )
+            validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
 
     def test_future_proof_rejected(self, es256_keypair, clock):
         """Proof with iat too far in the future should be rejected."""
@@ -752,11 +570,7 @@ class TestTimestampValidation:
         validator = DPoPValidator(config)
 
         with pytest.raises(DPoPExpiredError):
-            validator.validate_proof(
-                proof=proof,
-                method="POST",
-                url="https://mcp.example.com/messages",
-            )
+            validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
 
 
 # =============================================================================
@@ -778,10 +592,7 @@ class TestAccessTokenBinding:
         validator = DPoPValidator(config)
 
         result = validator.validate_proof(
-            proof=proof,
-            method="POST",
-            url="https://mcp.example.com/messages",
-            access_token=access_token,
+            proof=proof, method="POST", url="https://mcp.example.com/messages", access_token=access_token
         )
         assert result.ath == expected_ath
 
@@ -809,10 +620,7 @@ class TestAccessTokenBinding:
         validator = DPoPValidator(config)
 
         result = validator.validate_proof(
-            proof=proof,
-            method="POST",
-            url="https://mcp.example.com/messages",
-            expected_thumbprint=expected_thumbprint,
+            proof=proof, method="POST", url="https://mcp.example.com/messages", expected_thumbprint=expected_thumbprint
         )
         assert result.thumbprint == expected_thumbprint
 
@@ -849,19 +657,11 @@ class TestReplayProtection:
         validator = DPoPValidator(config)
 
         # First use succeeds
-        validator.validate_proof(
-            proof=proof,
-            method="POST",
-            url="https://mcp.example.com/messages",
-        )
+        validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
 
         # Replay attempt fails
         with pytest.raises(DPoPReplayError):
-            validator.validate_proof(
-                proof=proof,
-                method="POST",
-                url="https://mcp.example.com/messages",
-            )
+            validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
 
     def test_different_jti_succeeds(self, es256_keypair, clock):
         """Different JTIs should both succeed."""
@@ -871,16 +671,8 @@ class TestReplayProtection:
         proof1 = build_dpop_proof(es256_keypair, jti=str(uuid.uuid4()), iat=clock.now())
         proof2 = build_dpop_proof(es256_keypair, jti=str(uuid.uuid4()), iat=clock.now())
 
-        result1 = validator.validate_proof(
-            proof=proof1,
-            method="POST",
-            url="https://mcp.example.com/messages",
-        )
-        result2 = validator.validate_proof(
-            proof=proof2,
-            method="POST",
-            url="https://mcp.example.com/messages",
-        )
+        result1 = validator.validate_proof(proof=proof1, method="POST", url="https://mcp.example.com/messages")
+        result2 = validator.validate_proof(proof=proof2, method="POST", url="https://mcp.example.com/messages")
 
         assert result1.jti != result2.jti
 
@@ -893,11 +685,7 @@ class TestReplayProtection:
         validator = DPoPValidator(config)
 
         # First use succeeds
-        validator.validate_proof(
-            proof=proof,
-            method="POST",
-            url="https://mcp.example.com/messages",
-        )
+        validator.validate_proof(proof=proof, method="POST", url="https://mcp.example.com/messages")
 
         # Advance time past TTL
         clock.advance(120)
@@ -906,9 +694,5 @@ class TestReplayProtection:
         proof2 = build_dpop_proof(es256_keypair, jti=jti, iat=clock.now())
 
         # Should succeed after TTL eviction
-        result = validator.validate_proof(
-            proof=proof2,
-            method="POST",
-            url="https://mcp.example.com/messages",
-        )
+        result = validator.validate_proof(proof=proof2, method="POST", url="https://mcp.example.com/messages")
         assert result is not None

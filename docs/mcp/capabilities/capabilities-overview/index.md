@@ -32,5 +32,3 @@ Explore these key primitives in more detail below:
 
   <Card title="Tools" icon="wrench" href="/specification/2025-06-18/server/tools" />
 </CardGroup>
-
-

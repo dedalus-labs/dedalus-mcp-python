@@ -1,16 +1,7 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Prompt registration utilities.
-
-Implements the prompts capability as specified in the Model Context Protocol:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/server/prompts
-  (prompts capability, list and get operations, argument handling)
-
-Supports the ambient authoring pattern where decorated callables are registered
-as prompt templates with the MCP server.
-"""
+"""Prompt registration utilities."""
 
 from __future__ import annotations
 
@@ -80,6 +71,25 @@ def prompt(
     meta: Mapping[str, Any] | None = None,
 ) -> Callable[[PromptFunction], PromptFunction]:
     """Register a prompt renderer.
+
+    Basic usage:
+
+        >>> from dedalus_mcp import MCPServer, prompt
+        >>> from dedalus_mcp.types import PromptArgument
+        >>>
+        >>> @prompt(
+        ...     "code-review",
+        ...     description="Review code for issues",
+        ...     arguments=[PromptArgument(name="language", required=True)],
+        ... )
+        ... def code_review(arguments):
+        ...     lang = arguments.get("language", "python")
+        ...     return (
+        ...         f"Review the following {lang} code for bugs and style issues."
+        ...     )
+        >>>
+        >>> server = MCPServer("assistant")
+        >>> server.collect(code_review)
 
     See: https://modelcontextprotocol.io/specification/2025-06-18/server/prompts
     """

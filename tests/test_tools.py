@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 from __future__ import annotations
@@ -9,10 +9,10 @@ from typing import Any, Literal
 from mcp.shared.exceptions import McpError
 import pytest
 
-from dedalus_mcp.types.server.tools import ListToolsRequest
-from dedalus_mcp.types.shared.base import INVALID_PARAMS, PaginatedRequestParams
 from dedalus_mcp.server import MCPServer, NotificationFlags
 from dedalus_mcp.tool import tool
+from dedalus_mcp.types.server.tools import ListToolsRequest
+from dedalus_mcp.types.shared.base import INVALID_PARAMS, PaginatedRequestParams
 from dedalus_mcp.utils.schema import resolve_output_schema
 from tests.helpers import DummySession, run_with_context
 
@@ -267,6 +267,129 @@ async def test_tools_metadata_fields_present():
 
 
 @pytest.mark.anyio
+async def test_tools_metadata_with_typed_annotations():
+    """Tool decorator accepts ToolAnnotations object instead of dict."""
+    from dedalus_mcp.types import ToolAnnotations
+
+    server = MCPServer("tools-typed-annotations")
+
+    with server.binding():
+
+        @tool(
+            description="A read-only tool",
+            annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False),
+        )
+        def read_only_op() -> str:
+            return "data"
+
+    spec = server.tools._tool_specs["read_only_op"]
+    assert isinstance(spec.annotations, ToolAnnotations)
+    assert spec.annotations.readOnlyHint is True
+    assert spec.annotations.destructiveHint is False
+
+
+@pytest.mark.anyio
+async def test_tools_metadata_with_typed_icons():
+    """Tool decorator accepts Icon objects instead of dicts."""
+    from dedalus_mcp.types import Icon
+
+    server = MCPServer("tools-typed-icons")
+
+    with server.binding():
+
+        @tool(
+            description="Tool with icons",
+            icons=[
+                Icon(src="file:///primary.png", mimeType="image/png"),
+                Icon(src="file:///secondary.svg"),
+            ],
+        )
+        def iconified() -> str:
+            return "ok"
+
+    spec = server.tools._tool_specs["iconified"]
+    assert spec.icons is not None
+    assert len(spec.icons) == 2
+    assert all(isinstance(icon, Icon) for icon in spec.icons)
+    assert spec.icons[0].src == "file:///primary.png"
+    assert spec.icons[0].mimeType == "image/png"
+    assert spec.icons[1].src == "file:///secondary.svg"
+
+
+@pytest.mark.anyio
+async def test_tools_metadata_annotations_from_dict():
+    """Tool decorator accepts dict and coerces to ToolAnnotations."""
+    from dedalus_mcp.types import ToolAnnotations
+
+    server = MCPServer("tools-dict-annotations")
+
+    with server.binding():
+
+        @tool(
+            description="Dict-style annotations",
+            annotations={"idempotentHint": True},
+        )
+        def dict_style() -> str:
+            return "ok"
+
+    spec = server.tools._tool_specs["dict_style"]
+    assert isinstance(spec.annotations, ToolAnnotations)
+    assert spec.annotations.idempotentHint is True
+
+
+@pytest.mark.anyio
+async def test_tools_metadata_icons_from_dict():
+    """Tool decorator accepts dicts and coerces to Icon objects."""
+    from dedalus_mcp.types import Icon
+
+    server = MCPServer("tools-dict-icons")
+
+    with server.binding():
+
+        @tool(
+            description="Dict-style icons",
+            icons=[{"src": "file:///icon.png", "mimeType": "image/png"}],
+        )
+        def dict_icons() -> str:
+            return "ok"
+
+    spec = server.tools._tool_specs["dict_icons"]
+    assert spec.icons is not None
+    assert len(spec.icons) == 1
+    assert isinstance(spec.icons[0], Icon)
+    assert spec.icons[0].src == "file:///icon.png"
+    assert spec.icons[0].mimeType == "image/png"
+
+
+@pytest.mark.anyio
+async def test_tools_metadata_typed_objects_in_listing():
+    """Typed annotations and icons serialize correctly in tools/list response."""
+    from dedalus_mcp.types import Icon, ToolAnnotations
+
+    server = MCPServer("tools-typed-listing")
+
+    with server.binding():
+
+        @tool(
+            description="Fully typed",
+            annotations=ToolAnnotations(title="Typed Tool", openWorldHint=True),
+            icons=[Icon(src="file:///typed.png")],
+        )
+        def typed_tool() -> str:
+            return "ok"
+
+    handler = server.request_handlers[ListToolsRequest]
+    response = await run_with_context(DummySession("typed-listing"), handler, ListToolsRequest())
+
+    tool_entry = response.root.tools[0]
+    assert tool_entry.annotations is not None
+    assert tool_entry.annotations.title == "Typed Tool"
+    assert tool_entry.annotations.openWorldHint is True
+    assert tool_entry.icons is not None
+    assert tool_entry.icons[0].src == "file:///typed.png"
+
+
+@pytest.mark.anyio
 async def test_tool_output_schema_inferred_from_return_type():
     server = MCPServer("tools-output-schema")
 
@@ -426,3 +549,161 @@ class NestedProfile:
 class UnionAction:
     kind: Literal["chat", "navigate"]
     payload: dict[str, Any]
+
+
+# ==============================================================================
+# Scope-Gated Tools Tests (OAuth 2.1 Per-Tool Authorization)
+# ==============================================================================
+
+
+@dataclass
+class MockAuthContext:
+    """Minimal auth context for scope testing."""
+
+    subject: str | None
+    scopes: list[str]
+    claims: dict[str, Any]
+
+
+@pytest.mark.anyio
+async def test_tool_with_required_scopes_allowed():
+    """Tool with required_scopes allows invocation when scopes are granted."""
+    server = MCPServer("scope-test")
+
+    with server.binding():
+
+        @tool(required_scopes=["read:data"])
+        def read_data() -> str:
+            return "secret"
+
+    session = DummySession("scoped")
+    auth = MockAuthContext(subject="user", scopes=["read:data", "write:data"], claims={})
+    scope = {"dedalus_mcp.auth": auth}
+
+    result = await run_with_context(
+        session,
+        server.tools.call_tool,
+        "read_data",
+        {},
+        request_scope=scope,
+    )
+
+    assert not result.isError
+    assert result.content[0].text == "secret"
+
+
+@pytest.mark.anyio
+async def test_tool_with_required_scopes_denied():
+    """Tool with required_scopes denies invocation when scopes are missing."""
+    server = MCPServer("scope-test-denied")
+
+    with server.binding():
+
+        @tool(required_scopes=["admin:delete"])
+        def delete_everything() -> str:
+            return "deleted"
+
+    session = DummySession("insufficient")
+    auth = MockAuthContext(subject="user", scopes=["read:data"], claims={})
+    scope = {"dedalus_mcp.auth": auth}
+
+    result = await run_with_context(
+        session,
+        server.tools.call_tool,
+        "delete_everything",
+        {},
+        request_scope=scope,
+    )
+
+    assert result.isError
+    assert "admin:delete" in result.content[0].text
+    assert "Missing" in result.content[0].text
+
+
+@pytest.mark.anyio
+async def test_tool_with_multiple_required_scopes():
+    """Tool requiring multiple scopes checks all of them."""
+    server = MCPServer("multi-scope")
+
+    with server.binding():
+
+        @tool(required_scopes=["scope:a", "scope:b", "scope:c"])
+        def multi_scope_tool() -> str:
+            return "ok"
+
+    session = DummySession("partial")
+    # Only has scope:a and scope:b, missing scope:c
+    auth = MockAuthContext(subject="user", scopes=["scope:a", "scope:b"], claims={})
+    scope = {"dedalus_mcp.auth": auth}
+
+    result = await run_with_context(
+        session,
+        server.tools.call_tool,
+        "multi_scope_tool",
+        {},
+        request_scope=scope,
+    )
+
+    assert result.isError
+    assert "scope:c" in result.content[0].text
+
+
+@pytest.mark.anyio
+async def test_tool_without_required_scopes_ignores_auth():
+    """Tool without required_scopes works regardless of auth context."""
+    server = MCPServer("no-scope")
+
+    with server.binding():
+
+        @tool()
+        def public_tool() -> str:
+            return "public"
+
+    session = DummySession("any")
+    # Even with no scopes, tool should work
+    auth = MockAuthContext(subject="user", scopes=[], claims={})
+    scope = {"dedalus_mcp.auth": auth}
+
+    result = await run_with_context(
+        session,
+        server.tools.call_tool,
+        "public_tool",
+        {},
+        request_scope=scope,
+    )
+
+    assert not result.isError
+    assert result.content[0].text == "public"
+
+
+@pytest.mark.anyio
+async def test_tool_with_required_scopes_no_auth_context():
+    """Tool with required_scopes passes when no auth context (non-OAuth mode)."""
+    server = MCPServer("no-auth")
+
+    with server.binding():
+
+        @tool(required_scopes=["admin:delete"])
+        def protected_tool() -> str:
+            return "allowed in non-oauth mode"
+
+    # No auth context in scope (server not configured for OAuth)
+    result = await server.tools.call_tool("protected_tool", {})
+
+    assert not result.isError
+    assert result.content[0].text == "allowed in non-oauth mode"
+
+
+@pytest.mark.asyncio
+async def test_tool_spec_stores_required_scopes():
+    """ToolSpec stores required_scopes from decorator."""
+    server = MCPServer("spec-test")
+
+    with server.binding():
+
+        @tool(required_scopes=["scope:x", "scope:y"])
+        def scoped() -> str:
+            return "ok"
+
+    spec = server.tools._tool_specs["scoped"]
+    assert spec.required_scopes == {"scope:x", "scope:y"}

@@ -38,4 +38,3 @@ Servers send log messages using `notifications/message` notifications:
   }
 }
 ```
-

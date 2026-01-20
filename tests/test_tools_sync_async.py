@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Sync/async function support tests for tools.
@@ -114,10 +114,7 @@ async def test_sync_tool_does_not_block_event_loop():
             return "done"
 
     # Execute both concurrently
-    results = await asyncio.gather(
-        server.invoke_tool("slow_sync"),
-        server.invoke_tool("fast_async"),
-    )
+    results = await asyncio.gather(server.invoke_tool("slow_sync"), server.invoke_tool("fast_async"))
 
     # Both should complete successfully
     assert all(not r.isError for r in results)
@@ -234,7 +231,7 @@ async def test_sync_tool_output_schema_inference():
 
         @tool()
         def compute_metrics(value: int) -> Metrics:
-            return Metrics(input=value, squared=value ** 2)
+            return Metrics(input=value, squared=value**2)
 
     tool_def = server.tools.definitions["compute_metrics"]
     assert tool_def.outputSchema is not None

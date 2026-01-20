@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Typed tools with automatic schema inference.
@@ -13,15 +13,16 @@ Usage:
 """
 
 import asyncio
-import logging
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+import logging
 from typing import Literal
 
 from pydantic import BaseModel, Field
 
 from dedalus_mcp import MCPServer, tool
+
 
 for name in ("mcp", "httpx", "uvicorn"):
     logging.getLogger(name).setLevel(logging.WARNING)
@@ -106,4 +107,3 @@ if __name__ == "__main__":
     print("  register_person(person: Person) -> dict")
     print("  search(query: str, limit: int = 10) -> SearchResult")
     asyncio.run(server.serve())
-

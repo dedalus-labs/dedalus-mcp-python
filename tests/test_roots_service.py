@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 from __future__ import annotations
@@ -13,10 +13,10 @@ import anyio
 from mcp.shared.exceptions import McpError
 import pytest
 
-from dedalus_mcp.types.client.roots import ListRootsRequest, ListRootsResult, Root
-from dedalus_mcp.types.lifecycle import InitializedNotification
 from dedalus_mcp.server import MCPServer
 from dedalus_mcp.server.services.roots import RootGuard, RootsService
+from dedalus_mcp.types.client.roots import ListRootsRequest, ListRootsResult, Root
+from dedalus_mcp.types.lifecycle import InitializedNotification
 from tests.helpers import run_with_context
 
 

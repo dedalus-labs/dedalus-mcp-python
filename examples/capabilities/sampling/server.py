@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Server that requests LLM completions from the client.
@@ -24,6 +24,7 @@ import logging
 
 from dedalus_mcp import MCPServer, get_context, tool
 from dedalus_mcp.types import CreateMessageRequestParams, SamplingMessage, TextContent
+
 
 for name in ("mcp", "httpx", "uvicorn"):
     logging.getLogger(name).setLevel(logging.WARNING)

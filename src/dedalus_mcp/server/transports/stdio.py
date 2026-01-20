@@ -1,12 +1,13 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """STDIO transport adapter."""
 
 from __future__ import annotations
 
-from .base import BaseTransport
 from mcp.server.stdio import stdio_server
+
+from .base import BaseTransport
 
 
 def get_stdio_server():

@@ -15,4 +15,3 @@ Clients that support roots **MUST** declare the `roots` capability during
 
 `listChanged` indicates whether the client will emit notifications when the list of roots
 changes.
-

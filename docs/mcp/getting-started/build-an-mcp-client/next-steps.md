@@ -9,5 +9,3 @@
     View the list of clients that support MCP integrations
   </Card>
 </CardGroup>
-
-

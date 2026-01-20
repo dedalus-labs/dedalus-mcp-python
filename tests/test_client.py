@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 from __future__ import annotations
@@ -9,6 +9,7 @@ from typing import Any
 import anyio
 import pytest
 
+from dedalus_mcp.client import ClientCapabilitiesConfig, MCPClient
 from dedalus_mcp.types.client.elicitation import ElicitRequestParams, ElicitResult
 from dedalus_mcp.types.client.roots import Root
 from dedalus_mcp.types.client.sampling import CreateMessageRequestParams, CreateMessageResult
@@ -18,7 +19,6 @@ from dedalus_mcp.types.shared.base import EmptyResult
 from dedalus_mcp.types.shared.capabilities import Implementation, ServerCapabilities
 from dedalus_mcp.types.shared.content import TextContent
 from dedalus_mcp.types.shared.primitives import LATEST_PROTOCOL_VERSION
-from dedalus_mcp.client import ClientCapabilitiesConfig, MCPClient
 
 
 class FakeClientSession:

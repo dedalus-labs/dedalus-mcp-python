@@ -1,21 +1,14 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""JWT validation service for OAuth 2.1 resource servers.
-
-Implements RFC 9068 JWT Profile for OAuth 2.0 Access Tokens with:
-- JWKS fetching and caching (RFC 7517)
-- Signature verification (RS256/ES256)
-- Standard claims validation (exp, iss, aud, nbf)
-- Scope validation
-- Clock skew tolerance
-"""
+"""JWT validation service implementing RFC 9068."""
 
 from __future__ import annotations
 
-import time
 from dataclasses import dataclass, field
+import time
 from typing import Any, Protocol
+
 
 try:
     import httpx
@@ -132,7 +125,7 @@ class JWTValidator(AuthorizationProvider):
         ...     jwks_uri="https://as.dedaluslabs.ai/.well-known/jwks.json",
         ...     issuer="https://as.dedaluslabs.ai",
         ...     audience="https://mcp.example.com",
-        ...     required_scopes=["mcp:tools:call"],
+        ...     required_scopes=["tools:call"],
         ... )
         >>> validator = JWTValidator(config)
         >>> context = await validator.validate("eyJhbGci...")
@@ -140,10 +133,7 @@ class JWTValidator(AuthorizationProvider):
 
     def __init__(self, config: JWTValidatorConfig) -> None:
         if httpx is None or jwt is None:
-            raise ImportError(
-                "JWT validation requires httpx and pyjwt. "
-                "Install with: uv add httpx pyjwt cryptography"
-            )
+            raise ImportError("JWT validation requires httpx and pyjwt. Install with: uv add httpx pyjwt cryptography")
 
         self.config = config
         self._logger = get_logger("dedalus_mcp.jwt_validator")
@@ -200,11 +190,7 @@ class JWTValidator(AuthorizationProvider):
             if self.config.required_scopes:
                 self._validate_scopes(scopes, self.config.required_scopes)
 
-            return AuthorizationContext(
-                subject=claims.get("sub"),
-                scopes=scopes,
-                claims=claims,
-            )
+            return AuthorizationContext(subject=claims.get("sub"), scopes=scopes, claims=claims)
 
         except InvalidSignatureError as exc:
             self._logger.warning(
@@ -213,10 +199,7 @@ class JWTValidator(AuthorizationProvider):
             )
             raise InvalidJWTSignatureError("invalid JWT signature") from exc
         except InvalidTokenError as exc:
-            self._logger.warning(
-                "JWT validation failed",
-                extra={"event": "jwt.validation.failed", "error": str(exc)},
-            )
+            self._logger.warning("JWT validation failed", extra={"event": "jwt.validation.failed", "error": str(exc)})
             raise JWTValidationError(f"JWT validation failed: {exc}") from exc
 
     async def _get_public_key(self, kid: str) -> Any:
@@ -234,10 +217,7 @@ class JWTValidator(AuthorizationProvider):
             # Expired entry – drop so we refetch below.
             self._jwks_cache.pop(kid, None)
 
-        needs_refresh = (
-            cached_entry is None
-            or now - self._jwks_cache_time >= self.config.jwks_cache_ttl
-        )
+        needs_refresh = cached_entry is None or now - self._jwks_cache_time >= self.config.jwks_cache_ttl
 
         if needs_refresh:
             await self._refresh_jwks_cache()
@@ -266,6 +246,7 @@ class JWTValidator(AuthorizationProvider):
 
                 # Convert JWK to public key using PyJWT
                 import json as _json
+
                 from jwt.algorithms import ECAlgorithm, RSAAlgorithm
 
                 kty = key_data.get("kty")
@@ -282,20 +263,17 @@ class JWTValidator(AuthorizationProvider):
                 self._jwks_cache[kid_val] = (public_key, now)
 
             self._logger.debug(
-                "JWKS cache refreshed",
-                extra={"event": "jwks.cache.refresh", "key_count": len(self._jwks_cache)},
+                "JWKS cache refreshed", extra={"event": "jwks.cache.refresh", "key_count": len(self._jwks_cache)}
             )
 
         except Exception as e:
             self._logger.error(
-                "JWKS fetch failed",
-                extra={"event": "jwks.fetch.failed", "error": str(e), "uri": self.config.jwks_uri},
+                "JWKS fetch failed", extra={"event": "jwks.fetch.failed", "error": str(e), "uri": self.config.jwks_uri}
             )
             raise JWKSFetchError(f"failed to fetch JWKS: {e}") from e
 
     def _validate_claims(self, claims: dict[str, Any]) -> None:
         """Validate standard JWT claims per RFC 9068 with skew tolerance."""
-
         now = self.config.clock.now()
 
         # exp is required (enforced during decode) but still validate semantics
@@ -333,7 +311,6 @@ class JWTValidator(AuthorizationProvider):
 
     def _as_timestamp(self, value: Any) -> float | None:
         """Convert JWT time claim values to a float timestamp."""
-
         if value is None:
             return None
 

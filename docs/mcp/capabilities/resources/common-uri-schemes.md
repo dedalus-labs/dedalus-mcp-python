@@ -33,4 +33,3 @@ Git version control integration.
 
 Custom URI schemes **MUST** be in accordance with [RFC3986](https://datatracker.ietf.org/doc/html/rfc3986),
 taking the above guidance in to account.
-

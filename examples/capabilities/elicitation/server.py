@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Server that requests user input from the client.
@@ -24,6 +24,7 @@ import logging
 
 from dedalus_mcp import MCPServer, get_context, tool
 from dedalus_mcp.types import ElicitRequestParams
+
 
 for name in ("mcp", "httpx", "uvicorn"):
     logging.getLogger(name).setLevel(logging.WARNING)
@@ -57,10 +58,9 @@ async def delete_file(path: str) -> dict:
         # User confirmed — perform deletion
         await ctx.info(f"Deletion confirmed for: {path}")
         return {"deleted": True, "path": path}
-    else:
-        # User declined
-        await ctx.info("Deletion cancelled by user")
-        return {"deleted": False, "path": path, "reason": "User cancelled"}
+    # User declined
+    await ctx.info("Deletion cancelled by user")
+    return {"deleted": False, "path": path, "reason": "User cancelled"}
 
 
 @tool(description="Create a user account (collects info)")
@@ -97,8 +97,7 @@ async def create_account(email: str) -> dict:
             "role": response.content.get("role"),
             "newsletter": response.content.get("newsletter", False),
         }
-    else:
-        return {"created": False, "email": email, "reason": "User cancelled setup"}
+    return {"created": False, "email": email, "reason": "User cancelled setup"}
 
 
 @tool(description="Deploy to environment (requires approval)")
@@ -135,14 +134,13 @@ async def deploy(environment: str, version: str) -> dict:
             "approved_by": "user",
             "reason": response.content.get("reason"),
         }
-    else:
-        await ctx.info(f"Deployment rejected: {response.content.get('reason', 'No reason given')}")
-        return {
-            "deployed": False,
-            "environment": environment,
-            "version": version,
-            "reason": response.content.get("reason", "User rejected"),
-        }
+    await ctx.info(f"Deployment rejected: {response.content.get('reason', 'No reason given')}")
+    return {
+        "deployed": False,
+        "environment": environment,
+        "version": version,
+        "reason": response.content.get("reason", "User rejected"),
+    }
 
 
 server.collect(delete_file, create_account, deploy)

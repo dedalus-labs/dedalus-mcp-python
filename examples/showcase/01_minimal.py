@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Minimal MCP server in 15 lines.
@@ -12,7 +12,9 @@ Usage:
 """
 
 import asyncio
+
 from dedalus_mcp import MCPServer, tool
+
 
 server = MCPServer("minimal")
 

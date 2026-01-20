@@ -1,18 +1,19 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Composable MCP server built on the reference SDK."""
+"""A composable MCP server."""
 
 from __future__ import annotations
 
 import base64
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from contextlib import AsyncExitStack, asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from functools import wraps
 import inspect
 import time
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator, Literal, Mapping
+from typing import TYPE_CHECKING, Any, Literal
 
 import anyio
 
@@ -31,31 +32,13 @@ from mcp.server.lowlevel.helper_types import ReadResourceContents
 from mcp.server.lowlevel.server import NotificationOptions, Server, request_ctx
 from mcp.server.lowlevel.server import lifespan as default_lifespan
 from mcp.server.transport_security import TransportSecuritySettings
-from mcp.shared.exceptions import McpError
 from mcp.shared.context import RequestContext
+from mcp.shared.exceptions import McpError
 from mcp.shared.message import ServerMessageMetadata
 from mcp.shared.session import RequestResponder
 
-from ..types.client.roots import ListRootsRequest, ListRootsResult, RootsListChangedNotification
-from ..types.client.sampling import CreateMessageRequestParams, CreateMessageResult
-from ..types.client.elicitation import ElicitRequestParams, ElicitResult
-from ..types.lifecycle import InitializedNotification
-from ..types.messages import ClientNotification, ClientRequest, ServerRequest, ServerResult
-from ..types.server.completions import Completion, CompletionArgument, CompletionContext, ResourceTemplateReference
-from ..types.server.prompts import GetPromptResult, ListPromptsRequest, ListPromptsResult, PromptReference
-from ..types.server.resources import (
-    ListResourcesRequest,
-    ListResourcesResult,
-    ListResourceTemplatesRequest,
-    ListResourceTemplatesResult,
-)
-from ..types.server.tools import ListToolsRequest, ListToolsResult
-from ..types.shared.base import ErrorData, INTERNAL_ERROR, INVALID_PARAMS, METHOD_NOT_FOUND, RequestParams
-from ..types.shared.capabilities import Icon, ServerCapabilities
-from ..types.shared.content import BlobResourceContents, ContentBlock, TextContent, TextResourceContents
-from ..types.shared.primitives import LATEST_PROTOCOL_VERSION, LoggingLevel
-
 from .authorization import AuthorizationConfig, AuthorizationManager, AuthorizationProvider
+from .config import ServerConfig
 from .notifications import DefaultNotificationSink, NotificationSink
 from .services import (
     CompletionService,
@@ -81,34 +64,48 @@ from .services.protocols import (
 )
 from .subscriptions import SubscriptionManager
 from .transports import ASGIRunConfig, StdioTransport, StreamableHTTPTransport
-from ..completion import CompletionSpec
-from ..completion import extract_completion_spec
+from ..completion import CompletionSpec, extract_completion_spec
 from ..completion import reset_active_server as reset_completion_server
 from ..completion import set_active_server as set_completion_server
-from ..prompt import PromptSpec
-from ..prompt import extract_prompt_spec
+from ..context import RUNTIME_CONTEXT_KEY
+from ..prompt import PromptSpec, extract_prompt_spec
 from ..prompt import reset_active_server as reset_prompt_server
 from ..prompt import set_active_server as set_prompt_server
-from ..resource import ResourceSpec
-from ..resource import extract_resource_spec
+from ..resource import ResourceSpec, extract_resource_spec
 from ..resource import reset_active_server as reset_resource_server
 from ..resource import set_active_server as set_resource_server
-from ..resource_template import ResourceTemplateSpec
-from ..resource_template import extract_resource_template_spec
+from ..resource_template import ResourceTemplateSpec, extract_resource_template_spec
 from ..resource_template import reset_active_server as reset_resource_template_server
 from ..resource_template import set_active_server as set_resource_template_server
-from ..tool import ToolSpec
-from ..tool import extract_tool_spec
+from ..tool import ToolSpec, extract_tool_spec
 from ..tool import reset_active_server as reset_tool_server
 from ..tool import set_active_server as set_tool_server
+from ..types.client.elicitation import ElicitRequestParams, ElicitResult
+from ..types.client.roots import ListRootsRequest, ListRootsResult, RootsListChangedNotification
+from ..types.client.sampling import CreateMessageRequestParams, CreateMessageResult
+from ..types.lifecycle import InitializedNotification
+from ..types.messages import ClientNotification, ClientRequest, ServerRequest, ServerResult
+from ..types.server.completions import Completion, CompletionArgument, CompletionContext, ResourceTemplateReference
+from ..types.server.prompts import GetPromptResult, ListPromptsRequest, ListPromptsResult, PromptReference
+from ..types.server.resources import (
+    ListResourcesRequest,
+    ListResourcesResult,
+    ListResourceTemplatesRequest,
+    ListResourceTemplatesResult,
+)
+from ..types.server.tools import ListToolsRequest, ListToolsResult
+from ..types.shared.base import INTERNAL_ERROR, INVALID_PARAMS, METHOD_NOT_FOUND, ErrorData, RequestParams
+from ..types.shared.capabilities import Icon, ServerCapabilities
+from ..types.shared.content import BlobResourceContents, ContentBlock, TextContent, TextResourceContents
+from ..types.shared.primitives import LoggingLevel
 from ..utils import get_logger
-from ..context import RUNTIME_CONTEXT_KEY, context_scope, get_context
 
 
 if TYPE_CHECKING:
     from anyio.abc import TaskGroup
     from mcp.server.models import InitializationOptions
     from mcp.server.session import ServerSession
+
     from .connectors import Connection
     from .resolver import ConnectionResolver
 
@@ -144,14 +141,45 @@ _SPEC_URLS = {
 
 
 class MCPServer(Server[Any, Any]):
-    """Spec-aligned server surface for MCP applications."""
+    """Spec-aligned server surface for MCP applications.
 
-    _PAGINATION_LIMIT = 50
+    Basic usage with decorators:
+
+        >>> from dedalus_mcp import MCPServer, tool
+        >>>
+        >>> server = MCPServer("calculator")
+        >>>
+        >>> @tool(description="Add two numbers")
+        ... def add(a: int, b: int) -> int:
+        ...     return a + b
+        >>>
+        >>> server.collect(add)
+
+    With configuration:
+
+        >>> from dedalus_mcp.server import ServerConfig, SamplingConfig
+        >>>
+        >>> config = ServerConfig(
+        ...     sampling=SamplingConfig(timeout=30.0), pagination_limit=100),
+        ... )
+        >>> server = MCPServer("my-server", config=config)
+
+    With authorization:
+
+        >>> from dedalus_mcp.server.auth import AuthorizationConfig
+        >>>
+        >>> server = MCPServer(
+        ...     "protected-server", authorization=AuthorizationConfig(enabled=True)
+        ... )
+    """
 
     def __init__(
         self,
         name: str,
         *,
+        # Bundled config for power users
+        config: ServerConfig | None = None,
+        # Common params stay explicit for discoverability
         version: str | None = None,
         instructions: str | None = None,
         website_url: str | None = None,
@@ -164,21 +192,29 @@ class MCPServer(Server[Any, Any]):
         http_security: TransportSecuritySettings | None = None,
         authorization: AuthorizationConfig | None = None,
         authorization_server: str = "https://as.dedaluslabs.ai",
-        streamable_http_stateless: bool = False,
+        streamable_http_stateless: bool = True,  # TODO: Defaulting to True for now, but look into this.
         allow_dynamic_tools: bool = False,
         resource_uri: str | None = None,
         connector_kind: str | None = None,
         connector_params: dict[str, type] | None = None,
         auth_methods: list[str] | None = None,
-        connections: list["Connection"] | None = None,
+        connections: list[Connection] | None = None,
     ) -> None:
+        # Resolve config with param overrides taking precedence
+        cfg = config or ServerConfig()
+
+        # Config values can be overridden by explicit params
+        resolved_icons = icons if icons is not None else cfg.icons
+        resolved_notification_sink = notification_sink if notification_sink is not None else cfg.notification_sink
+        pagination_limit = cfg.pagination_limit
+
         self._notification_flags = notification_flags or NotificationFlags()
         self._experimental_capabilities = {key: dict(value) for key, value in (experimental_capabilities or {}).items()}
         self._base_lifespan = lifespan
-        self._connection_resolver: "ConnectionResolver" | None = None
+        self._connection_resolver: ConnectionResolver | None = None
 
         # Build connections map with duplicate name validation
-        self._connections: dict[str, "Connection"] = {}
+        self._connections: dict[str, Connection] = {}
         if connections:
             for conn in connections:
                 if conn.name in self._connections:
@@ -188,7 +224,12 @@ class MCPServer(Server[Any, Any]):
         # Dispatch backend (initialized in _build_runtime_payload)
         self._dispatch_backend: Any = None
         super().__init__(
-            name, version=version, instructions=instructions, website_url=website_url, icons=icons, lifespan=lifespan
+            name,
+            version=version,
+            instructions=instructions,
+            website_url=website_url,
+            icons=resolved_icons,
+            lifespan=lifespan,
         )
         self.lifespan = self._wrap_lifespan(self._base_lifespan)
         self._default_transport = transport.lower() if transport else "streamable-http"
@@ -198,13 +239,13 @@ class MCPServer(Server[Any, Any]):
         loop_impl = "uvloop" if _USING_UVLOOP else "asyncio"
         self._logger.debug("Event loop: %s", loop_impl)
 
-        self._notification_sink: NotificationSink = notification_sink or DefaultNotificationSink()
+        self._notification_sink: NotificationSink = resolved_notification_sink or DefaultNotificationSink()
 
         self._subscription_manager: SubscriptionManager = SubscriptionManager()
         self.resources: ResourcesService = ResourcesService(
             subscription_manager=self._subscription_manager,
             logger=self._logger,
-            pagination_limit=self._PAGINATION_LIMIT,
+            pagination_limit=pagination_limit,
             notification_sink=self._notification_sink,
         )
         self.roots: RootsService = RootsService(self._call_roots_list)
@@ -213,17 +254,24 @@ class MCPServer(Server[Any, Any]):
             attach_callable=self._attach_tool,
             detach_callable=self._detach_tool,
             logger=self._logger,
-            pagination_limit=self._PAGINATION_LIMIT,
+            pagination_limit=pagination_limit,
             notification_sink=self._notification_sink,
         )
         self.prompts: PromptsService = PromptsService(
-            logger=self._logger, pagination_limit=self._PAGINATION_LIMIT, notification_sink=self._notification_sink
+            logger=self._logger, pagination_limit=pagination_limit, notification_sink=self._notification_sink
         )
-        self.completions: CompletionService = CompletionService()
+        self.completions: CompletionService = CompletionService(limit=cfg.completion_limit)
         self.logging_service: LoggingService = LoggingService(self._logger, notification_sink=self._notification_sink)
-        self.sampling: SamplingService = SamplingService()
-        self.elicitation: ElicitationService = ElicitationService()
-        self.ping: PingService = PingService(notification_sink=self._notification_sink, logger=self._logger)
+        self.sampling: SamplingService = SamplingService(
+            timeout=cfg.sampling.timeout,
+            max_concurrent=cfg.sampling.max_concurrent,
+            failure_threshold=cfg.sampling.failure_threshold,
+            cooldown_seconds=cfg.sampling.cooldown_seconds,
+        )
+        self.elicitation: ElicitationService = ElicitationService(timeout=cfg.elicitation.timeout)
+        self.ping: PingService = PingService(
+            notification_sink=self._notification_sink, logger=self._logger, default_phi=cfg.ping.phi_threshold
+        )
 
         self._http_security_settings = (
             http_security if http_security is not None else self._default_http_security_settings()
@@ -247,8 +295,10 @@ class MCPServer(Server[Any, Any]):
             auth_config = authorization
             auto_configure_jwt = False
         elif connections:
-            # Connections require auth to resolve name → handle from JWT
-            auth_config = AuthorizationConfig(enabled=True)
+            # Connections require auth to resolve name → handle from JWT.
+            # Pass authorization_server to AuthorizationConfig so it appears in
+            # the /.well-known/oauth-protected-resource metadata (RFC 9728).
+            auth_config = AuthorizationConfig(enabled=True, authorization_servers=[authorization_server])
             auto_configure_jwt = True
         else:
             auth_config = AuthorizationConfig()
@@ -257,14 +307,18 @@ class MCPServer(Server[Any, Any]):
         self._authorization_manager: AuthorizationManager | None = None
         if auth_config.enabled:
             self._authorization_manager = AuthorizationManager(auth_config)
-            # Auto-configure JWT validator when connections trigger auto-enable
+            # Auto-configure JWT validator when connections trigger auto-enable.
+            #
+            # TODO(RFC 9728): Support multi-issuer JWT validation. Per RFC 9728,
+            # authorization_servers is a list because a resource MAY trust tokens
+            # from multiple AS's. Currently we only validate against one issuer.
+            # For enterprise multi-IdP scenarios, we'd need to try validation
+            # against each configured AS until one succeeds.
             if auto_configure_jwt:
                 from .services.jwt_validator import JWTValidator, JWTValidatorConfig
+
                 as_url = authorization_server.rstrip("/")
-                jwt_config = JWTValidatorConfig(
-                    jwks_uri=f"{as_url}/.well-known/jwks.json",
-                    issuer=as_url,
-                )
+                jwt_config = JWTValidatorConfig(jwks_uri=f"{as_url}/.well-known/jwks.json", issuer=as_url)
                 self._authorization_manager.set_provider(JWTValidator(jwt_config))
 
         self._transport_factories: dict[str, TransportFactory] = {}
@@ -387,7 +441,7 @@ class MCPServer(Server[Any, Any]):
         return self._auth_methods
 
     @property
-    def connections(self) -> dict[str, "Connection"]:
+    def connections(self) -> dict[str, Connection]:
         """Connection definitions declared by this server."""
         return self._connections
 
@@ -491,7 +545,7 @@ class MCPServer(Server[Any, Any]):
 
     def start_ping_heartbeat(
         self,
-        task_group: "TaskGroup",
+        task_group: TaskGroup,
         *,
         interval: float = 5.0,
         jitter: float = 0.2,
@@ -533,10 +587,12 @@ class MCPServer(Server[Any, Any]):
         for fn in fns:
             spec = self._extract_spec(fn)
             if spec is None:
-                raise ValueError(
-                    f"'{getattr(fn, '__name__', repr(fn))}' has no Dedalus MCP metadata. "
+                fn_name = getattr(fn, "__name__", repr(fn))
+                msg = (
+                    f"'{fn_name}' has no Dedalus MCP metadata. "
                     "Decorate with @tool, @resource, @prompt, @completion, or @resource_template."
                 )
+                raise ValueError(msg)
             self._register_spec(spec)
 
     def collect_from(self, *modules: ModuleType) -> None:
@@ -679,7 +735,6 @@ class MCPServer(Server[Any, Any]):
 
     def record_tool_mutation(self, *, operation: str) -> None:
         """Public entry point for capability services to report tool registry changes."""
-
         self._record_tool_mutation(operation=operation)
 
     def _record_tool_mutation(self, *, operation: str) -> None:
@@ -728,7 +783,7 @@ class MCPServer(Server[Any, Any]):
 
         return decorator
 
-    async def _call_roots_list(self, session: "ServerSession", params: Mapping[str, Any] | None) -> Mapping[str, Any]:
+    async def _call_roots_list(self, session: ServerSession, params: Mapping[str, Any] | None) -> Mapping[str, Any]:
         list_params: RequestParams | None = None
         if params is not None:
             list_params = RequestParams.model_validate(params)
@@ -801,14 +856,12 @@ class MCPServer(Server[Any, Any]):
         return self._authorization_manager
 
     @property
-    def connection_resolver(self) -> "ConnectionResolver" | None:
+    def connection_resolver(self) -> ConnectionResolver | None:
         """Return the configured connection resolver, if any."""
-
         return self._connection_resolver
 
-    def set_connection_resolver(self, resolver: "ConnectionResolver" | None) -> None:
+    def set_connection_resolver(self, resolver: ConnectionResolver | None) -> None:
         """Configure the resolver used by Context.resolve_client calls."""
-
         self._connection_resolver = resolver
 
     def set_authorization_provider(self, provider: AuthorizationProvider) -> None:
@@ -821,7 +874,7 @@ class MCPServer(Server[Any, Any]):
     # //////////////////////////////////////////////////////////////////
 
     @contextmanager
-    def binding(self) -> Iterator["MCPServer"]:
+    def binding(self) -> Iterator[MCPServer]:
         self._binding_depth += 1
         tool_token = set_tool_server(self)
         resource_token = set_resource_server(self)
@@ -884,11 +937,7 @@ class MCPServer(Server[Any, Any]):
         if self._dispatch_backend is None and self._connections:
             self._initialize_dispatch_backend()
 
-        return {
-            "server": self,
-            "resolver": self._connection_resolver,
-            "dispatch_backend": self._dispatch_backend,
-        }
+        return {"server": self, "resolver": self._connection_resolver, "dispatch_backend": self._dispatch_backend}
 
     def _initialize_dispatch_backend(self) -> None:
         """Initialize dispatch backend from environment.
@@ -905,7 +954,7 @@ class MCPServer(Server[Any, Any]):
         self,
         message: RequestResponder[ClientRequest, ServerResult],
         req: Any,
-        session: "ServerSession",
+        session: ServerSession,
         lifespan_context: Any,
         raise_exceptions: bool,
     ) -> None:

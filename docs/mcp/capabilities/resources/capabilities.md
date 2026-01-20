@@ -50,4 +50,3 @@ either, or both:
   }
 }
 ```
-

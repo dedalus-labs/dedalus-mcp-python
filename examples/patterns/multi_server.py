@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Multi-server patterns: same tools, different configurations.
@@ -22,6 +22,7 @@ import logging
 import anyio
 
 from dedalus_mcp import MCPServer, tool
+
 
 for name in ("mcp", "httpx", "uvicorn"):
     logging.getLogger(name).setLevel(logging.WARNING)
@@ -130,4 +131,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

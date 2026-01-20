@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Authorization-code MCP client for the Supabase OAuth demo.
@@ -11,11 +11,11 @@ works with the production stack once the missing UI pieces land.
 Usage::
 
     # 1. Start the Go Authorization Server (dedalus-browser is seeded)
-    $ cd ~/Desktop/dedalus-labs/codebase/mcp-knox/openmcp-authorization-server
+    $ cd ~/Desktop/dedalus-labs/codebase/mcp-knox/dedalus-mcp-authorization-server
     $ go run ./cmd/serve
 
     # 2. Start the protected resource server (new shell)
-    $ cd ~/Desktop/dedalus-labs/codebase/openmcp
+    $ cd ~/Desktop/dedalus-labs/codebase/dedalus-mcp
     $ uv run python examples/auth/02_as/server.py
 
     # 3. Run the PKCE client locally; it hosts http://127.0.0.1:8400/callback,
@@ -37,17 +37,16 @@ import argparse
 import asyncio
 import base64
 import hashlib
+from http.server import BaseHTTPRequestHandler
 import json
 import os
 import secrets
+import socketserver
 import string
 import threading
-import webbrowser
 from typing import Any
 from urllib.parse import parse_qs, urlparse
-
-from http.server import BaseHTTPRequestHandler
-import socketserver
+import webbrowser
 
 import httpx
 from pydantic import ValidationError
@@ -63,10 +62,11 @@ from dedalus_mcp.types import (
 )
 from dedalus_mcp.utils import to_json
 
+
 DEFAULT_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://127.0.0.1:8000/mcp")
 DEFAULT_RESOURCE = os.getenv("MCP_RESOURCE_URL", "http://127.0.0.1:8000")
 DEFAULT_ISSUER = os.getenv("AS_ISSUER", "http://localhost:4444")
-DEFAULT_SCOPE = os.getenv("MCP_REQUIRED_SCOPES", "mcp:tools:call")
+DEFAULT_SCOPE = os.getenv("MCP_REQUIRED_SCOPES", "tools:call")
 DEFAULT_CLIENT_ID = os.getenv("MCP_CLIENT_ID", "dedalus-browser")
 DEFAULT_CALLBACK_PORT = int(os.getenv("MCP_CALLBACK_PORT", "8400"))
 
@@ -112,10 +112,7 @@ def _start_callback_listener(state: str, port: int) -> tuple[socketserver.TCPSer
                 "error_description": params.get("error_description", [None])[0],
             }
 
-            body = (
-                "<html><body><h1>Authentication complete</h1>"
-                "<p>You can return to the CLI.</p></body></html>"
-            )
+            body = "<html><body><h1>Authentication complete</h1><p>You can return to the CLI.</p></body></html>"
             encoded = body.encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -215,9 +212,7 @@ async def fetch_access_token(args: argparse.Namespace) -> dict[str, Any]:
             ) from exc
 
     if token_response.status_code != 200:
-        raise OAuthError(
-            f"Token request failed: HTTP {token_response.status_code} {token_response.text}"
-        )
+        raise OAuthError(f"Token request failed: HTTP {token_response.status_code} {token_response.text}")
     return token_response.json()
 
 
@@ -227,9 +222,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--resource", default=DEFAULT_RESOURCE, help="Resource/audience URI (default: %(default)s)")
     parser.add_argument("--issuer", default=DEFAULT_ISSUER, help="Authorization Server issuer (default: %(default)s)")
     parser.add_argument(
-        "--client-id",
-        default=DEFAULT_CLIENT_ID,
-        help="OAuth client_id registered with the AS (default: %(default)s)",
+        "--client-id", default=DEFAULT_CLIENT_ID, help="OAuth client_id registered with the AS (default: %(default)s)"
     )
     parser.add_argument(
         "--redirect-uri",
@@ -252,10 +245,7 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["streamable-http", "lambda-http"],
         help="MCP transport (default: %(default)s)",
     )
-    parser.add_argument(
-        "--access-token",
-        help="Skip OAuth flow and use an existing access token",
-    )
+    parser.add_argument("--access-token", help="Skip OAuth flow and use an existing access token")
     return parser
 
 
@@ -265,9 +255,7 @@ async def call_supabase_tool(args: argparse.Namespace, access_token: str) -> Non
         init = client.initialize_result
         if init is None:
             raise RuntimeError("MCP initialize handshake failed")
-        print(
-            f"Connected to {init.serverInfo.name} v{init.serverInfo.version or '0.0.0'} via {args.transport}"
-        )
+        print(f"Connected to {init.serverInfo.name} v{init.serverInfo.version or '0.0.0'} via {args.transport}")
         print(f"Negotiated MCP protocol version: {init.protocolVersion}\n")
 
         list_request = ClientRequest(ListToolsRequest())

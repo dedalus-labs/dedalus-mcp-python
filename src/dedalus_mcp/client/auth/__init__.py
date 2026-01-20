@@ -1,33 +1,31 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """OAuth authentication for MCP clients.
 
-This module provides spec-compliant OAuth authentication per MCP authorization spec:
-- ClientCredentialsAuth: M2M/backend service authentication
-- TokenExchangeAuth: User delegation via token exchange (RFC 8693)
-- DeviceCodeAuth: CLI tool authentication (stub)
-- AuthorizationCodeAuth: Browser-based authentication (stub)
+M2M / backend service:
 
-Example usage:
+    >>> auth = await ClientCredentialsAuth.from_resource(
+    ...     resource_url="https://mcp.example.com/mcp",
+    ...     client_id="my-service",
+    ...     client_secret=os.environ["CLIENT_SECRET"],
+    ... )
+    >>> async with await MCPClient.connect(
+    ...     "https://mcp.example.com/mcp", auth=auth
+    ... ) as client:
+    ...     tools = await client.list_tools()
 
-    # M2M / Backend service
-    auth = await ClientCredentialsAuth.from_resource(
-        resource_url="https://mcp.example.com/mcp",
-        client_id="m2m",
-        client_secret=os.environ["M2M_SECRET"],
-    )
-    await auth.get_token()
-    client = await MCPClient.connect("https://mcp.example.com/mcp", auth=auth)
+User delegation (e.g., from Clerk token):
 
-    # User delegation (e.g., from Clerk token)
-    auth = await TokenExchangeAuth.from_resource(
-        resource_url="https://mcp.example.com/mcp",
-        client_id="dedalus-sdk",
-        subject_token=clerk_session_token,
-    )
-    await auth.get_token()
-    client = await MCPClient.connect("https://mcp.example.com/mcp", auth=auth)
+    >>> auth = await TokenExchangeAuth.from_resource(
+    ...     resource_url="https://mcp.example.com/mcp",
+    ...     client_id="my-app",
+    ...     subject_token=clerk_session_token,
+    ... )
+    >>> async with await MCPClient.connect(
+    ...     "https://mcp.example.com/mcp", auth=auth
+    ... ) as client:
+    ...     tools = await client.list_tools()
 """
 
 from .authorization_code import AuthorizationCodeAuth
@@ -48,6 +46,7 @@ from .models import (
     parse_www_authenticate,
 )
 from .token_exchange import TokenExchangeAuth
+
 
 __all__ = [
     # Primary auth classes

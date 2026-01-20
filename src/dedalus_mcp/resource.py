@@ -1,15 +1,9 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Resource registration utilities for Dedalus MCP.
+"""Resource registration utilities.
 
-Implements the resources capability as specified in the Model Context Protocol:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/server/resources
-  (resources capability, list and read operations)
-
-Usage mirrors the :mod:`dedalus_mcp.tool` ambient registration pattern. Decorated
-functions return text (str) or binary (bytes) content for resource URIs.
+Decorated functions return text (str) or binary (bytes) content for resource URIs.
 """
 
 from __future__ import annotations
@@ -63,8 +57,25 @@ def resource(
 ) -> Callable[[ResourceFn], ResourceFn]:
     """Register a resource-producing callable.
 
+    Text resource:
+
+        >>> from dedalus_mcp import MCPServer, resource
+        >>>
+        >>> @resource("file:///config.json", mime_type="application/json")
+        ... def config() -> str:
+        ...     return '{"debug": true}'
+        >>>
+        >>> server = MCPServer("my-server")
+        >>> server.collect(config)
+
+    Binary resource:
+
+        >>> @resource("file:///logo.png", mime_type="image/png")
+        ... def logo() -> bytes:
+        ...     return open("logo.png", "rb").read()
+
     The decorated function must return ``str`` (text) or ``bytes`` (binary)
-    content.  Registration happens immediately if inside
+    content. Registration happens immediately if inside
     :meth:`dedalus_mcp.server.MCPServer.binding`.
     """
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Tests for coroutine utility functions.
@@ -20,6 +20,7 @@ from dedalus_mcp.utils import maybe_await, maybe_await_with_args
 @pytest.mark.asyncio
 async def test_maybe_await_with_sync_callable() -> None:
     """maybe_await evaluates sync callables correctly."""
+
     def sync_fn() -> int:
         return 42
 
@@ -30,6 +31,7 @@ async def test_maybe_await_with_sync_callable() -> None:
 @pytest.mark.asyncio
 async def test_maybe_await_with_async_callable() -> None:
     """maybe_await evaluates async callables correctly."""
+
     async def async_fn() -> int:
         await asyncio.sleep(0)
         return 42
@@ -48,6 +50,7 @@ async def test_maybe_await_with_direct_value() -> None:
 @pytest.mark.asyncio
 async def test_maybe_await_with_coroutine() -> None:
     """maybe_await handles coroutines correctly."""
+
     async def async_fn() -> int:
         await asyncio.sleep(0)
         return 42
@@ -60,6 +63,7 @@ async def test_maybe_await_with_coroutine() -> None:
 @pytest.mark.asyncio
 async def test_maybe_await_with_args_sync_callable() -> None:
     """maybe_await_with_args evaluates sync callables with arguments."""
+
     def add(a: int, b: int) -> int:
         return a + b
 
@@ -70,6 +74,7 @@ async def test_maybe_await_with_args_sync_callable() -> None:
 @pytest.mark.asyncio
 async def test_maybe_await_with_args_async_callable() -> None:
     """maybe_await_with_args evaluates async callables with arguments."""
+
     async def add_async(a: int, b: int) -> int:
         await asyncio.sleep(0)
         return a + b
@@ -81,6 +86,7 @@ async def test_maybe_await_with_args_async_callable() -> None:
 @pytest.mark.asyncio
 async def test_maybe_await_with_args_kwargs() -> None:
     """maybe_await_with_args handles keyword arguments."""
+
     def compute(a: int, b: int = 10) -> int:
         return a * b
 
@@ -91,6 +97,7 @@ async def test_maybe_await_with_args_kwargs() -> None:
 @pytest.mark.asyncio
 async def test_maybe_await_with_args_async_kwargs() -> None:
     """maybe_await_with_args handles async with keyword arguments."""
+
     async def compute_async(a: int, b: int = 10) -> int:
         await asyncio.sleep(0)
         return a * b
@@ -109,6 +116,7 @@ async def test_maybe_await_with_args_direct_value() -> None:
 @pytest.mark.asyncio
 async def test_maybe_await_with_args_coroutine() -> None:
     """maybe_await_with_args handles already-created coroutines."""
+
     async def async_fn(x: int) -> int:
         await asyncio.sleep(0)
         return x * 2

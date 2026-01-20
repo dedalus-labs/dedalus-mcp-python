@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Device-authorization MCP client for the Supabase OAuth demo.
@@ -11,11 +11,11 @@ works with the production stack once the missing UI pieces land.
 Usage::
 
     # 1. Make sure the Authorization Server is running
-    $ cd ~/Desktop/dedalus-labs/codebase/mcp-knox/openmcp-authorization-server
+    $ cd ~/Desktop/dedalus-labs/codebase/mcp-knox/dedalus-mcp-authorization-server
     $ go run ./cmd/serve
 
     # 2. Start the resource server (separate shell)
-    $ cd ~/Desktop/dedalus-labs/codebase/openmcp
+    $ cd ~/Desktop/dedalus-labs/codebase/dedalus-mcp
     $ uv run python examples/auth/02_as/server.py
 
     # 3. Run the device-flow client; it will fetch a token and call the tool
@@ -35,9 +35,7 @@ import argparse
 import asyncio
 import json
 import os
-import secrets
 from typing import Any
-from urllib.parse import urlparse
 
 import httpx
 from pydantic import ValidationError
@@ -53,10 +51,11 @@ from dedalus_mcp.types import (
 )
 from dedalus_mcp.utils import to_json
 
+
 DEFAULT_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://127.0.0.1:8000/mcp")
 DEFAULT_RESOURCE = os.getenv("MCP_RESOURCE_URL", "http://127.0.0.1:8000")
 DEFAULT_ISSUER = os.getenv("AS_ISSUER", "http://localhost:4444")
-DEFAULT_SCOPE = os.getenv("MCP_REQUIRED_SCOPES", "mcp:tools:call")
+DEFAULT_SCOPE = os.getenv("MCP_REQUIRED_SCOPES", "tools:call")
 DEFAULT_CLIENT_ID = os.getenv("MCP_CLIENT_ID", "dedalus-cli")
 
 
@@ -66,16 +65,11 @@ class OAuthError(RuntimeError):
 
 async def fetch_access_token(args: argparse.Namespace) -> dict[str, Any]:
     """Run the RFC 8628 device authorization flow against the AS."""
-
     token_url = f"{args.issuer.rstrip('/')}/oauth2/token"
     device_url = f"{args.issuer.rstrip('/')}/oauth2/device/auth"
 
     async with httpx.AsyncClient(timeout=30.0) as client:
-        payload = {
-            "client_id": args.client_id,
-            "scope": args.scope,
-            "resource": args.resource,
-        }
+        payload = {"client_id": args.client_id, "scope": args.scope, "resource": args.resource}
         try:
             device_response = await client.post(device_url, data=payload)
         except httpx.ConnectError as exc:
@@ -84,9 +78,7 @@ async def fetch_access_token(args: argparse.Namespace) -> dict[str, Any]:
                 "Ensure AS_ISSUER is correct and the server is running."
             ) from exc
         if device_response.status_code != 200:
-            raise OAuthError(
-                f"Device authorization failed: HTTP {device_response.status_code} {device_response.text}"
-            )
+            raise OAuthError(f"Device authorization failed: HTTP {device_response.status_code} {device_response.text}")
 
         device_json = device_response.json()
         device_code = device_json["device_code"]
@@ -129,9 +121,7 @@ async def fetch_access_token(args: argparse.Namespace) -> dict[str, Any]:
             if error == "slow_down":
                 interval += 5
                 continue
-            raise OAuthError(
-                f"Device flow failed: error={error} description={error_payload.get('error_description')}"
-            )
+            raise OAuthError(f"Device flow failed: error={error} description={error_payload.get('error_description')}")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -140,9 +130,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--resource", default=DEFAULT_RESOURCE, help="Resource/audience URI (default: %(default)s)")
     parser.add_argument("--issuer", default=DEFAULT_ISSUER, help="Authorization Server issuer (default: %(default)s)")
     parser.add_argument(
-        "--client-id",
-        default=DEFAULT_CLIENT_ID,
-        help="OAuth client_id registered with the AS (default: %(default)s)",
+        "--client-id", default=DEFAULT_CLIENT_ID, help="OAuth client_id registered with the AS (default: %(default)s)"
     )
     parser.add_argument("--scope", default=DEFAULT_SCOPE, help="Space-separated scopes (default: %(default)s)")
     parser.add_argument("--table", default="users", help="Supabase table to query")
@@ -154,10 +142,7 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["streamable-http", "lambda-http"],
         help="MCP transport (default: %(default)s)",
     )
-    parser.add_argument(
-        "--access-token",
-        help="Skip OAuth flow and use an existing access token",
-    )
+    parser.add_argument("--access-token", help="Skip OAuth flow and use an existing access token")
     return parser
 
 
@@ -167,9 +152,7 @@ async def call_supabase_tool(args: argparse.Namespace, access_token: str) -> Non
         init = client.initialize_result
         if init is None:
             raise RuntimeError("MCP initialize handshake failed")
-        print(
-            f"Connected to {init.serverInfo.name} v{init.serverInfo.version or '0.0.0'} via {args.transport}"
-        )
+        print(f"Connected to {init.serverInfo.name} v{init.serverInfo.version or '0.0.0'} via {args.transport}")
         print(f"Negotiated MCP protocol version: {init.protocolVersion}\n")
 
         list_request = ClientRequest(ListToolsRequest())

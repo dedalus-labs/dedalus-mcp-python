@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """End-to-end transport tests for subscription flows.
@@ -26,6 +26,7 @@ from mcp.shared.session import RequestResponder
 import pytest
 
 from dedalus_mcp import MCPServer, resource
+from dedalus_mcp.server import NotificationFlags
 from dedalus_mcp.types.lifecycle import InitializeResult
 from dedalus_mcp.types.messages import ClientRequest, ClientResult, ServerNotification, ServerRequest
 from dedalus_mcp.types.server.resources import (
@@ -38,7 +39,6 @@ from dedalus_mcp.types.server.resources import (
 )
 from dedalus_mcp.types.shared.base import EmptyResult, ErrorData
 from dedalus_mcp.types.shared.capabilities import Implementation
-from dedalus_mcp.server import NotificationFlags
 
 
 async def _exercise_transport(

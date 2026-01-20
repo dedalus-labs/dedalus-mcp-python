@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Example: Client Credentials Authentication with the new auth module.
@@ -27,13 +27,8 @@ import argparse
 import asyncio
 import os
 
-from dedalus_mcp.client.auth import (
-    AuthorizationServerMetadata,
-    ClientCredentialsAuth,
-    TokenError,
-    discover_authorization_server,
-    fetch_authorization_server_metadata,
-)
+from dedalus_mcp.client.auth import ClientCredentialsAuth, TokenError, fetch_authorization_server_metadata
+
 
 # Defaults for preview environment
 DEFAULT_ISSUER = os.getenv("AS_ISSUER", "https://preview.as.dedaluslabs.ai")
@@ -43,29 +38,18 @@ DEFAULT_CLIENT_SECRET = os.getenv("MCP_CLIENT_SECRET")
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Client Credentials Auth Example",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="Client Credentials Auth Example", formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument(
-        "--issuer",
-        default=DEFAULT_ISSUER,
-        help=f"Authorization Server issuer URL (default: {DEFAULT_ISSUER})",
+        "--issuer", default=DEFAULT_ISSUER, help=f"Authorization Server issuer URL (default: {DEFAULT_ISSUER})"
     )
     parser.add_argument(
-        "--client-id",
-        default=DEFAULT_CLIENT_ID,
-        help=f"OAuth client ID (default: {DEFAULT_CLIENT_ID})",
+        "--client-id", default=DEFAULT_CLIENT_ID, help=f"OAuth client ID (default: {DEFAULT_CLIENT_ID})"
     )
     parser.add_argument(
-        "--client-secret",
-        default=DEFAULT_CLIENT_SECRET,
-        help="OAuth client secret (default: MCP_CLIENT_SECRET env)",
+        "--client-secret", default=DEFAULT_CLIENT_SECRET, help="OAuth client secret (default: MCP_CLIENT_SECRET env)"
     )
-    parser.add_argument(
-        "--scope",
-        default=None,
-        help="Optional scope to request",
-    )
+    parser.add_argument("--scope", default=None, help="Optional scope to request")
     return parser
 
 
@@ -94,10 +78,7 @@ async def main() -> None:
 
     # Create auth instance
     auth = ClientCredentialsAuth(
-        server_metadata=server_metadata,
-        client_id=args.client_id,
-        client_secret=args.client_secret,
-        scope=args.scope,
+        server_metadata=server_metadata, client_id=args.client_id, client_secret=args.client_secret, scope=args.scope
     )
 
     print(f"Requesting token for client '{auth.client_id}'...")

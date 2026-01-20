@@ -1,17 +1,7 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""High-level client entrypoint.
-
-`open_connection` wraps transport selection and :class:`~dedalus_mcp.client.MCPClient`
-so applications can talk to an MCP server with a single ``async with`` block.
-
-The helper deliberately keeps the surface tiny: callers choose a transport via
-``transport=`` (defaulting to streamable HTTP) and receive an
-:class:`~dedalus_mcp.client.MCPClient` instance that already negotiated
-capabilities. Power users can still reach the underlying transport by using
-the lower-level helpers directly.
-"""
+"""High-level client connection helper."""
 
 from __future__ import annotations
 
@@ -20,7 +10,6 @@ from contextlib import asynccontextmanager
 from datetime import timedelta
 
 import httpx
-
 from mcp.client.streamable_http import MCP_PROTOCOL_VERSION, streamable_http_client
 from mcp.shared._httpx_utils import create_mcp_http_client
 from mcp.types import LATEST_PROTOCOL_VERSION, Implementation
@@ -50,9 +39,7 @@ def _build_http_client(
     sse_timeout_sec = sse_read_timeout.total_seconds() if isinstance(sse_read_timeout, timedelta) else sse_read_timeout
 
     return create_mcp_http_client(
-        headers=base_headers,
-        timeout=httpx.Timeout(timeout_sec, read=sse_timeout_sec),
-        auth=auth,
+        headers=base_headers, timeout=httpx.Timeout(timeout_sec, read=sse_timeout_sec), auth=auth
     )
 
 
@@ -93,11 +80,11 @@ async def open_connection(
 
         async with client:
             async with (
-                streamable_http_client(
-                    url,
-                    http_client=client,
-                    terminate_on_close=terminate_on_close,
-                ) as (read_stream, write_stream, get_session_id),
+                streamable_http_client(url, http_client=client, terminate_on_close=terminate_on_close) as (
+                    read_stream,
+                    write_stream,
+                    get_session_id,
+                ),
                 MCPClient(
                     read_stream,
                     write_stream,
@@ -114,11 +101,11 @@ async def open_connection(
 
         async with client:
             async with (
-                lambda_http_client(
-                    url,
-                    http_client=client,
-                    terminate_on_close=terminate_on_close,
-                ) as (read_stream, write_stream, get_session_id),
+                lambda_http_client(url, http_client=client, terminate_on_close=terminate_on_close) as (
+                    read_stream,
+                    write_stream,
+                    get_session_id,
+                ),
                 MCPClient(
                     read_stream,
                     write_stream,

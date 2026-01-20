@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Client with all capabilities enabled.
@@ -18,8 +18,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-import anyio
 import anthropic
+import anyio
 
 from dedalus_mcp.client import ClientCapabilitiesConfig, open_connection
 from dedalus_mcp.types import (
@@ -42,18 +42,13 @@ from dedalus_mcp.types import (
 SERVER_URL = "http://127.0.0.1:8000/mcp"
 
 
-async def sampling_handler(
-    _context: object, params: CreateMessageRequestParams
-) -> CreateMessageResult | ErrorData:
+async def sampling_handler(_context: object, params: CreateMessageRequestParams) -> CreateMessageResult | ErrorData:
     """Handle sampling requests with Anthropic API."""
     try:
         client = anthropic.AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
         messages = [
-            {
-                "role": msg.role,
-                "content": msg.content.text if hasattr(msg.content, "text") else str(msg.content),
-            }
+            {"role": msg.role, "content": msg.content.text if hasattr(msg.content, "text") else str(msg.content)}
             for msg in params.messages
         ]
 
@@ -61,9 +56,7 @@ async def sampling_handler(
         if params.modelPreferences and params.modelPreferences.hints:
             model = params.modelPreferences.hints[0].name
 
-        response = await client.messages.create(
-            model=model, messages=messages, max_tokens=params.maxTokens or 1024
-        )
+        response = await client.messages.create(model=model, messages=messages, max_tokens=params.maxTokens or 1024)
 
         return CreateMessageResult(
             model=response.model,
@@ -75,9 +68,7 @@ async def sampling_handler(
         return ErrorData(code=-32603, message=f"Sampling failed: {e}")
 
 
-async def elicitation_handler(
-    _context: object, params: ElicitRequestParams
-) -> ElicitResult | ErrorData:
+async def elicitation_handler(_context: object, params: ElicitRequestParams) -> ElicitResult | ErrorData:
     """Handle elicitation requests via CLI prompts (auto-accepts for demo)."""
     try:
         print(f"\n{'=' * 60}\nServer requests: {params.message}\n{'=' * 60}\n")
@@ -86,9 +77,7 @@ async def elicitation_handler(
         for field_name, field_schema in properties.items():
             field_type = field_schema.get("type", "string")
             content[field_name] = (
-                True
-                if field_type == "boolean"
-                else 42 if field_type in ("integer", "number") else "demo-value"
+                True if field_type == "boolean" else 42 if field_type in ("integer", "number") else "demo-value"
             )
         return ElicitResult(action="accept", content=content)
     except Exception as e:
@@ -115,11 +104,9 @@ async def main() -> None:
         initial_roots=initial_roots,
     )
 
-    async with open_connection(
-        url=SERVER_URL, transport="streamable-http", capabilities=capabilities
-    ) as client:
+    async with open_connection(url=SERVER_URL, transport="streamable-http", capabilities=capabilities) as client:
         init = client.initialize_result
-        print(f"Connected with all capabilities enabled")
+        print("Connected with all capabilities enabled")
         print(f"Server: {init.serverInfo.name} | Protocol: {init.protocolVersion}")
 
         caps = init.capabilities

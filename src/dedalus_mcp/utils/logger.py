@@ -1,14 +1,7 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Minimal logging utilities for Dedalus MCP.
-
-The default setup uses only Python's standard library to stay lightweight and
-dependency-free. You can enable structured JSON output and plug in a faster
-serializer like orjson without increasing the base footprint
-
-See examples/advanced/custom_logging for example usage.
-"""
+"""Logging utilities with optional JSON output."""
 
 from __future__ import annotations
 
@@ -25,15 +18,15 @@ BOLD: Final[str] = "\033[1m"
 DIM: Final[str] = "\033[2m"
 
 # Level colors (matches Python 3.13+ traceback style)
-DEBUG_COLOR: Final[str] = "\033[36m"     # Cyan
-INFO_COLOR: Final[str] = "\033[32m"      # Green
-WARNING_COLOR: Final[str] = "\033[33m"   # Yellow
-ERROR_COLOR: Final[str] = "\033[1;31m"   # Bold bright red (Python exception style)
+DEBUG_COLOR: Final[str] = "\033[36m"  # Cyan
+INFO_COLOR: Final[str] = "\033[32m"  # Green
+WARNING_COLOR: Final[str] = "\033[33m"  # Yellow
+ERROR_COLOR: Final[str] = "\033[1;31m"  # Bold bright red (Python exception style)
 CRITICAL_COLOR: Final[str] = "\033[1;35m"  # Bold bright magenta (Python error span style)
 
 # Component colors
 TIMESTAMP_COLOR: Final[str] = "\033[90m"  # Bright black (gray)
-LOGGER_COLOR: Final[str] = "\033[94m"     # Bright blue
+LOGGER_COLOR: Final[str] = "\033[94m"  # Bright blue
 
 DEFAULT_LOGGER_NAME: Final[str] = "dedalus_mcp"
 ENV_LOG_LEVEL: Final[str] = "DEDALUS_MCP_LOG_LEVEL"
@@ -315,6 +308,7 @@ def get_logger(name: str | None = None) -> logging.Logger:
     if not _has_dedalus_mcp_handler(root):
         setup_logger()
     return logging.getLogger(name or DEFAULT_LOGGER_NAME)
+
 
 __all__ = [
     "DEFAULT_LOGGER_NAME",

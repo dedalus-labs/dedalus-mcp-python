@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """License header checker and fixer for Python files.
@@ -10,21 +10,18 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 import re
 import sys
-from pathlib import Path
+
 
 # MIT SPDX license header
-MIT_LICENSE = """# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+MIT_LICENSE = """# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT"""
 
 # Default configuration
 DEFAULT_CONFIG = {
-    "license_mapping": {
-        "mit": {
-            "dirs": ["src", "tests", "examples", ".github/scripts"]
-        }
-    },
+    "license_mapping": {"mit": {"dirs": ["src", "tests", "examples", ".github/scripts"]}},
     "exclude_patterns": [
         "**/venv/**",
         "**/.venv/**",
@@ -101,9 +98,7 @@ def find_python_files(config: dict) -> list[tuple[Path, str, str]]:
                 continue
 
             for file_path in dir_path.rglob("*.py"):
-                if file_path not in seen_files and not should_skip_file(
-                    file_path, config
-                ):
+                if file_path not in seen_files and not should_skip_file(file_path, config):
                     seen_files.add(file_path)
                     license_header = get_license_header(license_type)
                     python_files.append((file_path, license_type, license_header))
@@ -131,9 +126,7 @@ def check_license_header(file_path: Path, expected_header: str) -> bool:
         return False
 
 
-def fix_license_header(
-    file_path: Path, expected_header: str, remove_shebang: bool = True
-) -> bool:
+def fix_license_header(file_path: Path, expected_header: str, remove_shebang: bool = True) -> bool:
     """Fix the license header in a file."""
     try:
         with open(file_path, encoding="utf-8") as f:
@@ -184,18 +177,10 @@ def fix_license_header(
 
 def main() -> int:
     """Main function."""
-    parser = argparse.ArgumentParser(
-        description="Check and fix license headers in Python files"
-    )
-    parser.add_argument(
-        "--check", action="store_true", help="Check files only (exit with error if missing)"
-    )
-    parser.add_argument(
-        "--fix", action="store_true", help="Fix missing or incorrect headers"
-    )
-    parser.add_argument(
-        "--verbose", action="store_true", help="Show all files being checked"
-    )
+    parser = argparse.ArgumentParser(description="Check and fix license headers in Python files")
+    parser.add_argument("--check", action="store_true", help="Check files only (exit with error if missing)")
+    parser.add_argument("--fix", action="store_true", help="Fix missing or incorrect headers")
+    parser.add_argument("--verbose", action="store_true", help="Show all files being checked")
 
     args = parser.parse_args()
 
@@ -225,9 +210,7 @@ def main() -> int:
             incorrect_headers.append((file_path, license_type))
 
             if args.fix:
-                if fix_license_header(
-                    file_path, expected_header, config.get("remove_shebangs", True)
-                ):
+                if fix_license_header(file_path, expected_header, config.get("remove_shebangs", True)):
                     fixed_files.append(file_path)
                     print(f"  → Fixed {file_path}")
                 else:
@@ -252,4 +235,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

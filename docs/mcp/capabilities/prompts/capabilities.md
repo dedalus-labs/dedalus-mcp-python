@@ -15,4 +15,3 @@ Servers that support prompts **MUST** declare the `prompts` capability during
 
 `listChanged` indicates whether the server will emit notifications when the list of
 available prompts changes.
-

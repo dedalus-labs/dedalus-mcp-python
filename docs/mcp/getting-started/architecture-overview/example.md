@@ -317,5 +317,3 @@ This section provides a step-by-step walkthrough of an MCP client-server interac
     ```
   </Step>
 </Steps>
-
-

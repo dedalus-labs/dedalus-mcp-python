@@ -36,4 +36,3 @@ The Inspector provides several features for interacting with your MCP server:
 
 * Presents all logs recorded from the server
 * Shows notifications received from the server
-

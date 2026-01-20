@@ -218,4 +218,3 @@ Applications typically expose prompts through various UI patterns such as:
 * Command palettes for searchable access
 * Dedicated UI buttons for frequently used prompts
 * Context menus that suggest relevant prompts
-

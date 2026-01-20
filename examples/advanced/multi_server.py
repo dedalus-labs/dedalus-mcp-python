@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Multi-server ambient registration pattern.
@@ -30,6 +30,7 @@ import asyncio
 import logging
 
 from dedalus_mcp import MCPServer, tool
+
 
 # Suppress SDK and server logs for cleaner demo output
 for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):

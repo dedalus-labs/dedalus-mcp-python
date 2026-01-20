@@ -43,4 +43,3 @@ Proposed changes to the specification must come in the form of a written version
 All proposals must have a **sponsor** from the MCP steering group (maintainer, core maintainer or lead core maintainer). The sponsor is responsible for ensuring that the proposal is actively developed, meets the quality standard for proposals and is responsible for presenting and discussing it in meetings of core maintainers. Maintainer and Core Maintainer groups should review open proposals without sponsors in regular intervals. Proposals that do not find a sponsor within six months are automatically rejected.
 
 Once proposals have a sponsor, they are assigned to the sponsor and are tagged `draft`.
-

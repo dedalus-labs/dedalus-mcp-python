@@ -17,10 +17,7 @@ async def main() -> None:
         version="1.0.0",
         resource_uri="https://mcp.example.com/supabase",
         connection_kind="supabase",
-        connection_params={
-            "supabase_url": str,
-            "anon_key": str,
-        },
+        connection_params={"supabase_url": str, "anon_key": str},
         auth_methods=["service_role_key", "user_jwt"],
     )
 

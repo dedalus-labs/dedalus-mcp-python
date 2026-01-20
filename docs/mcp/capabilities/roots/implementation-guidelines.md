@@ -11,5 +11,3 @@
    * Handle root list changes gracefully
    * Respect root boundaries in operations
    * Cache root information appropriately
-
-

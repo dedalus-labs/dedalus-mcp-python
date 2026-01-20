@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """MCP protocol type definitions organized by specification category."""
@@ -9,6 +9,7 @@ from .messages import *
 from .server import *
 from .shared import *
 from .utilities import *
+
 
 __all__ = [
     # Lifecycle

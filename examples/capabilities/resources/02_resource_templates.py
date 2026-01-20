@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Resource templates — parameterized resources.
@@ -11,10 +11,11 @@ Usage:
 """
 
 import asyncio
+from datetime import datetime
 import logging
-from datetime import datetime, timedelta
 
 from dedalus_mcp import MCPServer, resource_template
+
 
 for name in ("mcp", "httpx", "uvicorn"):
     logging.getLogger(name).setLevel(logging.WARNING)

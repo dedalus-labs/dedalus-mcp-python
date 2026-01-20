@@ -23,4 +23,3 @@ sequenceDiagram
     Client->>Server: tools/list
     Server-->>Client: Updated tools
 ```
-

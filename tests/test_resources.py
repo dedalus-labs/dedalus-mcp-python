@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Resource capability tests following the MCP spec receipts.
@@ -18,10 +18,10 @@ from mcp.shared.exceptions import McpError
 import pytest
 
 from dedalus_mcp import MCPServer, resource
+from dedalus_mcp.server import NotificationFlags
 from dedalus_mcp.types.server.resources import ListResourcesRequest, ReadResourceResult
 from dedalus_mcp.types.shared.base import INVALID_PARAMS, PaginatedRequestParams
 from dedalus_mcp.types.shared.content import BlobResourceContents
-from dedalus_mcp.server import NotificationFlags
 from tests.helpers import DummySession, FailingSession, run_with_context
 
 

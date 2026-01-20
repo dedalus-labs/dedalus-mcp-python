@@ -42,4 +42,3 @@ implementors **SHOULD**:
 3. Implement appropriate access controls and data protections
 4. Follow security best practices in their integrations
 5. Consider privacy implications in their feature designs
-

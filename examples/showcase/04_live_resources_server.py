@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Server with live-updating resources.
@@ -14,10 +14,11 @@ Usage:
 """
 
 import asyncio
-import random
 from datetime import datetime
+import random
 
-from dedalus_mcp import MCPServer, resource, tool, get_context
+from dedalus_mcp import MCPServer, get_context, resource, tool
+
 
 server = MCPServer("live-resources", instructions="Subscribe to live data feeds")
 
@@ -29,18 +30,12 @@ system_metrics = {"cpu": 45.0, "memory": 62.0, "requests_per_sec": 1250}
 
 @resource(uri="stocks://prices", description="Live stock prices")
 def get_stock_prices() -> dict:
-    return {
-        "timestamp": datetime.now().isoformat(),
-        "prices": stock_prices.copy(),
-    }
+    return {"timestamp": datetime.now().isoformat(), "prices": stock_prices.copy()}
 
 
 @resource(uri="system://metrics", description="Live system metrics")
 def get_system_metrics() -> dict:
-    return {
-        "timestamp": datetime.now().isoformat(),
-        "metrics": system_metrics.copy(),
-    }
+    return {"timestamp": datetime.now().isoformat(), "metrics": system_metrics.copy()}
 
 
 @resource(uri="stocks://price/{symbol}", description="Single stock price")
@@ -98,4 +93,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

@@ -154,4 +154,3 @@ to specific resources and receive notifications when they change:
   }
 }
 ```
-

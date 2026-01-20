@@ -107,4 +107,3 @@ tmux kill-session -t mcp
 | Elicitation (bidirectional) | See `examples/client/elicitation_handler.py` |
 | Real-time notifications | 03, 04 |
 | DPoP authentication | See `examples/client/dpop_auth.py` |
-

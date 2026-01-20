@@ -10,4 +10,3 @@ host can run multiple client instances. This architecture enables users to integ
 capabilities across applications while maintaining clear security boundaries and
 isolating concerns. Built on JSON-RPC, MCP provides a stateful session protocol focused
 on context exchange and sampling coordination between clients and servers.
-

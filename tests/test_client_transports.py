@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 from __future__ import annotations
@@ -16,15 +16,13 @@ accidental regression.
 from contextlib import asynccontextmanager
 from typing import Any
 
-from exceptiongroup import BaseExceptionGroup
-
 import anyio
 import anyio.abc
+from exceptiongroup import BaseExceptionGroup
+from mcp.client.streamable_http import streamable_http_client
 import pytest
 
 from dedalus_mcp.client.transports import lambda_http_client
-
-from mcp.client.streamable_http import streamable_http_client
 
 
 class SentinelError(RuntimeError):

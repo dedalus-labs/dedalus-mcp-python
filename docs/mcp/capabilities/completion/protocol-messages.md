@@ -100,4 +100,3 @@ Servers return an array of completion values ranked by relevance, with:
 * Maximum 100 items per response
 * Optional total number of available matches
 * Boolean indicating if additional results exist
-

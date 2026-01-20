@@ -263,4 +263,3 @@
   - [Registry](governance/roadmap/registry.md)
   - [Multimodality](governance/roadmap/multimodality.md)
   - [Get Involved](governance/roadmap/get-involved.md)
-

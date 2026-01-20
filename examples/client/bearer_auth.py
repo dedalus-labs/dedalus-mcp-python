@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Bearer token authentication for protected MCP servers.
@@ -27,9 +27,8 @@ Usage:
 
 from __future__ import annotations
 
-import asyncio
-
 from dedalus_mcp.client import BearerAuth, MCPClient
+
 
 # In production: obtain from authorization server
 ACCESS_TOKEN = "your_oauth_access_token"
@@ -83,4 +82,3 @@ if __name__ == "__main__":
     print("Note: This example requires a protected server and valid token.")
     print("Update SERVER_URL and ACCESS_TOKEN before running.")
     # asyncio.run(main())
-

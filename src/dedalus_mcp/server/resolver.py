@@ -1,19 +1,7 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Connection resolver with credential custody split.
-
-Resolves connection handles to clients with security split:
-- Org credentials: vault -> driver -> client (in-process)
-- User credentials: backend -> execution -> result (forwarded)
-
-Defense-in-depth:
-- Token validation before resolution
-- Handle authorization checks
-- Fingerprint validation
-- Secret zeroization
-- Audit logging
-"""
+"""Connection handle resolution with credential custody split."""
 
 from __future__ import annotations
 
@@ -251,11 +239,10 @@ class ConnectionResolver:
         # Route based on auth type
         if metadata.auth_type == "org":
             return await self._resolve_org_credential(handle, metadata)
-        elif metadata.auth_type == "user":
+        if metadata.auth_type == "user":
             return await self._resolve_user_credential(handle, metadata, request_context)
-        else:
-            self._audit_log("resolve_failed", handle, f"invalid_auth_type: {metadata.auth_type}")
-            raise ResolverError(f"invalid auth type: {metadata.auth_type}")
+        self._audit_log("resolve_failed", handle, f"invalid_auth_type: {metadata.auth_type}")
+        raise ResolverError(f"invalid auth type: {metadata.auth_type}")
 
     async def _resolve_org_credential(self, handle: str, metadata: ConnectionMetadata) -> Any:
         """Resolve org credential: vault -> driver -> client (in-process).

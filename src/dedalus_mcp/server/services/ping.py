@@ -1,15 +1,7 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Ping helpers for MCP servers.
-
-Implements ping/pong keepalive as specified in the Model Context Protocol:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/ping
-
-Includes phi-accrual failure detection for adaptive suspicion scoring and EWMA
-RTT tracking beyond basic spec requirements.
-"""
+"""Ping service with failure detection and RTT tracking."""
 
 from __future__ import annotations
 

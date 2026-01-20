@@ -1,23 +1,14 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Tool registration utilities for Dedalus MCP.
-
-Implements the ambient registration pattern for MCP tools as specified in:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/server/tools
-
-When an :class:`~dedalus_mcp.server.MCPServer` instance enters its
-:meth:`binding <dedalus_mcp.server.MCPServer.binding>` context, decorated functions
-are automatically registered as MCP tools with schema inference from type hints.
-"""
+"""Tool registration utilities with schema inference from type hints."""
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from contextvars import ContextVar
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from . import types
 from .server.dependencies import Depends
@@ -26,12 +17,16 @@ from .utils.schema import resolve_input_schema, resolve_output_schema
 
 if types:  # keep pydoc happy when mcp.types is unavailable during static checks
     types.Tool  # noqa: B018
-
-from typing import TYPE_CHECKING
+    types.ToolAnnotations  # noqa: B018
+    types.Icon  # noqa: B018
 
 
 if TYPE_CHECKING:
     from .server import MCPServer
+
+
+ToolAnnotationsLike = Mapping[str, Any] | types.ToolAnnotations
+IconLike = Mapping[str, Any] | types.Icon
 
 # ---------------------------------------------------------------------------
 # Data model
@@ -52,8 +47,10 @@ class ToolSpec:
     enabled: Callable[[MCPServer], bool] | Depends | None = None
     title: str | None = None
     output_schema: dict[str, Any] | None = None
-    annotations: dict[str, Any] | None = None
-    icons: list[Any] | None = None
+    annotations: types.ToolAnnotations | None = None
+    icons: list[types.Icon] | None = None
+    required_scopes: set[str] = field(default_factory=set)
+    """OAuth scopes required to invoke this tool. Empty = no scope restriction."""
 
 
 _TOOL_ATTR = "__dedalus_mcp_tool__"
@@ -82,6 +79,24 @@ def _coerce_tags(tags: Iterable[str] | None) -> set[str]:
     return result
 
 
+def _coerce_annotations(value: ToolAnnotationsLike | None) -> types.ToolAnnotations | None:
+    if value is None:
+        return None
+    if isinstance(value, types.ToolAnnotations):
+        return value
+    if not isinstance(value, Mapping):
+        raise TypeError("annotations must be ToolAnnotations or mapping")
+    return types.ToolAnnotations(**value)
+
+
+def _coerce_icon(value: IconLike) -> types.Icon:
+    if isinstance(value, types.Icon):
+        return value
+    if not isinstance(value, Mapping):
+        raise TypeError("icon must be Icon or mapping")
+    return types.Icon(**value)
+
+
 def tool(
     name: str | None = None,
     *,
@@ -91,10 +106,38 @@ def tool(
     enabled: Callable[[MCPServer], bool] | Depends | None = None,
     title: str | None = None,
     output_schema: dict[str, Any] | None = None,
-    annotations: dict[str, Any] | None = None,
-    icons: Iterable[Any] | None = None,
+    annotations: ToolAnnotationsLike | None = None,
+    icons: Iterable[IconLike] | None = None,
+    required_scopes: Iterable[str] | None = None,
 ) -> Callable[[ToolFn], ToolFn]:
     """Decorator that marks a callable as an MCP tool.
+
+    Basic usage:
+
+        >>> from dedalus_mcp import MCPServer, tool
+        >>>
+        >>> @tool(description="Add two numbers")
+        ... def add(a: int, b: int) -> int:
+        ...     return a + b
+        >>>
+        >>> server = MCPServer("calculator")
+        >>> server.collect(add)
+
+    With tags and custom name:
+
+        >>> @tool(name="math/multiply", tags=["math", "arithmetic"])
+        ... def multiply(x: float, y: float) -> float:
+        ...     '''Multiply two numbers.'''
+        ...     return x * y
+
+    With OAuth scope requirements:
+
+        >>> @tool(
+        ...     description="Delete a repository", required_scopes=["repo:delete"]
+        ... )
+        ... def delete_repo(name: str) -> None:
+        ...     '''Delete repository by name.'''
+        ...     ...
 
     The decorator attaches a :class:`ToolSpec` to the function and, if a server
     is actively binding, registers it immediately.
@@ -120,8 +163,9 @@ def tool(
             enabled=enabled,
             title=title,
             output_schema=resolved_output_schema,
-            annotations=annotations,
-            icons=list(icons) if icons is not None else None,
+            annotations=_coerce_annotations(annotations),
+            icons=[_coerce_icon(i) for i in icons] if icons is not None else None,
+            required_scopes=_coerce_tags(required_scopes),
         )
         setattr(fn, _TOOL_ATTR, spec)
 

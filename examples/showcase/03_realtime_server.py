@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Real-time tool updates without restart.
@@ -22,7 +22,6 @@ Usage:
 """
 
 import asyncio
-import json
 import logging
 from typing import Any
 
@@ -34,6 +33,7 @@ from starlette.routing import Route
 import uvicorn
 
 from dedalus_mcp import MCPServer, tool
+
 
 # Suppress log noise
 for name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):

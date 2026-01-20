@@ -1,15 +1,7 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Elicitation capability adapter.
-
-Implements the elicitation capability as specified in the Model Context Protocol:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation
-  (elicitation capability, create request for user input prompts)
-
-Provides adapter interface for servers to request user input from clients.
-"""
+"""Elicitation capability service for requesting user input."""
 
 from __future__ import annotations
 
@@ -24,11 +16,9 @@ from mcp.shared.exceptions import McpError
 from ... import types
 from ...utils import get_logger
 
+
 if TYPE_CHECKING:
     from mcp.server.session import ServerSession
-
-
-DEFAULT_TIMEOUT = 60.0
 
 
 @dataclass
@@ -37,9 +27,15 @@ class _SessionState:
 
 
 class ElicitationService:
-    """Proxy for ``elicitation/create`` requests."""
+    """Proxy for ``elicitation/create`` requests.
 
-    def __init__(self, *, timeout: float = DEFAULT_TIMEOUT) -> None:
+    See: https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation
+
+    Args:
+        timeout: Request timeout in seconds.
+    """
+
+    def __init__(self, *, timeout: float = 60.0) -> None:
         self._timeout = timeout
         # Sessions are kept alive by the SDK; WeakKeyDictionary auto-cleans when sessions are garbage collected
         self._states: weakref.WeakKeyDictionary[ServerSession, _SessionState] = weakref.WeakKeyDictionary()

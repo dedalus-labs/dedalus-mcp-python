@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """OAuth 2.1 authorization flow stub.
@@ -39,6 +39,7 @@ from dedalus_mcp.server.authorization import (
     AuthorizationProvider,
 )
 
+
 # Suppress SDK and server logs for cleaner demo output
 for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
     logging.getLogger(logger_name).setLevel(logging.CRITICAL)
@@ -76,7 +77,7 @@ class TokenIntrospectionProvider(AuthorizationProvider):
         if token.startswith("valid-"):
             introspection = {
                 "active": True,
-                "scope": "mcp:read mcp:write",
+                "scope": "read write",
                 "sub": "user-123",
                 "exp": int(time.time()) + 3600,
             }
@@ -107,7 +108,7 @@ async def main() -> None:
         authorization=AuthorizationConfig(
             enabled=True,
             authorization_servers=["https://as.dedaluslabs.ai"],
-            required_scopes=["mcp:read", "mcp:write"],
+            required_scopes=["read", "write"],
             metadata_path="/.well-known/oauth-protected-resource",
             cache_ttl=300,
         ),
@@ -122,12 +123,12 @@ async def main() -> None:
 
     with server.binding():
 
-        @tool(description="Read user data (requires mcp:read scope)")
+        @tool(description="Read user data (requires read scope)")
         async def read_data(user_id: str) -> dict[str, Any]:
             """Access control enforced by framework via required_scopes."""
             return {"user_id": user_id, "data": "sensitive information"}
 
-        @tool(description="Write user data (requires mcp:write scope)")
+        @tool(description="Write user data (requires write scope)")
         async def write_data(user_id: str, data: dict[str, Any]) -> str:
             """Fine-grained access control example."""
             return f"Data written for {user_id}"

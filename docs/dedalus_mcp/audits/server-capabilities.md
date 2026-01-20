@@ -22,4 +22,3 @@ related spec receipts. Line references point to the primary implementation.
 
 * **Prompt/resource parameter suggestions** – the spec describes UI-driven completion. Dedalus MCP intentionally exposes raw templates and leaves completion to clients; no server changes required, but documentation clarifies this.
 * **Advanced autoschema** – richer schema derivation (e.g., dataclasses, Pydantic models) is being tracked separately (see autoschema enhancement work).
-

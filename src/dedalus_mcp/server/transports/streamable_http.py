@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Streamable HTTP transport adapter."""
@@ -14,6 +14,7 @@ from starlette.responses import JSONResponse
 from starlette.routing import Route
 
 from .asgi import ASGITransportBase, ASGITransportConfig, SessionManagerHandler
+
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

@@ -22,5 +22,3 @@ Example initialization error:
   }
 }
 ```
-
-

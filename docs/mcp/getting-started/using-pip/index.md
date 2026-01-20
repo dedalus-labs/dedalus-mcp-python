@@ -32,4 +32,3 @@ To use an MCP server with Claude, add it to your configuration:
   }
 }
 ```
-

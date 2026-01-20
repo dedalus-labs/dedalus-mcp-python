@@ -85,5 +85,3 @@ MCP clients **MUST** implement and use the `resource` parameter as defined in [R
 to explicitly specify the target resource for which the token is being requested. This requirement aligns with the recommendation in
 [RFC 9728 Section 7.4](https://datatracker.ietf.org/doc/html/rfc9728#section-7.4). This ensures that access tokens are bound to their intended resources and
 cannot be misused across different services.
-
-

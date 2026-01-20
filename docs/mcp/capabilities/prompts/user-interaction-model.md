@@ -13,4 +13,3 @@ For example, as slash commands:
 However, implementors are free to expose prompts through any interface pattern that suits
 their needs—the protocol itself does not mandate any specific user interaction
 model.
-

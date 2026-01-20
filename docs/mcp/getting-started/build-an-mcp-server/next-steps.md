@@ -17,5 +17,3 @@
     Learn how to use LLMs like Claude to speed up your MCP development
   </Card>
 </CardGroup>
-
-

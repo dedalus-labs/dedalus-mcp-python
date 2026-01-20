@@ -12,4 +12,3 @@ While input from Interest Groups can help justify the formation of a Working Gro
 We strongly encourage all contributors interested in working on a specific SEP to first collaborate within an Interest Group. This collaborative process helps ensure that the proposed SEP aligns with community needs and is the right direction for the protocol.
 
 Long-term projects in the MCP ecosystem, such as SDKs, Inspector, or Registry are maintained by dedicated Working Groups.
-

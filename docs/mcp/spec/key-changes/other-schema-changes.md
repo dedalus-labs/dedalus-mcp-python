@@ -6,4 +6,3 @@
    previously-resolved variables (PR [#598](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/598)).
 3. Add `title` field for human-friendly display names, so that `name` can be used as a programmatic
    identifier (PR [#663](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/663))
-

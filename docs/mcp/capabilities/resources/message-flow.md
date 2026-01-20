@@ -22,4 +22,3 @@ sequenceDiagram
     Client->>Server: resources/read
     Server-->>Client: Updated contents
 ```
-

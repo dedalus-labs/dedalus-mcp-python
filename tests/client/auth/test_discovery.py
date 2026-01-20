@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Tests for OAuth discovery (RFC 9728, RFC 8414).
@@ -11,8 +11,8 @@ MCP clients MUST:
 
 from __future__ import annotations
 
-import pytest
 import httpx
+import pytest
 import respx
 
 
@@ -42,9 +42,7 @@ class TestFetchResourceMetadata:
         )
 
         async with httpx.AsyncClient() as client:
-            meta = await fetch_resource_metadata(
-                client, "https://mcp.example.com/.well-known/oauth-protected-resource"
-            )
+            meta = await fetch_resource_metadata(client, "https://mcp.example.com/.well-known/oauth-protected-resource")
 
         assert meta.resource == "https://mcp.example.com"
         assert meta.authorization_servers == ["https://as.example.com"]
@@ -53,23 +51,19 @@ class TestFetchResourceMetadata:
     @pytest.mark.anyio
     async def test_fetch_resource_metadata_not_found(self):
         """fetch_resource_metadata raises on 404."""
-        from dedalus_mcp.client.auth.discovery import fetch_resource_metadata, DiscoveryError
+        from dedalus_mcp.client.auth.discovery import DiscoveryError, fetch_resource_metadata
 
-        respx.get("https://mcp.example.com/.well-known/oauth-protected-resource").mock(
-            return_value=httpx.Response(404)
-        )
+        respx.get("https://mcp.example.com/.well-known/oauth-protected-resource").mock(return_value=httpx.Response(404))
 
         async with httpx.AsyncClient() as client:
             with pytest.raises(DiscoveryError, match="404"):
-                await fetch_resource_metadata(
-                    client, "https://mcp.example.com/.well-known/oauth-protected-resource"
-                )
+                await fetch_resource_metadata(client, "https://mcp.example.com/.well-known/oauth-protected-resource")
 
     @respx.mock
     @pytest.mark.anyio
     async def test_fetch_resource_metadata_invalid_json(self):
         """fetch_resource_metadata raises on invalid JSON."""
-        from dedalus_mcp.client.auth.discovery import fetch_resource_metadata, DiscoveryError
+        from dedalus_mcp.client.auth.discovery import DiscoveryError, fetch_resource_metadata
 
         respx.get("https://mcp.example.com/.well-known/oauth-protected-resource").mock(
             return_value=httpx.Response(200, content=b"not json")
@@ -77,9 +71,7 @@ class TestFetchResourceMetadata:
 
         async with httpx.AsyncClient() as client:
             with pytest.raises(DiscoveryError, match="JSON"):
-                await fetch_resource_metadata(
-                    client, "https://mcp.example.com/.well-known/oauth-protected-resource"
-                )
+                await fetch_resource_metadata(client, "https://mcp.example.com/.well-known/oauth-protected-resource")
 
 
 # =============================================================================
@@ -123,11 +115,7 @@ class TestFetchASMetadata:
         # AS URL with trailing slash
         route = respx.get("https://as.example.com/.well-known/oauth-authorization-server").mock(
             return_value=httpx.Response(
-                200,
-                json={
-                    "issuer": "https://as.example.com",
-                    "token_endpoint": "https://as.example.com/oauth2/token",
-                },
+                200, json={"issuer": "https://as.example.com", "token_endpoint": "https://as.example.com/oauth2/token"}
             )
         )
 
@@ -140,7 +128,7 @@ class TestFetchASMetadata:
     @pytest.mark.anyio
     async def test_fetch_authorization_server_metadata_not_found(self):
         """fetch_authorization_server_metadata raises on 404."""
-        from dedalus_mcp.client.auth.discovery import fetch_authorization_server_metadata, DiscoveryError
+        from dedalus_mcp.client.auth.discovery import DiscoveryError, fetch_authorization_server_metadata
 
         respx.get("https://as.example.com/.well-known/oauth-authorization-server").mock(
             return_value=httpx.Response(404)
@@ -178,11 +166,7 @@ class TestDiscoverAuthorizationServer:
         # Mock PRM endpoint
         respx.get("https://mcp.example.com/.well-known/oauth-protected-resource").mock(
             return_value=httpx.Response(
-                200,
-                json={
-                    "resource": "https://mcp.example.com",
-                    "authorization_servers": ["https://as.example.com"],
-                },
+                200, json={"resource": "https://mcp.example.com", "authorization_servers": ["https://as.example.com"]}
             )
         )
 
@@ -209,7 +193,7 @@ class TestDiscoverAuthorizationServer:
     @pytest.mark.anyio
     async def test_discover_no_401_raises(self):
         """discover_authorization_server raises if no 401 received."""
-        from dedalus_mcp.client.auth.discovery import discover_authorization_server, DiscoveryError
+        from dedalus_mcp.client.auth.discovery import DiscoveryError, discover_authorization_server
 
         # Server returns 200 (not protected)
         respx.get("https://mcp.example.com/mcp").mock(return_value=httpx.Response(200))
@@ -222,7 +206,7 @@ class TestDiscoverAuthorizationServer:
     @pytest.mark.anyio
     async def test_discover_missing_www_authenticate(self):
         """discover_authorization_server raises if 401 lacks WWW-Authenticate."""
-        from dedalus_mcp.client.auth.discovery import discover_authorization_server, DiscoveryError
+        from dedalus_mcp.client.auth.discovery import DiscoveryError, discover_authorization_server
 
         respx.get("https://mcp.example.com/mcp").mock(return_value=httpx.Response(401))
 
@@ -234,13 +218,10 @@ class TestDiscoverAuthorizationServer:
     @pytest.mark.anyio
     async def test_discover_missing_resource_metadata_param(self):
         """discover_authorization_server raises if WWW-Authenticate lacks resource_metadata."""
-        from dedalus_mcp.client.auth.discovery import discover_authorization_server, DiscoveryError
+        from dedalus_mcp.client.auth.discovery import DiscoveryError, discover_authorization_server
 
         respx.get("https://mcp.example.com/mcp").mock(
-            return_value=httpx.Response(
-                401,
-                headers={"WWW-Authenticate": 'Bearer error="invalid_token"'},
-            )
+            return_value=httpx.Response(401, headers={"WWW-Authenticate": 'Bearer error="invalid_token"'})
         )
 
         async with httpx.AsyncClient() as client:
@@ -260,18 +241,14 @@ class TestBuildMetadataUrl:
         """build_resource_metadata_url handles absolute paths."""
         from dedalus_mcp.client.auth.discovery import build_resource_metadata_url
 
-        url = build_resource_metadata_url(
-            "https://mcp.example.com/mcp", "/.well-known/oauth-protected-resource"
-        )
+        url = build_resource_metadata_url("https://mcp.example.com/mcp", "/.well-known/oauth-protected-resource")
         assert url == "https://mcp.example.com/.well-known/oauth-protected-resource"
 
     def test_build_resource_metadata_url_relative(self):
         """build_resource_metadata_url handles relative paths."""
         from dedalus_mcp.client.auth.discovery import build_resource_metadata_url
 
-        url = build_resource_metadata_url(
-            "https://mcp.example.com/api/mcp", ".well-known/oauth-protected-resource"
-        )
+        url = build_resource_metadata_url("https://mcp.example.com/api/mcp", ".well-known/oauth-protected-resource")
         # Relative to the path
         assert "mcp.example.com" in url
         assert "oauth-protected-resource" in url
@@ -280,9 +257,7 @@ class TestBuildMetadataUrl:
         """build_resource_metadata_url handles full URLs."""
         from dedalus_mcp.client.auth.discovery import build_resource_metadata_url
 
-        url = build_resource_metadata_url(
-            "https://mcp.example.com/mcp", "https://other.example.com/.well-known/prm"
-        )
+        url = build_resource_metadata_url("https://mcp.example.com/mcp", "https://other.example.com/.well-known/prm")
         assert url == "https://other.example.com/.well-known/prm"
 
     def test_build_authorization_server_metadata_url(self):

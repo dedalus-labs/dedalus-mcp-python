@@ -12,4 +12,3 @@ Consider proposing a SEP if your change involves any of the following:
 * **A Breaking Change**: Any change that is not backwards-compatible.
 * **A Change to Governance or Process**: Any proposal that alters the project's decision-making, contribution guidelines (like this document itself).
 * **A Complex or Controversial Topic**: If a change is likely to have multiple valid solutions or generate significant debate, the SEP process provides the necessary framework to explore alternatives, document the rationale, and build community consensus before implementation begins.
-

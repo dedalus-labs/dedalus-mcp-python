@@ -59,5 +59,3 @@ example:
 
 This capability negotiation ensures clients and servers have a clear understanding of
 supported functionality while maintaining protocol extensibility.
-
-

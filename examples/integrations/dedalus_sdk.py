@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Passing Dedalus MCP servers directly to the Dedalus SDK.
@@ -20,6 +20,7 @@ import os
 from dotenv import load_dotenv
 
 from dedalus_mcp import MCPServer, tool
+
 
 load_dotenv()
 
@@ -122,7 +123,7 @@ def demonstrate_protocol():
     print(f"  is_mcp_server(server) = {is_mcp_server(server)}")
     print(f"  isinstance(server, MCPServerProtocol) = {isinstance(server, MCPServerProtocol)}")
 
-    print(f"\nRemote slug: 'windsor/brave-search-mcp'")
+    print("\nRemote slug: 'windsor/brave-search-mcp'")
     print(f"  is_mcp_server('windsor/brave-search-mcp') = {is_mcp_server('windsor/brave-search-mcp')}")
 
     # Minimal fake server
@@ -133,7 +134,7 @@ def demonstrate_protocol():
         def serve(self):
             pass
 
-    print(f"\nMinimal fake server:")
+    print("\nMinimal fake server:")
     print(f"  isinstance(MinimalServer(), MCPServerProtocol) = {isinstance(MinimalServer(), MCPServerProtocol)}")
 
     print("\n✓ Protocol pattern allows SDK to accept Dedalus MCP servers")

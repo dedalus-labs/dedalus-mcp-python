@@ -88,6 +88,64 @@ config = Config()
 # Type-safe, validated, documented
 ```
 
+### Prefer Enums Over Constants and Raw Dicts
+
+Use `Enum` or `StrEnum` for finite sets of values. This gives you type safety, IDE autocomplete, and exhaustiveness checking.
+
+```python
+# Bad: Module-level constants
+TRANSPORT_STDIO = "stdio"
+TRANSPORT_HTTP = "streamable-http"
+
+def get_transport(kind: str) -> Transport:
+    if kind == TRANSPORT_STDIO:
+        return StdioTransport()
+    elif kind == TRANSPORT_HTTP:
+        return HttpTransport()
+    # Forgot a case? No warning.
+
+# Bad: Raw dict mapping
+ERROR_CODES = {
+    "not_found": -32601,
+    "invalid_params": -32602,
+}
+# Easy to typo keys, no autocomplete
+
+# Good: Enum
+from enum import StrEnum
+
+class TransportKind(StrEnum):
+    STDIO = "stdio"
+    HTTP = "streamable-http"
+
+def get_transport(kind: TransportKind) -> Transport:
+    match kind:
+        case TransportKind.STDIO:
+            return StdioTransport()
+        case TransportKind.HTTP:
+            return HttpTransport()
+    # Exhaustiveness: type checker warns if you miss a case
+
+# Good: IntEnum for error codes
+from enum import IntEnum
+
+class ErrorCode(IntEnum):
+    NOT_FOUND = -32601
+    INVALID_PARAMS = -32602
+    INTERNAL_ERROR = -32603
+
+# Type-safe, autocomplete works, can't typo
+raise McpError(ErrorData(code=ErrorCode.NOT_FOUND, message="Tool not found"))
+```
+
+Benefits:
+
+- **Type safety**: Can't pass arbitrary strings where enums are expected
+- **Autocomplete**: IDE shows all valid options
+- **Exhaustiveness**: `match` statements can warn about unhandled cases
+- **Documentation**: Enum members are self-documenting
+- **Refactoring**: Rename an enum member and the type checker finds all usages
+
 ## Async Patterns
 
 ### Don't Block the Event Loop
@@ -164,6 +222,7 @@ def get_protocol_def(version: str) -> ProtocolDefinition:
 The principle: if you're not certain your code handles a case correctly, raise an error. Don't guess. Don't hope the caller won't notice. Explicit failures are easier to debug than silent misbehavior.
 
 This applies everywhere:
+
 - Unknown enum values
 - Unsupported protocol versions
 - Invalid configuration options

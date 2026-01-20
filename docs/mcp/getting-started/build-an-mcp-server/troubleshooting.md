@@ -59,4 +59,3 @@
 <Note>
   For more advanced troubleshooting, check out our guide on [Debugging MCP](/legacy/tools/debugging)
 </Note>
-

@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Custom transport registration pattern.
@@ -35,6 +35,7 @@ import anyio
 
 from dedalus_mcp import MCPServer, tool
 from dedalus_mcp.server.transports.base import BaseTransport
+
 
 # Suppress SDK and server logs for cleaner demo output
 for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
@@ -108,6 +109,7 @@ async def main() -> None:
 
 
 # Production patterns:
+
 
 # 1. Transport selection from config
 def create_server_with_config(config: dict[str, Any]) -> MCPServer:

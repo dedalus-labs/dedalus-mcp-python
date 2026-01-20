@@ -19,4 +19,3 @@ sequenceDiagram
     Server-->>Client: Empty Result
     Note over Server: Only sends error level<br/>and above
 ```
-

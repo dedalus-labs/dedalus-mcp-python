@@ -36,5 +36,3 @@ may reserve particular names for purpose-specific metadata, as declared in those
 
 * Unless empty, MUST begin and end with an alphanumeric character (`[a-z0-9A-Z]`).
 * MAY contain hyphens (`-`), underscores (`_`), dots (`.`), and alphanumerics in between.
-
-

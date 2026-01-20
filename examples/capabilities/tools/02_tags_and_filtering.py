@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Tool tags and allow-list filtering.
@@ -15,6 +15,7 @@ import asyncio
 import logging
 
 from dedalus_mcp import MCPServer, tool
+
 
 for name in ("mcp", "httpx", "uvicorn"):
     logging.getLogger(name).setLevel(logging.WARNING)
@@ -101,4 +102,3 @@ if __name__ == "__main__":
     print("  dangerous: db_write, db_delete")
     print("\nUse server.tools.allow_tools(['tool1', 'tool2']) to filter")
     asyncio.run(server.serve())
-

@@ -4,4 +4,3 @@ Source: https://modelcontextprotocol.io/specification/2025-06-18/basic/security_
 
 
 <div id="enable-section-numbers" />
-

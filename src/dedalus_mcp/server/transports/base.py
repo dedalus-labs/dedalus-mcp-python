@@ -1,11 +1,7 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Shared transport primitives for :mod:`dedalus_mcp.server`.
-
-Provides a minimal base class that custom transports can subclass and a factory
-signature that `MCPServer` uses to instantiate transports lazily.
-"""
+"""Base transport classes for MCP servers."""
 
 from __future__ import annotations
 
@@ -76,8 +72,7 @@ class BaseTransport(ABC):
 class TransportFactory(Protocol):
     """Callable that produces a configured transport for an ``MCPServer``."""
 
-    def __call__(self, server: MCPServer) -> BaseTransport:
-        ...
+    def __call__(self, server: MCPServer) -> BaseTransport: ...
 
 
 __all__ = ["BaseTransport", "TransportFactory"]

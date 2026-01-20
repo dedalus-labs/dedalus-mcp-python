@@ -66,4 +66,3 @@ Servers provide specialized context and capabilities:
 * Request sampling through client interfaces
 * Must respect security constraints
 * Can be local processes or remote services
-

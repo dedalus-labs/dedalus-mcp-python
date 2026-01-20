@@ -50,7 +50,7 @@ Extend `MCPServer` to accept an optional `authorization` configuration block:
 AuthorizationConfig(
     enabled=True,
     metadata_path="/.well-known/oauth-protected-resource",
-    required_scopes=["mcp:read", "mcp:write"],
+    required_scopes=["read", "write"],
     fail_open=False,  # allow local/dev to bypass auth on AS outage
     cache_ttl=300,
 )
@@ -167,7 +167,7 @@ surface UX to the user. All error paths should emit structured logs (`auth.disco
 - How will hosted products capture OAuth redirect callbacks? (Likely per-app configuration; we expose a
   hook or callback interface.)
 - ~~Do we require mTLS or DPoP support from the AS?~~ **Resolved**: DPoP implemented in
-  `client/auth.py` and `server/services/dpop.py`. See `docs/dedalus_mcp/dpop.md`.
+  `auth/dpop/`. See `docs/dedalus_mcp/dpop.md`.
 - Should we expose a lightweight policy interface so server authors can map scopes to tool/resource
   availability? (Nice-to-have once core flow is stable.)
 

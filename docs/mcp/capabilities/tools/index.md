@@ -11,4 +11,3 @@ The Model Context Protocol (MCP) allows servers to expose tools that can be invo
 language models. Tools enable models to interact with external systems, such as querying
 databases, calling APIs, or performing computations. Each tool is uniquely identified by
 a name and includes metadata describing its schema.
-

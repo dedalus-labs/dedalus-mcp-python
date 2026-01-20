@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Test tools capability per MCP 2024-11-05.
@@ -21,6 +21,7 @@ from __future__ import annotations
 import pytest
 
 from dedalus_mcp import MCPServer, tool
+from dedalus_mcp.server.core import NotificationFlags
 from dedalus_mcp.types.server.tools import (
     CallToolRequest,
     CallToolRequestParams,
@@ -32,7 +33,6 @@ from dedalus_mcp.types.server.tools import (
 )
 from dedalus_mcp.types.shared.base import PaginatedRequestParams
 from dedalus_mcp.types.shared.content import TextContent
-from dedalus_mcp.server.core import NotificationFlags
 
 
 @pytest.mark.anyio

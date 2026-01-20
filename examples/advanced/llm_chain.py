@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """MCP server chaining: LLM → MCP → MCP → Client
@@ -51,7 +51,6 @@ Requires: pip install fastapi httpx-sse (or uv pip install)
 import asyncio
 import json
 import logging
-from contextlib import asynccontextmanager
 
 import anyio
 import httpx
@@ -62,8 +61,8 @@ from starlette.routing import Route
 import uvicorn
 
 from dedalus_mcp import MCPServer, get_context, tool
-from dedalus_mcp.client import MCPClient, ClientCapabilitiesConfig
-from dedalus_mcp.types import CreateMessageRequestParams, CreateMessageResult, SamplingMessage, TextContent
+from dedalus_mcp.client import MCPClient
+
 
 # Suppress noise
 for name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
@@ -161,8 +160,7 @@ mcp_llm_client: MCPClient | None = None
 
 @tool(description="Summarize text using chained MCP servers")
 async def summarize(text: str) -> dict:
-    """
-    This tool:
+    """This tool:
     1. Receives request from client
     2. Calls Server A's "generate" tool for LLM reasoning
     3. Returns summarized result
@@ -174,15 +172,20 @@ async def summarize(text: str) -> dict:
         return {"error": "LLM client not connected"}
 
     # Call Server A's generate tool
-    result = await mcp_llm_client.call_tool("generate", {"prompt": f"Summarize this text:\n\n{text}", "max_tokens": 100})
+    result = await mcp_llm_client.call_tool(
+        "generate", {"prompt": f"Summarize this text:\n\n{text}", "max_tokens": 100}
+    )
 
-    return {"original_length": len(text), "summary": result.structuredContent.get("response", ""), "chain": "Client → Server B → Server A → LLM SSE"}
+    return {
+        "original_length": len(text),
+        "summary": result.structuredContent.get("response", ""),
+        "chain": "Client → Server B → Server A → LLM SSE",
+    }
 
 
 @tool(description="Analyze text with multi-hop reasoning")
 async def deep_analyze(text: str) -> dict:
-    """
-    Multi-hop analysis:
+    """Multi-hop analysis:
     1. First LLM call: Extract key points
     2. Second LLM call: Analyze the key points
     """
@@ -256,7 +259,9 @@ async def run_demo() -> None:
 
     # Call summarize (single hop through chain)
     print("--- Calling summarize (single hop) ---")
-    text = "MCP enables composable AI systems. Servers can be clients to other servers. This creates powerful pipelines."
+    text = (
+        "MCP enables composable AI systems. Servers can be clients to other servers. This creates powerful pipelines."
+    )
     result = await client.call_tool("summarize", {"text": text})
     print(f"Chain: {result.structuredContent.get('chain')}")
     print(f"Summary: {result.structuredContent.get('summary')}\n")
@@ -298,4 +303,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

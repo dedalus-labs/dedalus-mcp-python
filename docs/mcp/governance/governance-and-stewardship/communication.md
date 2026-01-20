@@ -7,4 +7,3 @@ The core maintainer group meets on a bi-weekly basis to discuss proposals and th
 ### Public Chat
 
 The MCP project maintains a [public Discord server](/community/communication#discord) with open chats for interest groups. The MCP project may have private channels for certain communications.
-

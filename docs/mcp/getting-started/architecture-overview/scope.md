@@ -11,4 +11,3 @@ The Model Context Protocol includes the following projects:
   MCP focuses solely on the protocol for context exchange—it does not dictate
   how AI applications use LLMs or manage the provided context.
 </Note>
-

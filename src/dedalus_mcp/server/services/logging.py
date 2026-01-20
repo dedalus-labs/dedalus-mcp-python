@@ -1,16 +1,7 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Logging capability service.
-
-Implements the logging capability as specified in the Model Context Protocol:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging
-  (logging capability, setLevel request, message notifications)
-
-Bridges Python's logging system to MCP message notifications with per-session
-level filtering and automatic handler installation.
-"""
+"""Logging capability service bridging Python logging to MCP notifications."""
 
 from __future__ import annotations
 
@@ -20,11 +11,13 @@ import contextlib
 import logging
 from typing import TYPE_CHECKING, Any
 import weakref
+
 from mcp.server.lowlevel.server import request_ctx
 from mcp.shared.exceptions import McpError
 
 from ..notifications import NotificationSink
 from ... import types
+
 
 try:
     import trio

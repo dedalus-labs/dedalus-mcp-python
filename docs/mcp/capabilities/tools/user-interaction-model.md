@@ -19,4 +19,3 @@ interaction model.
   * Present confirmation prompts to the user for operations, to ensure a human is in the
     loop
 </Warning>
-

@@ -8,4 +8,3 @@ sequenceDiagram
     Sender->>Receiver: ping request
     Receiver->>Sender: empty response
 ```
-

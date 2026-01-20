@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Script-style client connection without context managers.
@@ -30,6 +30,7 @@ from __future__ import annotations
 import asyncio
 
 from dedalus_mcp.client import MCPClient
+
 
 SERVER_URL = "http://127.0.0.1:8000/mcp"
 

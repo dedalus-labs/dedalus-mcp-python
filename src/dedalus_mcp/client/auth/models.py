@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """OAuth metadata models (RFC 9728, RFC 8414).
@@ -12,8 +12,8 @@ This module defines data models for:
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
+import re
 from typing import Any
 
 

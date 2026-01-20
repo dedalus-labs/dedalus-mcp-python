@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 from __future__ import annotations
@@ -10,9 +10,9 @@ import httpx
 import pytest
 
 from dedalus_mcp import MCPServer, tool
+from dedalus_mcp.client import MCPClient, open_connection
 from dedalus_mcp.types.messages import ClientRequest
 from dedalus_mcp.types.server.tools import CallToolRequest, CallToolRequestParams, CallToolResult
-from dedalus_mcp.client import open_connection, MCPClient
 from dedalus_mcp.versioning import V_2024_11_05
 
 
@@ -79,7 +79,7 @@ async def test_open_connection_unknown_transport() -> None:
 
 @pytest.mark.anyio
 async def test_streamable_http_allows_preinitialize_get(unused_tcp_port: int) -> None:
-    server = MCPServer("preinit-get")
+    server = MCPServer("preinit-get", streamable_http_stateless=False)
 
     host = "127.0.0.1"
     port = unused_tcp_port
@@ -160,7 +160,7 @@ async def test_streamable_http_stateless_allows_preinitialize_get(unused_tcp_por
 
 @pytest.mark.anyio
 async def test_streamable_http_preinitialize_get_requires_session(unused_tcp_port: int) -> None:
-    server = MCPServer("stateful-get")
+    server = MCPServer("stateful-get", streamable_http_stateless=False)
 
     host = "127.0.0.1"
     port = unused_tcp_port

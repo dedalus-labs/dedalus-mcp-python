@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """JSON serialization utilities for MCP protocol types.
@@ -13,6 +13,7 @@ from __future__ import annotations
 from typing import Any
 
 from pydantic import TypeAdapter
+
 
 # Universal serializer that handles any nested combination of:
 # - Pydantic models
@@ -37,7 +38,9 @@ def to_json(obj: Any, *, by_alias: bool = True) -> Any:
 
     Example:
         >>> from dedalus_mcp.types import CallToolResult, TextContent
-        >>> result = CallToolResult(content=[TextContent(type="text", text="hello")])
+        >>> result = CallToolResult(
+        ...     content=[TextContent(type="text", text="hello")]
+        ... )
         >>> to_json(result)
         {'content': [{'type': 'text', 'text': 'hello'}], 'isError': False, ...}
     """

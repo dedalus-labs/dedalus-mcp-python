@@ -17,4 +17,3 @@ node --version
 ```
 
 If Node.js is not installed, download it from [nodejs.org](https://nodejs.org/). We recommend the LTS (Long Term Support) version for stability.
-

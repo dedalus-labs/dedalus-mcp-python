@@ -19,4 +19,3 @@ sequenceDiagram
       Note over Server: Stop processing
    end
 ```
-

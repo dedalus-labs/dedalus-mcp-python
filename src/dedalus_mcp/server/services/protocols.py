@@ -1,13 +1,7 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Runtime protocols describing mandatory service behaviour.
-
-The Model Context Protocol defines capability-specific invariants that servers
-MUST uphold (see https://modelcontextprotocol.io/specification/2025-06-18/).
-Dedalus MCP uses these protocols to validate that swappable service implementations
-still conform to the required surface area before a server is allowed to run.
-"""
+"""Runtime protocols for capability services."""
 
 from __future__ import annotations
 
@@ -115,11 +109,7 @@ class PingServiceProtocol(Protocol):
     async def ping(self, session: Any, *, timeout: float | None = None) -> bool: ...
 
     async def ping_many(
-        self,
-        sessions: Any = ...,
-        *,
-        timeout: float | None = None,
-        max_concurrency: int | None = None,
+        self, sessions: Any = ..., *, timeout: float | None = None, max_concurrency: int | None = None
     ) -> Any: ...
 
     def start_heartbeat(

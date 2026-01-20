@@ -13,4 +13,3 @@ sequenceDiagram
     Client->>Server: completion/complete
     Server-->>Client: Refined suggestions
 ```
-

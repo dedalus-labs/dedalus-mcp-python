@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Static resources — files and data exposed to clients.
@@ -11,10 +11,10 @@ Usage:
 """
 
 import asyncio
-import json
 import logging
 
 from dedalus_mcp import MCPServer, resource
+
 
 for name in ("mcp", "httpx", "uvicorn"):
     logging.getLogger(name).setLevel(logging.WARNING)
@@ -179,4 +179,3 @@ if __name__ == "__main__":
     print("  docs://api/endpoints    - Markdown documentation")
     print("  assets://logo.png       - Binary image")
     asyncio.run(server.serve())
-

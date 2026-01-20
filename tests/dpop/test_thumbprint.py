@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Tests for JWK thumbprint computation per RFC 7638.
@@ -16,11 +16,8 @@ import json
 
 import pytest
 
-from dedalus_mcp.dpop import (
-    compute_jwk_thumbprint,
-    compute_access_token_hash,
-)
-from dedalus_mcp.dpop.thumbprint import b64url_encode, b64url_decode
+from dedalus_mcp.auth.dpop import compute_access_token_hash, compute_jwk_thumbprint
+from dedalus_mcp.auth.dpop.thumbprint import b64url_decode, b64url_encode
 
 
 class TestB64UrlEncode:
@@ -58,12 +55,7 @@ class TestComputeJwkThumbprint:
         x_bytes = public_numbers.x.to_bytes(32, byteorder="big")
         y_bytes = public_numbers.y.to_bytes(32, byteorder="big")
 
-        jwk = {
-            "kty": "EC",
-            "crv": "P-256",
-            "x": b64url_encode(x_bytes),
-            "y": b64url_encode(y_bytes),
-        }
+        jwk = {"kty": "EC", "crv": "P-256", "x": b64url_encode(x_bytes), "y": b64url_encode(y_bytes)}
 
         thumbprint = compute_jwk_thumbprint(jwk)
 
@@ -98,11 +90,7 @@ class TestComputeJwkThumbprint:
 
         # Manually compute expected thumbprint
         # Order for EC: crv, kty, x, y (alphabetical)
-        canonical = json.dumps(
-            {"crv": "P-256", "kty": "EC", "x": x, "y": y},
-            separators=(",", ":"),
-            sort_keys=True,
-        )
+        canonical = json.dumps({"crv": "P-256", "kty": "EC", "x": x, "y": y}, separators=(",", ":"), sort_keys=True)
         expected = b64url_encode(hashlib.sha256(canonical.encode()).digest())
 
         assert compute_jwk_thumbprint(jwk) == expected
@@ -116,15 +104,7 @@ class TestComputeJwkThumbprint:
         y = b64url_encode(public_numbers.y.to_bytes(32, byteorder="big"))
 
         jwk_minimal = {"kty": "EC", "crv": "P-256", "x": x, "y": y}
-        jwk_with_extras = {
-            "kty": "EC",
-            "crv": "P-256",
-            "x": x,
-            "y": y,
-            "kid": "key-id",
-            "use": "sig",
-            "alg": "ES256",
-        }
+        jwk_with_extras = {"kty": "EC", "crv": "P-256", "x": x, "y": y, "kid": "key-id", "use": "sig", "alg": "ES256"}
 
         assert compute_jwk_thumbprint(jwk_minimal) == compute_jwk_thumbprint(jwk_with_extras)
 

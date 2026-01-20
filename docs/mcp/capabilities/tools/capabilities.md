@@ -14,4 +14,3 @@ Servers that support tools **MUST** declare the `tools` capability:
 
 `listChanged` indicates whether the server will emit notifications when the list of
 available tools changes.
-

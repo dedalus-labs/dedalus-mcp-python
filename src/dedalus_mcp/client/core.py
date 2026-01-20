@@ -1,17 +1,10 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""High-level MCP client wrapper built on the reference SDK.
+"""MCP client implementation.
 
-Implements MCP client behavior per the specification.
-
-`MCPClient` manages the initialization handshake, capability negotiation,
-optional client-side features (sampling, elicitation, roots, logging), and
-exposes convenience helpers for protocol operations.  It stays thin by
-leveraging the official `ClientSession` class while providing ergonomic hooks
-and safety checks for host applications.
-
-The client supports both script-style usage (with explicit `close()`) and
+`MCPClient` handles initialization, capability negotiation, and protocol
+operations. Supports script-style usage (explicit `close()`) and
 context manager patterns:
 
     # Script-style (recommended for simple scripts)
@@ -26,27 +19,25 @@ context manager patterns:
 
 from __future__ import annotations
 
-import warnings
-import weakref
 from collections.abc import Awaitable, Callable, Iterable
 from contextlib import AsyncExitStack
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import Any, TypeVar
+import warnings
+import weakref
 
 from anyio import Lock
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 import httpx
-
 from mcp.client.session import ClientSession
 
-from .errors import MCPConnectionError, SessionExpiredError
 from .error_handling import (
     extract_http_error,
     extract_network_error,
     http_error_to_mcp_error,
     network_error_to_mcp_error,
 )
-
+from .errors import MCPConnectionError, SessionExpiredError
 from ..types.client.elicitation import ElicitRequestParams, ElicitResult
 from ..types.client.roots import ListRootsResult, Root
 from ..types.client.sampling import CreateMessageRequestParams, CreateMessageResult
@@ -62,9 +53,6 @@ from ..types.shared.primitives import RequestId
 from ..types.utilities.cancellation import CancelledNotification, CancelledNotificationParams
 from ..types.utilities.ping import PingRequest
 from ..utils.coro import maybe_await_with_args
-
-if TYPE_CHECKING:
-    pass
 
 
 SamplingHandler = Callable[
@@ -92,16 +80,32 @@ class ClientCapabilitiesConfig:
 class MCPClient:
     """Lifecycle-aware wrapper around :class:`mcp.client.session.ClientSession`.
 
-    Supports both script-style usage and context managers:
+    Script-style usage:
 
-        # Script-style
-        client = await MCPClient.connect("http://localhost:8000/mcp")
-        tools = await client.list_tools()
-        await client.close()
+        >>> client = await MCPClient.connect("http://localhost:8000/mcp")
+        >>> tools = await client.list_tools()
+        >>> await client.close()
 
-        # Context manager
-        async with await MCPClient.connect("http://localhost:8000/mcp") as client:
-            tools = await client.list_tools()
+    Context manager (recommended):
+
+        >>> async with await MCPClient.connect(
+        ...     "http://localhost:8000/mcp"
+        ... ) as client:
+        ...     tools = await client.list_tools()
+
+    With authentication:
+
+        >>> from dedalus_mcp.client.auth import ClientCredentialsAuth
+        >>>
+        >>> auth = ClientCredentialsAuth(
+        ...     client_id="my-client",
+        ...     client_secret="secret",
+        ...     token_endpoint="https://auth.example.com/token",
+        ... )
+        >>> async with await MCPClient.connect(
+        ...     "http://localhost:8000/mcp", auth=auth
+        ... ) as client:
+        ...     tools = await client.list_tools()
 
     Parameters correspond to the optional client features described in
     the MCP specification. Hosts can provide handlers for sampling, elicitation,
@@ -182,7 +186,7 @@ class MCPClient:
             sse_read_timeout: SSE read timeout in seconds
             headers: Optional HTTP headers
             auth: Optional httpx.Auth handler for authorization. Use
-                `dedalus_mcp.dpop.DPoPAuth` for DPoP-bound tokens.
+                `dedalus_mcp.auth.dpop.DPoPAuth` for DPoP-bound tokens.
             _transport_override: Internal use only (for testing)
 
         Returns:
@@ -231,9 +235,7 @@ class MCPClient:
                     base_headers.update(headers)
 
                 http_client = create_mcp_http_client(
-                    headers=base_headers,
-                    timeout=httpx.Timeout(timeout, read=sse_read_timeout),
-                    auth=auth,
+                    headers=base_headers, timeout=httpx.Timeout(timeout, read=sse_read_timeout), auth=auth
                 )
                 await exit_stack.enter_async_context(http_client)
 

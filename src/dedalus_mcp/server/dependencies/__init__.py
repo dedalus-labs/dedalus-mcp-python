@@ -1,12 +1,13 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Public dependency helpers for Dedalus MCP."""
+"""Dependency injection helpers."""
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 import inspect
-from typing import Any, Callable, Sequence, get_origin
+from typing import Any, get_origin
 
 from .models import DependencyCall
 
@@ -17,7 +18,6 @@ def register_injectable_type(typ: type) -> None:
     Currently only Context is supported. This exists for future extensibility.
     """
     # For now, we only support Context, but this allows future types
-    pass
 
 
 def _find_context_param(func: Callable[..., Any]) -> str | None:
@@ -62,10 +62,7 @@ class Depends:
     __slots__ = ("call", "dependencies", "use_cache")
 
     def __init__(
-        self,
-        dependency: Callable[..., Any],
-        *subdependencies: Callable[..., Any],
-        use_cache: bool = True,
+        self, dependency: Callable[..., Any], *subdependencies: Callable[..., Any], use_cache: bool = True
     ) -> None:
         if not callable(dependency):
             raise TypeError("Depends() arguments must be callable")
@@ -75,10 +72,11 @@ class Depends:
         self.use_cache: bool = use_cache
 
     def as_call(self) -> DependencyCall:
-        nested = tuple(Depends(dep).as_call() if not isinstance(dep, Depends) else dep.as_call() for dep in self.dependencies)
+        nested = tuple(
+            Depends(dep).as_call() if not isinstance(dep, Depends) else dep.as_call() for dep in self.dependencies
+        )
         context_param_name = _find_context_param(self.call)
         return DependencyCall(self.call, nested, self.use_cache, context_param_name)
 
 
 __all__ = ["Depends"]
-

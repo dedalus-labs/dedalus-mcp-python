@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Ping service tests (docs/mcp/spec/schema-reference/ping.md)."""
@@ -10,11 +10,11 @@ from mcp.client.session import ClientSession
 import pytest
 
 from dedalus_mcp import MCPServer
+from dedalus_mcp.server.services.ping import PingService
 from dedalus_mcp.types.messages import ClientRequest
 from dedalus_mcp.types.shared.base import EmptyResult
 from dedalus_mcp.types.shared.capabilities import Implementation
 from dedalus_mcp.types.utilities.ping import PingRequest
-from dedalus_mcp.server.services.ping import PingService
 
 
 @pytest.mark.anyio
@@ -184,9 +184,7 @@ async def test_ping_roundtrip_and_server_initiated_ping() -> None:
 
             assert server.active_sessions(), "server did not record the session after initialize"
 
-            client_result = await client_session.send_request(
-                ClientRequest(PingRequest()), EmptyResult
-            )
+            client_result = await client_session.send_request(ClientRequest(PingRequest()), EmptyResult)
             assert isinstance(client_result, EmptyResult)
 
             server_session = server.active_sessions()[0]

@@ -13,4 +13,3 @@ The protocol follows the standard syslog severity levels specified in
 | critical  | Critical conditions              | System component failures  |
 | alert     | Action must be taken immediately | Data corruption detected   |
 | emergency | System is unusable               | Complete system failure    |
-

@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Integration tests for Context.resolve_client wiring."""
@@ -9,8 +9,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from dedalus_mcp import MCPServer, tool, get_context
+from dedalus_mcp import MCPServer, get_context, tool
 from dedalus_mcp.context import RUNTIME_CONTEXT_KEY
+
 from ..helpers import RecordingSession, run_with_context
 
 
@@ -32,6 +33,7 @@ async def test_context_resolve_client_invokes_registered_resolver() -> None:
     server.set_connection_resolver(resolver)
 
     with server.binding():
+
         @tool(description="Resolve connection handle via context helper")
         async def use_connection(connection: str) -> str:
             ctx = get_context()

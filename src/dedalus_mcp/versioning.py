@@ -1,15 +1,16 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """MCP protocol versioning via typed capabilities and migrations."""
 
 from __future__ import annotations
 
-import datetime as dt
+from collections.abc import Callable
 from dataclasses import dataclass, field, fields, is_dataclass, replace
+import datetime as dt
 from enum import Enum, auto
 from functools import cache
-from typing import Any, Callable
+from typing import Any
 
 
 # --- Errors ------------------------------------------------------------------------
@@ -613,6 +614,22 @@ class ProtocolProfile:
     @classmethod
     def for_version(cls, version: ProtocolVersion) -> ProtocolProfile:
         return cls(capabilities_for(version))
+
+    @classmethod
+    def parse(cls, version_string: str) -> ProtocolProfile | None:
+        """Create a profile from a version string.
+
+        Returns None if the string is malformed or the version is unsupported.
+        """
+        try:
+            version = ProtocolVersion.parse(version_string)
+        except (ValueError, TypeError):
+            return None
+
+        if version not in SUPPORTED_VERSIONS:
+            return None
+
+        return cls.for_version(version)
 
 
 # --- Drift Detection (for tests) ---------------------------------------------------

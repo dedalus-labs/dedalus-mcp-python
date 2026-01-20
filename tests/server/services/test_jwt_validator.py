@@ -1,18 +1,18 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Tests for JWT validation service."""
 
+import base64
 import time
 
-import base64
-import jwt
-import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+import jwt
+import pytest
 
 from dedalus_mcp.server.authorization import AuthorizationError
-from dedalus_mcp.server.services.jwt_validator import Clock, JWTValidator, JWTValidatorConfig, SystemClock
+from dedalus_mcp.server.services.jwt_validator import Clock, JWTValidator, JWTValidatorConfig
 
 
 def _b64url_uint(value: int) -> str:
@@ -42,8 +42,7 @@ def generate_rsa_keypair(kid: str = "test-key-1"):
         encryption_algorithm=serialization.NoEncryption(),
     )
     public_pem = public_key.public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        encoding=serialization.Encoding.PEM, format=serialization.PublicFormat.SubjectPublicKeyInfo
     )
     return {
         "private_key": private_key,
@@ -77,21 +76,14 @@ def rsa_keypair():
 @pytest.fixture
 def mock_jwks_server(httpx_mock, rsa_keypair):
     """Mock JWKS endpoint returning test public key."""
-    jwks_response = {"keys": [build_rsa_jwk(rsa_keypair["public_key"], rsa_keypair["kid"]) ]}
+    jwks_response = {"keys": [build_rsa_jwk(rsa_keypair["public_key"], rsa_keypair["kid"])]}
 
-    httpx_mock.add_response(
-        url="https://as.example.com/.well-known/jwks.json",
-        json=jwks_response,
-    )
+    httpx_mock.add_response(url="https://as.example.com/.well-known/jwks.json", json=jwks_response)
 
     return jwks_response
 
 
-def create_test_token(
-    rsa_keypair,
-    claims: dict | None = None,
-    headers: dict | None = None,
-) -> str:
+def create_test_token(rsa_keypair, claims: dict | None = None, headers: dict | None = None) -> str:
     """Create a test JWT token."""
     default_claims = {
         "iss": "https://as.example.com",
@@ -99,7 +91,7 @@ def create_test_token(
         "aud": "https://mcp.example.com",
         "exp": time.time() + 900,  # 15 min
         "iat": time.time(),
-        "scope": "mcp:tools:call offline_access",
+        "scope": "tools:call offline_access",
         "client_id": "test_client",
         "jti": "test-jti-123",
     }
@@ -110,12 +102,7 @@ def create_test_token(
     merged_headers = {**default_headers, **(headers or {})}
     merged_headers = {k: v for k, v in merged_headers.items() if v is not None}
 
-    return jwt.encode(
-        merged_claims,
-        rsa_keypair["private_pem"],
-        algorithm="RS256",
-        headers=merged_headers,
-    )
+    return jwt.encode(merged_claims, rsa_keypair["private_pem"], algorithm="RS256", headers=merged_headers)
 
 
 @pytest.mark.asyncio
@@ -125,7 +112,7 @@ async def test_valid_jwt_validation(httpx_mock, rsa_keypair, mock_jwks_server):
         jwks_uri="https://as.example.com/.well-known/jwks.json",
         issuer="https://as.example.com",
         audience="https://mcp.example.com",
-        required_scopes=["mcp:tools:call"],
+        required_scopes=["tools:call"],
     )
 
     validator = JWTValidator(config)
@@ -134,7 +121,7 @@ async def test_valid_jwt_validation(httpx_mock, rsa_keypair, mock_jwks_server):
     context = await validator.validate(token)
 
     assert context.subject == "user_123"
-    assert "mcp:tools:call" in context.scopes
+    assert "tools:call" in context.scopes
     assert context.claims["client_id"] == "test_client"
     assert context.claims["iss"] == "https://as.example.com"
 
@@ -153,13 +140,7 @@ async def test_expired_token_rejected(httpx_mock, rsa_keypair, mock_jwks_server)
     validator = JWTValidator(config)
 
     # Create token that expires in 10 seconds
-    token = create_test_token(
-        rsa_keypair,
-        claims={
-            "exp": clock.now() + 10,
-            "iat": clock.now(),
-        },
-    )
+    token = create_test_token(rsa_keypair, claims={"exp": clock.now() + 10, "iat": clock.now()})
 
     # Advance clock past expiration (beyond leeway)
     clock.advance(10 + 61)  # Expired + leeway (60s) + 1s
@@ -183,13 +164,7 @@ async def test_leeway_tolerance(httpx_mock, rsa_keypair, mock_jwks_server):
     validator = JWTValidator(config)
 
     # Token expires in 10 seconds
-    token = create_test_token(
-        rsa_keypair,
-        claims={
-            "exp": clock.now() + 10,
-            "iat": clock.now(),
-        },
-    )
+    token = create_test_token(rsa_keypair, claims={"exp": clock.now() + 10, "iat": clock.now()})
 
     # Advance clock 30 seconds past expiration (within 60s leeway)
     clock.advance(40)
@@ -246,14 +221,14 @@ async def test_missing_required_scopes_rejected(httpx_mock, rsa_keypair, mock_jw
         jwks_uri="https://as.example.com/.well-known/jwks.json",
         issuer="https://as.example.com",
         audience="https://mcp.example.com",
-        required_scopes=["mcp:tools:call", "mcp:admin:write"],
+        required_scopes=["tools:call", "admin:write"],
     )
 
     validator = JWTValidator(config)
 
     token = create_test_token(
         rsa_keypair,
-        claims={"scope": "mcp:tools:call"},  # Missing mcp:admin:write
+        claims={"scope": "tools:call"},  # Missing admin:write
     )
 
     with pytest.raises(AuthorizationError, match="insufficient scopes"):
@@ -328,10 +303,7 @@ async def test_jwks_cache_expiration(httpx_mock, rsa_keypair, mock_jwks_server):
     clock.advance(301)
 
     # Add second JWKS response (cache expired, will refetch)
-    httpx_mock.add_response(
-        url="https://as.example.com/.well-known/jwks.json",
-        json=mock_jwks_server,
-    )
+    httpx_mock.add_response(url="https://as.example.com/.well-known/jwks.json", json=mock_jwks_server)
 
     # Second validation should refetch JWKS
     token2 = create_test_token(rsa_keypair, claims={"jti": "new-jti", "iat": clock.now(), "exp": clock.now() + 900})
@@ -451,10 +423,7 @@ async def test_audience_list_in_token(httpx_mock, rsa_keypair, mock_jwks_server)
     validator = JWTValidator(config)
 
     # Token with aud as list (valid if our audience is in the list)
-    token = create_test_token(
-        rsa_keypair,
-        claims={"aud": ["https://mcp.example.com", "https://other.example.com"]},
-    )
+    token = create_test_token(rsa_keypair, claims={"aud": ["https://mcp.example.com", "https://other.example.com"]})
 
     context = await validator.validate(token)
     assert context.subject == "user_123"
@@ -475,12 +444,7 @@ async def test_nbf_validation(httpx_mock, rsa_keypair, mock_jwks_server):
 
     # Token valid starting 100 seconds in the future
     token = create_test_token(
-        rsa_keypair,
-        claims={
-            "nbf": clock.now() + 100,
-            "iat": clock.now(),
-            "exp": clock.now() + 900,
-        },
+        rsa_keypair, claims={"nbf": clock.now() + 100, "iat": clock.now(), "exp": clock.now() + 900}
     )
 
     # Should be rejected (not yet valid)
@@ -509,13 +473,7 @@ async def test_future_iat_rejected(httpx_mock, rsa_keypair, mock_jwks_server):
 
     validator = JWTValidator(config)
 
-    token = create_test_token(
-        rsa_keypair,
-        claims={
-            "iat": clock.now() + 120,
-            "exp": clock.now() + 900,
-        },
-    )
+    token = create_test_token(rsa_keypair, claims={"iat": clock.now() + 120, "exp": clock.now() + 900})
 
     with pytest.raises(AuthorizationError, match="issued in the future"):
         await validator.validate(token)
@@ -551,10 +509,7 @@ async def test_custom_claims_preserved(httpx_mock, rsa_keypair, mock_jwks_server
 async def test_jwks_fetch_failure_raises_error(httpx_mock, rsa_keypair):
     """Test graceful handling of JWKS fetch failures."""
     # Mock 500 error from JWKS endpoint
-    httpx_mock.add_response(
-        url="https://as.example.com/.well-known/jwks.json",
-        status_code=500,
-    )
+    httpx_mock.add_response(url="https://as.example.com/.well-known/jwks.json", status_code=500)
 
     config = JWTValidatorConfig(
         jwks_uri="https://as.example.com/.well-known/jwks.json",

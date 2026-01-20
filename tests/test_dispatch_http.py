@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Tests for HTTP-based dispatch model.
@@ -11,8 +11,8 @@ This tests the new dispatch interface where:
 
 from __future__ import annotations
 
-import pytest
 from pydantic import ValidationError
+import pytest
 
 
 # =============================================================================
@@ -101,11 +101,7 @@ class TestHttpRequest:
         from dedalus_mcp.dispatch import HttpMethod, HttpRequest
 
         with pytest.raises(ValidationError) as exc:
-            HttpRequest(
-                method=HttpMethod.GET,
-                path="/user",
-                headers={"Authorization": "Bearer malicious"},
-            )
+            HttpRequest(method=HttpMethod.GET, path="/user", headers={"Authorization": "Bearer malicious"})
 
         assert "authorization" in str(exc.value).lower()
 
@@ -114,11 +110,7 @@ class TestHttpRequest:
         from dedalus_mcp.dispatch import HttpMethod, HttpRequest
 
         with pytest.raises(ValidationError):
-            HttpRequest(
-                method=HttpMethod.GET,
-                path="/user",
-                headers={"DPoP": "malicious-proof"},
-            )
+            HttpRequest(method=HttpMethod.GET, path="/user", headers={"DPoP": "malicious-proof"})
 
     def test_timeout_bounds(self):
         """Timeout must be between 1000 and 300000 ms."""
@@ -165,11 +157,7 @@ class TestHttpResponse:
         """HttpResponse with 200 status."""
         from dedalus_mcp.dispatch import HttpResponse
 
-        resp = HttpResponse(
-            status=200,
-            headers={"Content-Type": "application/json"},
-            body={"id": 123, "name": "test"},
-        )
+        resp = HttpResponse(status=200, headers={"Content-Type": "application/json"}, body={"id": 123, "name": "test"})
 
         assert resp.status == 200
         assert resp.headers["Content-Type"] == "application/json"
@@ -179,11 +167,7 @@ class TestHttpResponse:
         """HttpResponse with 4xx/5xx status."""
         from dedalus_mcp.dispatch import HttpResponse
 
-        resp = HttpResponse(
-            status=404,
-            headers={},
-            body={"error": "Not found"},
-        )
+        resp = HttpResponse(status=404, headers={}, body={"error": "Not found"})
 
         assert resp.status == 404
 
@@ -226,9 +210,7 @@ class TestDispatchError:
         from dedalus_mcp.dispatch import DispatchError, DispatchErrorCode
 
         err = DispatchError(
-            code=DispatchErrorCode.DOWNSTREAM_TIMEOUT,
-            message="Request timed out after 30s",
-            retryable=True,
+            code=DispatchErrorCode.DOWNSTREAM_TIMEOUT, message="Request timed out after 30s", retryable=True
         )
 
         assert err.code == DispatchErrorCode.DOWNSTREAM_TIMEOUT
@@ -260,11 +242,7 @@ class TestDispatchResponse:
         """DispatchResponse.fail() factory."""
         from dedalus_mcp.dispatch import DispatchErrorCode, DispatchResponse
 
-        resp = DispatchResponse.fail(
-            DispatchErrorCode.DOWNSTREAM_TIMEOUT,
-            "Timed out",
-            retryable=True,
-        )
+        resp = DispatchResponse.fail(DispatchErrorCode.DOWNSTREAM_TIMEOUT, "Timed out", retryable=True)
 
         assert resp.success is False
         assert resp.response is None

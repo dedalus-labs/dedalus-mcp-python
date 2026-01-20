@@ -20,4 +20,3 @@
 8. Require [negotiated protocol version to be specified](/specification/2025-06-18/basic/transports#protocol-version-header)
    via `MCP-Protocol-Version` header in subsequent requests when using HTTP (PR [#548](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/548)).
 9. Change **SHOULD** to **MUST** in [Lifecycle Operation](/specification/2025-06-18/basic/lifecycle#operation)
-

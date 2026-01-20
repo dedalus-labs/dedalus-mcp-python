@@ -1,27 +1,19 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Request context helpers for Dedalus MCP handlers.
+"""Request context helpers for MCP handlers.
 
-The utilities in this module provide a stable surface over the reference
-SDK's ``request_ctx`` primitive so application code can access
-capabilities such as logging and progress without importing SDK internals.
-
-Implements context integration for MCP capabilities:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging
-  (server-to-client logging notifications)
-- https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress
+Provides access to logging, progress, and session info within tool/resource handlers.
   (progress notifications during long-running operations)
 """
 
 from __future__ import annotations
 
-import os
 from collections.abc import AsyncIterator, Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar, Token
 from dataclasses import dataclass
+import os
 from typing import TYPE_CHECKING, Any, cast
 
 from mcp.server.lowlevel.server import request_ctx
@@ -34,6 +26,7 @@ from .progress import progress as progress_manager
 
 if TYPE_CHECKING:
     from mcp.server.session import ServerSession
+
     from .dispatch import DispatchResponse
     from .server.connectors import Connection
     from .server.core import MCPServer
@@ -78,7 +71,7 @@ class Context:
     """
 
     _request_context: RequestContext
-    dependency_cache: dict["DependencyCall", "ResolvedDependency"] | None = None
+    dependency_cache: dict[DependencyCall, ResolvedDependency] | None = None
     runtime: Mapping[str, Any] | None = None
 
     # ------------------------------------------------------------------
@@ -96,9 +89,8 @@ class Context:
         return self._request_context.session
 
     @property
-    def server(self) -> "MCPServer" | None:
+    def server(self) -> MCPServer | None:
         """Return the MCP server associated with this request, if any."""
-
         runtime = self.runtime
         if not isinstance(runtime, Mapping):
             return None
@@ -139,7 +131,7 @@ class Context:
         return None
 
     @property
-    def resolver(self) -> "ConnectionResolver" | None:
+    def resolver(self) -> ConnectionResolver | None:
         """Return the configured connection resolver for this server, if any."""
         runtime = self.runtime
         if not isinstance(runtime, Mapping):
@@ -215,7 +207,6 @@ class Context:
 
     async def resolve_client(self, handle: str, *, operation: Mapping[str, Any] | None = None) -> Any:
         """Resolve a connection handle into a driver client via the configured resolver."""
-
         if not isinstance(handle, str):
             raise TypeError("Connection handle must be a string identifier")
 
@@ -226,12 +217,7 @@ class Context:
         request_payload = self._build_resolver_context(operation)
         return await resolver.resolve_client(handle, request_payload)
 
-    async def dispatch(
-        self,
-        target: "Connection | str | None" = None,
-        request: Any = None,
-        /,
-    ) -> "DispatchResponse":
+    async def dispatch(self, target: Connection | str | None = None, request: Any = None, /) -> DispatchResponse:
         """Execute authenticated HTTP request through dispatch backend.
 
         Single-connection server (target omitted):
@@ -256,20 +242,17 @@ class Context:
             InvalidConnectionHandleError: If handle format is invalid
 
         Example:
-            >>> response = await ctx.dispatch(HttpRequest(
-            ...     method=HttpMethod.POST,
-            ...     path="/repos/owner/repo/issues",
-            ...     body={"title": "Bug", "body": "Description"},
-            ... ))
+            >>> response = await ctx.dispatch(
+            ...     HttpRequest(
+            ...         method=HttpMethod.POST,
+            ...         path="/repos/owner/repo/issues",
+            ...         body={"title": "Bug", "body": "Description"},
+            ...     )
+            ... )
             >>> if response.success:
             ...     print(response.response.body)
         """
-        from .dispatch import (
-            DispatchBackend,
-            DispatchResponse,
-            DispatchWireRequest,
-            HttpRequest,
-        )
+        from .dispatch import DispatchBackend, DispatchWireRequest, HttpRequest
         from .server.connectors import Connection
         from .server.services.connection_gate import validate_handle_format
 
@@ -350,7 +333,9 @@ class Context:
             if not authorization_token:
                 # Log all header names for debugging missing auth
                 header_names = [n.decode() if isinstance(n, bytes) else str(n) for n, _ in headers[:10]]
-                _ctx_logger.warning(f"No Authorization header in ASGI scope. Available headers: {', '.join(header_names)}")
+                _ctx_logger.warning(
+                    f"No Authorization header in ASGI scope. Available headers: {', '.join(header_names)}"
+                )
 
         # Dedalus-hosted MCP servers require Authorization tokens
         if os.getenv("DEDALUS_DISPATCH_URL") and not authorization_token:
@@ -364,9 +349,7 @@ class Context:
 
         # Build and execute wire request
         wire_request = DispatchWireRequest(
-            connection_handle=connection_handle,
-            request=http_request,
-            authorization=authorization_token,
+            connection_handle=connection_handle, request=http_request, authorization=authorization_token
         )
 
         return await backend.dispatch(wire_request)

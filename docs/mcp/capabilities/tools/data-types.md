@@ -196,4 +196,3 @@ Providing an output schema helps clients and LLMs understand and properly handle
 * Providing type information for better integration with programming languages
 * Guiding clients and LLMs to properly parse and utilize the returned data
 * Supporting better documentation and developer experience
-

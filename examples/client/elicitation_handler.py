@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Client implementing elicitation capability for MCP servers.
@@ -45,9 +45,7 @@ from dedalus_mcp.types import (
 SERVER_URL = "http://127.0.0.1:8000/mcp"
 
 
-async def elicitation_handler(
-    _context: object, params: ElicitRequestParams
-) -> ElicitResult | ErrorData:
+async def elicitation_handler(_context: object, params: ElicitRequestParams) -> ElicitResult | ErrorData:
     """Handle elicitation/create requests by prompting the user via CLI."""
     try:
         print(f"\n{'=' * 60}")
@@ -96,10 +94,9 @@ async def elicitation_handler(
 
         if confirm.lower() == "cancel":
             return ElicitResult(action="cancel", content={})
-        elif confirm.lower() == "n":
+        if confirm.lower() == "n":
             return ElicitResult(action="decline", content={})
-        else:
-            return ElicitResult(action="accept", content=content)
+        return ElicitResult(action="accept", content=content)
 
     except Exception as e:
         return ErrorData(code=-32603, message=f"Elicitation failed: {e}")
@@ -109,20 +106,14 @@ async def main() -> None:
     """Connect to a server that uses elicitation and handle its requests."""
     capabilities = ClientCapabilitiesConfig(elicitation=elicitation_handler)
 
-    async with open_connection(
-        url=SERVER_URL, transport="streamable-http", capabilities=capabilities
-    ) as client:
+    async with open_connection(url=SERVER_URL, transport="streamable-http", capabilities=capabilities) as client:
         print("Connected with elicitation capability enabled")
         print(f"Server info: {client.initialize_result.serverInfo.name}")
 
         try:
             result = await client.send_request(
                 ClientRequest(
-                    CallToolRequest(
-                        params=CallToolRequestParams(
-                            name="some_tool_needing_confirmation", arguments={}
-                        )
-                    )
+                    CallToolRequest(params=CallToolRequestParams(name="some_tool_needing_confirmation", arguments={}))
                 ),
                 CallToolResult,
             )

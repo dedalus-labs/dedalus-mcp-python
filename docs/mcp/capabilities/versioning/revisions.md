@@ -8,4 +8,3 @@ Revisions may be marked as:
 * **Final**: past, complete specifications that will not be changed.
 
 The **current** protocol version is [**2025-06-18**](/specification/2025-06-18/).
-

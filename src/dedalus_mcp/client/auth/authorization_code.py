@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """OAuth 2.0 Authorization Code Grant (RFC 6749 Section 4.1).
@@ -19,7 +19,4 @@ class AuthorizationCodeAuth:
     """
 
     def __init__(self) -> None:
-        raise NotImplementedError(
-            "AuthorizationCodeAuth is not yet implemented. "
-            "Planned for Clerk integration."
-        )
+        raise NotImplementedError("AuthorizationCodeAuth is not yet implemented. Planned for Clerk integration.")

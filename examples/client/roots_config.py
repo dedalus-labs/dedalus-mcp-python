@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Client advertising filesystem roots to MCP servers.
@@ -49,14 +49,9 @@ async def main() -> None:
         Root(uri=temp_dir.as_uri(), name="Temporary Files"),
     ]
 
-    capabilities = ClientCapabilitiesConfig(
-        enable_roots=True,
-        initial_roots=initial_roots,
-    )
+    capabilities = ClientCapabilitiesConfig(enable_roots=True, initial_roots=initial_roots)
 
-    async with open_connection(
-        url=SERVER_URL, transport="streamable-http", capabilities=capabilities
-    ) as client:
+    async with open_connection(url=SERVER_URL, transport="streamable-http", capabilities=capabilities) as client:
         print("Connected with roots capability enabled")
         print(f"Server info: {client.initialize_result.serverInfo.name}")
         print("\nAdvertised roots:")

@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Dedalus Labs, Inc. and its contributors
+# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
 """Tests for MCP metadata endpoint (.well-known/mcp-server.json)."""
@@ -6,19 +6,11 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
 
-import anyio
 import pytest
-from httpx import AsyncClient
 
 from dedalus_mcp import MCPServer, tool
-from dedalus_mcp.server import NotificationFlags
 from dedalus_mcp.server.authorization import AuthorizationConfig
-
-
-if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
 
 
 @pytest.fixture
@@ -44,11 +36,7 @@ async def configured_server() -> MCPServer:
 @pytest.fixture
 async def server_with_tools() -> MCPServer:
     """Create a server with registered tools."""
-    server = MCPServer(
-        "tools-server",
-        resource_uri="https://mcp.example.com/tools",
-        connector_kind="api",
-    )
+    server = MCPServer("tools-server", resource_uri="https://mcp.example.com/tools", connector_kind="api")
 
     with server.binding():
 
@@ -135,10 +123,7 @@ async def test_metadata_with_authorization(server_with_auth: MCPServer) -> None:
 @pytest.mark.anyio
 async def test_partial_connector_schema() -> None:
     """Test connection schema with only some fields populated."""
-    server = MCPServer(
-        "partial-server",
-        connector_kind="custom",
-    )
+    server = MCPServer("partial-server", connector_kind="custom")
 
     metadata = server.get_mcp_metadata()
     connector_schema = metadata["connector_schema"]
@@ -152,10 +137,7 @@ async def test_partial_connector_schema() -> None:
 @pytest.mark.anyio
 async def test_connector_params_only() -> None:
     """Test connection schema with only params defined."""
-    server = MCPServer(
-        "params-server",
-        connector_params={"api_key": str, "endpoint": str},
-    )
+    server = MCPServer("params-server", connector_params={"api_key": str, "endpoint": str})
 
     metadata = server.get_mcp_metadata()
     connector_schema = metadata["connector_schema"]
@@ -169,10 +151,7 @@ async def test_connector_params_only() -> None:
 @pytest.mark.anyio
 async def test_auth_methods_only() -> None:
     """Test connection schema with only auth methods defined."""
-    server = MCPServer(
-        "auth-methods-server",
-        auth_methods=["oauth2", "api_key"],
-    )
+    server = MCPServer("auth-methods-server", auth_methods=["oauth2", "api_key"])
 
     metadata = server.get_mcp_metadata()
     connector_schema = metadata["connector_schema"]
@@ -300,12 +279,7 @@ async def test_connector_params_type_names() -> None:
     """Test connection params correctly serialize type names."""
     server = MCPServer(
         "types-server",
-        connector_params={
-            "string_param": str,
-            "int_param": int,
-            "bool_param": bool,
-            "float_param": float,
-        },
+        connector_params={"string_param": str, "int_param": int, "bool_param": bool, "float_param": float},
     )
 
     metadata = server.get_mcp_metadata()
@@ -377,7 +351,7 @@ async def test_metadata_comprehensive_example() -> None:
     auth_config = AuthorizationConfig(
         enabled=True,
         authorization_servers=["https://auth.example.com"],
-        required_scopes=["mcp:read", "mcp:write", "mcp:execute"],
+        required_scopes=["read", "write", "execute"],
     )
 
     server = MCPServer(
@@ -385,12 +359,7 @@ async def test_metadata_comprehensive_example() -> None:
         version="2.0.0",
         resource_uri="https://mcp.example.com/comprehensive",
         connector_kind="hybrid",
-        connector_params={
-            "api_endpoint": str,
-            "websocket_url": str,
-            "timeout": int,
-            "retry_enabled": bool,
-        },
+        connector_params={"api_endpoint": str, "websocket_url": str, "timeout": int, "retry_enabled": bool},
         auth_methods=["oauth2", "api_key", "jwt"],
         authorization=auth_config,
     )
@@ -430,4 +399,4 @@ async def test_metadata_comprehensive_example() -> None:
     assert "comprehensive_tool_2" in metadata["tools"]
     assert "comprehensive_tool_3" in metadata["tools"]
 
-    assert metadata["required_scopes"] == ["mcp:read", "mcp:write", "mcp:execute"]
+    assert metadata["required_scopes"] == ["read", "write", "execute"]

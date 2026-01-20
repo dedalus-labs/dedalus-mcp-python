@@ -24,4 +24,3 @@ interpreted as described in [BCP 14](https://datatracker.ietf.org/doc/html/bcp14
 \[[RFC2119](https://datatracker.ietf.org/doc/html/rfc2119)]
 \[[RFC8174](https://datatracker.ietf.org/doc/html/rfc8174)] when, and only when, they
 appear in all capitals, as shown here.
-

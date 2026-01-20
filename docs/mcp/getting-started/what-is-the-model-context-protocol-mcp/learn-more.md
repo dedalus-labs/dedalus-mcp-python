@@ -5,5 +5,3 @@
     Learn the core concepts and architecture of MCP
   </Card>
 </CardGroup>
-
-
