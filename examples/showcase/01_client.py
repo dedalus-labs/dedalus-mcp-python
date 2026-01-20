@@ -15,7 +15,9 @@ Usage:
 
 import asyncio
 import logging
+
 from dedalus_mcp.client import MCPClient
+
 
 # Suppress log noise for clean output
 for name in ("mcp", "httpx"):

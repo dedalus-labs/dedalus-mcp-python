@@ -27,4 +27,3 @@ Clients may offer the following features to servers:
 * Cancellation
 * Error reporting
 * Logging
-

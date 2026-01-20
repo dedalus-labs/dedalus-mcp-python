@@ -31,8 +31,8 @@ from __future__ import annotations
 
 import os
 
-import anyio
 import anthropic
+import anyio
 
 from dedalus_mcp.client import ClientCapabilitiesConfig, open_connection
 from dedalus_mcp.types import CreateMessageRequestParams, CreateMessageResult, ErrorData, Role, StopReason, TextContent

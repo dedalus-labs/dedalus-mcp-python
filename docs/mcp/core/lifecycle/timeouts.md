@@ -14,4 +14,3 @@ notification](/specification/2025-06-18/basic/utilities/progress) corresponding 
 implies that work is actually happening. However, implementations **SHOULD** always
 enforce a maximum timeout, regardless of progress notifications, to limit the impact of a
 misbehaving client or server.
-

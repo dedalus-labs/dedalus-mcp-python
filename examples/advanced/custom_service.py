@@ -27,12 +27,13 @@ Reference:
 from __future__ import annotations
 
 import asyncio
-import logging
 from dataclasses import dataclass
+import logging
 from typing import Any
 
 from dedalus_mcp import MCPServer, tool
 from dedalus_mcp.types import CallToolResult
+
 
 # Suppress SDK and server logs for cleaner demo output
 for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):

@@ -52,7 +52,6 @@ class HTTPAPIDriver(BaseDriver):
 
     async def create_client(self, config: Any, auth: Any) -> HTTPAPIClient:
         """Create a driver-specific client for HTTP APIs."""
-
         config_data = self._normalize_input(config)
         auth_data = self._normalize_input(auth)
 

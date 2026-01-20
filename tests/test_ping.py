@@ -10,11 +10,11 @@ from mcp.client.session import ClientSession
 import pytest
 
 from dedalus_mcp import MCPServer
+from dedalus_mcp.server.services.ping import PingService
 from dedalus_mcp.types.messages import ClientRequest
 from dedalus_mcp.types.shared.base import EmptyResult
 from dedalus_mcp.types.shared.capabilities import Implementation
 from dedalus_mcp.types.utilities.ping import PingRequest
-from dedalus_mcp.server.services.ping import PingService
 
 
 @pytest.mark.anyio

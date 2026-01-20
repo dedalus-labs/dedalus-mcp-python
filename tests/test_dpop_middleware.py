@@ -9,10 +9,11 @@ import base64
 import hashlib
 import json
 import time
-import uuid
 from typing import Any
+import uuid
 
 import pytest
+
 
 pytest.importorskip("starlette")
 
@@ -94,8 +95,8 @@ class MockDPoPProvider(AuthorizationProvider):
 @pytest.fixture
 def es256_keypair():
     """Generate an ES256 key pair for testing."""
-    from cryptography.hazmat.primitives.asymmetric import ec
     from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives.asymmetric import ec
 
     return ec.generate_private_key(ec.SECP256R1(), default_backend())
 

@@ -16,4 +16,3 @@ notification containing:
   }
 }
 ```
-

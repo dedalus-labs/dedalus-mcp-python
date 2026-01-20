@@ -93,7 +93,7 @@ The goals are:
 
 | Risk | Mitigation |
 |------|------------|
-| Execution backend compromise | Private keys in CloudHSM/KMS; audit & alerts | 
+| Execution backend compromise | Private keys in CloudHSM/KMS; audit & alerts |
 | Token tampering or replay | DPoP proofs, handle fingerprints, short-lived JWTs |
 | SecretsManager downtime | Local cache + exponential backoff |
 | Driver misuse | Typed connectors/clients; explicit auth types enforce behavior |
@@ -101,4 +101,3 @@ The goals are:
 The architecture is a direct extension of the conversation plan: no unproven
 assumptions, and all components map to AWS primitives (Secrets Manager, KMS,
 CloudHSM, Lambda/ECS). The `.env` loader remains purely for local testing.
-

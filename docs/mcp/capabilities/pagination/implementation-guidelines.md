@@ -12,4 +12,3 @@
    * Don't make assumptions about cursor format
    * Don't attempt to parse or modify cursors
    * Don't persist cursors across sessions
-

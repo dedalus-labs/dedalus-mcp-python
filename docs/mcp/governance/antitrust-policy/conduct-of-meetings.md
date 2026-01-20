@@ -21,4 +21,3 @@ In connection with all Project Meetings, participants must do the following:
 * Insist that meeting minutes be prepared and distributed to all participants, and that meeting minutes accurately reflect the matters that transpired.
 * Consult with their respective counsel on all antitrust questions related to Project Meetings.
 * Protest against any discussions that appear to violate these policies or the Antitrust Laws, leave any meeting in which such discussions continue, and either insist that such protest be noted in the minutes.
-

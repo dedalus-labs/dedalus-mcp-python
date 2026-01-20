@@ -44,8 +44,8 @@ import asyncio
 import os
 from typing import Any
 
-import httpx
 from dotenv import load_dotenv
+import httpx
 
 from dedalus_mcp import MCPServer, get_context, tool
 from dedalus_mcp.server.authorization import AuthorizationConfig

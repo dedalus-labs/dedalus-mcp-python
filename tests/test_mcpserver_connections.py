@@ -21,7 +21,7 @@ class TestMCPServerConnections:
 
     def test_single_connection(self):
         """MCPServer should accept single connection in list."""
-        from dedalus_mcp import Connection, SecretKeys, MCPServer
+        from dedalus_mcp import Connection, MCPServer, SecretKeys
 
         github = Connection("github", secrets=SecretKeys(token="GITHUB_TOKEN"))
 
@@ -32,7 +32,7 @@ class TestMCPServerConnections:
 
     def test_multiple_connections(self):
         """MCPServer should accept multiple connections."""
-        from dedalus_mcp import Connection, SecretKeys, MCPServer
+        from dedalus_mcp import Connection, MCPServer, SecretKeys
 
         github = Connection("github", secrets=SecretKeys(token="GITHUB_TOKEN"))
         openai = Connection("openai", secrets=SecretKeys(api_key="OPENAI_API_KEY"))
@@ -71,7 +71,7 @@ class TestMCPServerConnectionValidation:
 
     def test_duplicate_names_rejected(self):
         """MCPServer should reject duplicate connection names."""
-        from dedalus_mcp import Connection, SecretKeys, MCPServer
+        from dedalus_mcp import Connection, MCPServer, SecretKeys
 
         conn1 = Connection("api", secrets=SecretKeys(key="KEY1"))
         conn2 = Connection("api", secrets=SecretKeys(key="KEY2"))

@@ -13,7 +13,8 @@ Usage:
 """
 
 import pytest
-from dedalus_mcp import MCPServer, tool, resource, prompt
+
+from dedalus_mcp import MCPServer, prompt, resource, tool
 
 
 # ============================================================================

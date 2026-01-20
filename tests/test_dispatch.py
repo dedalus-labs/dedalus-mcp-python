@@ -53,8 +53,9 @@ class TestDispatchWireRequestModel:
 
     def test_wire_request_validation(self):
         """DispatchWireRequest should validate handle format."""
-        from dedalus_mcp.dispatch import DispatchWireRequest, HttpMethod, HttpRequest
         from pydantic import ValidationError
+
+        from dedalus_mcp.dispatch import DispatchWireRequest, HttpMethod, HttpRequest
 
         http_req = HttpRequest(method=HttpMethod.GET, path="/user")
 
@@ -98,10 +99,10 @@ class TestDispatchBackendProtocol:
 
     def test_backend_has_dispatch_method(self):
         """All backends should implement async dispatch() method."""
-        from dedalus_mcp.dispatch import DispatchBackend
-
         # Verify protocol defines the method
         import inspect
+
+        from dedalus_mcp.dispatch import DispatchBackend
 
         assert hasattr(DispatchBackend, "dispatch")
         sig = inspect.signature(DispatchBackend.dispatch)
@@ -191,7 +192,7 @@ class TestEnclaveDispatchBackend:
         """Enclave dispatch should POST to /dispatch with response envelope."""
         import httpx
 
-        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
+        from dedalus_mcp.dispatch import DispatchWireRequest, EnclaveDispatchBackend, HttpMethod, HttpRequest
 
         # Mock the enclave endpoint - returns DispatchResponse envelope
         respx_mock.post("https://enclave.example.com/dispatch").mock(
@@ -216,11 +217,11 @@ class TestEnclaveDispatchBackend:
     @pytest.mark.asyncio
     async def test_enclave_dispatch_includes_dpop_header(self, respx_mock):
         """Enclave dispatch should include DPoP proof header when key provided."""
-        import httpx
         from cryptography.hazmat.backends import default_backend
         from cryptography.hazmat.primitives.asymmetric import ec
+        import httpx
 
-        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
+        from dedalus_mcp.dispatch import DispatchWireRequest, EnclaveDispatchBackend, HttpMethod, HttpRequest
 
         # Generate ES256 key for DPoP
         dpop_key = ec.generate_private_key(ec.SECP256R1(), default_backend())
@@ -254,7 +255,7 @@ class TestEnclaveDispatchBackend:
         """401 from enclave should result in auth error."""
         import httpx
 
-        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
+        from dedalus_mcp.dispatch import DispatchWireRequest, EnclaveDispatchBackend, HttpMethod, HttpRequest
 
         respx_mock.post("https://enclave.example.com/dispatch").mock(
             return_value=httpx.Response(401, json={"error": "token_expired"})
@@ -277,7 +278,7 @@ class TestEnclaveDispatchBackend:
         """Timeout should be handled gracefully."""
         import httpx
 
-        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
+        from dedalus_mcp.dispatch import DispatchWireRequest, EnclaveDispatchBackend, HttpMethod, HttpRequest
 
         respx_mock.post("https://enclave.example.com/dispatch").mock(side_effect=httpx.TimeoutException("timeout"))
 
@@ -304,8 +305,9 @@ class TestHttpRequestValidation:
 
     def test_path_must_start_with_slash(self):
         """Path must start with /."""
-        from dedalus_mcp.dispatch import HttpMethod, HttpRequest
         from pydantic import ValidationError
+
+        from dedalus_mcp.dispatch import HttpMethod, HttpRequest
 
         with pytest.raises(ValidationError, match="path must start with"):
             HttpRequest(method=HttpMethod.GET, path="user")
@@ -545,9 +547,10 @@ class TestEnclaveDispatchBackendAdvanced:
     async def test_enclave_dispatch_with_hmac_signature(self, respx_mock):
         """Enclave dispatch should include HMAC signature when deployment auth configured."""
         import base64
+
         import httpx
 
-        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
+        from dedalus_mcp.dispatch import DispatchWireRequest, EnclaveDispatchBackend, HttpMethod, HttpRequest
 
         captured = None
 
@@ -583,7 +586,7 @@ class TestEnclaveDispatchBackendAdvanced:
         """403 from enclave should result in authorization error."""
         import httpx
 
-        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
+        from dedalus_mcp.dispatch import DispatchWireRequest, EnclaveDispatchBackend, HttpMethod, HttpRequest
 
         respx_mock.post("https://enclave.example.com/dispatch").mock(
             return_value=httpx.Response(403, json={"error": "forbidden"})
@@ -606,7 +609,7 @@ class TestEnclaveDispatchBackendAdvanced:
         """5xx from enclave should result in downstream error."""
         import httpx
 
-        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
+        from dedalus_mcp.dispatch import DispatchWireRequest, EnclaveDispatchBackend, HttpMethod, HttpRequest
 
         respx_mock.post("https://enclave.example.com/dispatch").mock(
             return_value=httpx.Response(500, text="Internal server error")
@@ -629,7 +632,7 @@ class TestEnclaveDispatchBackendAdvanced:
         """Enclave error responses should be properly handled."""
         import httpx
 
-        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
+        from dedalus_mcp.dispatch import DispatchWireRequest, EnclaveDispatchBackend, HttpMethod, HttpRequest
 
         respx_mock.post("https://enclave.example.com/dispatch").mock(
             return_value=httpx.Response(
@@ -659,7 +662,7 @@ class TestEnclaveDispatchBackendAdvanced:
         """Network errors should be handled gracefully."""
         import httpx
 
-        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
+        from dedalus_mcp.dispatch import DispatchWireRequest, EnclaveDispatchBackend, HttpMethod, HttpRequest
 
         respx_mock.post("https://enclave.example.com/dispatch").mock(side_effect=httpx.RequestError("Network error"))
 
@@ -680,7 +683,7 @@ class TestEnclaveDispatchBackendAdvanced:
         """Without DPoP key, should use Bearer auth."""
         import httpx
 
-        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
+        from dedalus_mcp.dispatch import DispatchWireRequest, EnclaveDispatchBackend, HttpMethod, HttpRequest
 
         captured = None
 
@@ -723,8 +726,6 @@ class TestDirectDispatchBackendEdgeCases:
     @pytest.mark.asyncio
     async def test_dispatch_unexpected_exception(self, respx_mock):
         """Unexpected exceptions should be caught and logged."""
-        import httpx
-
         from dedalus_mcp.dispatch import DirectDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
 
         respx_mock.get("https://api.example.com/endpoint").mock(side_effect=RuntimeError("Unexpected error in httpx"))
@@ -750,9 +751,7 @@ class TestEnclaveDispatchBackendEdgeCases:
     @pytest.mark.asyncio
     async def test_enclave_dispatch_unexpected_exception(self, respx_mock):
         """Unexpected exceptions should be caught and logged."""
-        import httpx
-
-        from dedalus_mcp.dispatch import EnclaveDispatchBackend, DispatchWireRequest, HttpMethod, HttpRequest
+        from dedalus_mcp.dispatch import DispatchWireRequest, EnclaveDispatchBackend, HttpMethod, HttpRequest
 
         respx_mock.post("https://enclave.example.com/dispatch").mock(side_effect=RuntimeError("Unexpected error"))
 
@@ -825,9 +824,9 @@ class TestDispatchResponseConformance:
         import httpx
 
         from dedalus_mcp.dispatch import (
-            EnclaveDispatchBackend,
             DispatchErrorCode,
             DispatchWireRequest,
+            EnclaveDispatchBackend,
             HttpMethod,
             HttpRequest,
         )

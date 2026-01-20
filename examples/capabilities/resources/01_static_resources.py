@@ -11,10 +11,10 @@ Usage:
 """
 
 import asyncio
-import json
 import logging
 
 from dedalus_mcp import MCPServer, resource
+
 
 for name in ("mcp", "httpx", "uvicorn"):
     logging.getLogger(name).setLevel(logging.WARNING)

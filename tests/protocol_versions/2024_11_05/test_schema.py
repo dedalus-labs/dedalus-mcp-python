@@ -6,17 +6,14 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import TYPE_CHECKING
 
-import pytest
 from mcp.server.lowlevel.server import NotificationOptions
+import pytest
 
 from dedalus_mcp import MCPServer, prompt, resource, tool, types, versioning
 from dedalus_mcp.server import NotificationFlags
 from tests.helpers import DummySession, run_with_context
 
-if TYPE_CHECKING:
-    pass
 
 VERSION = "2024-11-05"
 

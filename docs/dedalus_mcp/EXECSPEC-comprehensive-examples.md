@@ -25,7 +25,7 @@ examples/
 │   ├── context_vs_script.py  ✅
 │   ├── multi_server.py       ✅
 │   └── testing.py            ✅
-├── integrations/      
+├── integrations/
 │   └── fastapi_migration.py  ✅
 ├── advanced/
 │   └── llm_chain.py          ✅ (MCP server chaining!)

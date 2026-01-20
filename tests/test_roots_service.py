@@ -13,10 +13,10 @@ import anyio
 from mcp.shared.exceptions import McpError
 import pytest
 
-from dedalus_mcp.types.client.roots import ListRootsRequest, ListRootsResult, Root
-from dedalus_mcp.types.lifecycle import InitializedNotification
 from dedalus_mcp.server import MCPServer
 from dedalus_mcp.server.services.roots import RootGuard, RootsService
+from dedalus_mcp.types.client.roots import ListRootsRequest, ListRootsResult, Root
+from dedalus_mcp.types.lifecycle import InitializedNotification
 from tests.helpers import run_with_context
 
 

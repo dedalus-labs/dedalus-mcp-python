@@ -84,7 +84,7 @@ Silent fallbacks create bugs that "work" until production. Explicit failures are
 ```python
 async def list_tools(self) -> ListToolsResult:
     """List available tools.
-    
+
     See: docs/mcp/spec/schema-reference/tools-list.md
     """
 ```

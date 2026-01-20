@@ -9,8 +9,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from dedalus_mcp import MCPServer, tool, get_context
+from dedalus_mcp import MCPServer, get_context, tool
 from dedalus_mcp.context import RUNTIME_CONTEXT_KEY
+
 from ..helpers import RecordingSession, run_with_context
 
 

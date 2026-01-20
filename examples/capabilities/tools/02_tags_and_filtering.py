@@ -16,6 +16,7 @@ import logging
 
 from dedalus_mcp import MCPServer, tool
 
+
 for name in ("mcp", "httpx", "uvicorn"):
     logging.getLogger(name).setLevel(logging.WARNING)
 

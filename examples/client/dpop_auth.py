@@ -13,12 +13,11 @@ Usage:
 
 from __future__ import annotations
 
-import asyncio
-
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from dedalus_mcp.client import DPoPAuth, MCPClient
+
 
 # In production: load from secure storage
 # This key must match the one used when obtaining the access token

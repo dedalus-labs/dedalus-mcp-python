@@ -53,4 +53,3 @@ To request a language model generation, servers send a `sampling/createMessage` 
   }
 }
 ```
-

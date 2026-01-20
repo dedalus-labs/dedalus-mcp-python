@@ -59,4 +59,3 @@ The process of connecting Claude to a remote MCP server involves adding a Custom
     Navigate back to the Connectors settings and click on your connected server. Here you can enable or disable specific tools, set usage limits, and configure other security parameters according to your needs.
   </Step>
 </Steps>
-

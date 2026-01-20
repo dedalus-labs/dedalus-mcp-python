@@ -34,7 +34,6 @@ from dedalus_mcp.server.connectors import Credentials, EnvironmentCredentialLoad
 
 def example_basic_connector():
     """Define a basic typed connector for an HTTP API."""
-
     # Define the connector schema
     HttpApiConn = define(
         kind="http-api",
@@ -82,7 +81,6 @@ def example_basic_connector():
 
 def example_database_connector():
     """Define a PostgreSQL connector with typed parameters."""
-
     PostgresConn = define(
         kind="postgres",
         params={"host": str, "port": int, "database": str, "ssl_mode": str},
@@ -158,7 +156,6 @@ class MockPostgresDriver:
 
 async def example_with_driver():
     """Use typed connector with a driver."""
-
     PostgresConn = define(
         kind="postgres", params={"host": str, "port": int, "database": str, "ssl_mode": str}, auth=["password"]
     )
@@ -243,7 +240,6 @@ def example_optional_fields():
 
 def comparison_connection_vs_define():
     """Show when to use Connection (simple) vs define() (typed)."""
-
     # -------------------------------------------------------------------------
     # Pattern A: Connection (for HTTP dispatch)
     # -------------------------------------------------------------------------

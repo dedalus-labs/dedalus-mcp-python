@@ -6,5 +6,3 @@ Implementations **MUST**:
 * Implement appropriate rate limiting
 * Control access to sensitive suggestions
 * Prevent completion-based information disclosure
-
-

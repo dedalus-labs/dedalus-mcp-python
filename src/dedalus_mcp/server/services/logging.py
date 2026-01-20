@@ -20,11 +20,13 @@ import contextlib
 import logging
 from typing import TYPE_CHECKING, Any
 import weakref
+
 from mcp.server.lowlevel.server import request_ctx
 from mcp.shared.exceptions import McpError
 
 from ..notifications import NotificationSink
 from ... import types
+
 
 try:
     import trio

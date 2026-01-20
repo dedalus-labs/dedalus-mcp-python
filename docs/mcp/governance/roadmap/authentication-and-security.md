@@ -7,4 +7,3 @@ We're evolving our authorization and security resources to improve user safety a
 * **Fine-grained Authorization**: developing mechanisms and guidelines for primitive authorization for sensitive actions
 * **Enterprise Managed Authorization**: adding the capability for enterprises to simplify MCP server authorization with the help of Single Sign-On (SSO)
 * **Secure Authorization Elicitation**: enable developers to integrate secure authorization flows for downstream APIs outside the main MCP server authorization
-

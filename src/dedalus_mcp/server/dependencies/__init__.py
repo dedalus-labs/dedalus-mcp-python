@@ -5,8 +5,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 import inspect
-from typing import Any, Callable, Sequence, get_origin
+from typing import Any, get_origin
 
 from .models import DependencyCall
 
@@ -17,7 +18,6 @@ def register_injectable_type(typ: type) -> None:
     Currently only Context is supported. This exists for future extensibility.
     """
     # For now, we only support Context, but this allows future types
-    pass
 
 
 def _find_context_param(func: Callable[..., Any]) -> str | None:

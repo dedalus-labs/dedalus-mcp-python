@@ -14,9 +14,9 @@ from mcp.shared.exceptions import McpError
 import pytest
 
 from dedalus_mcp import MCPServer, prompt
+from dedalus_mcp.server import NotificationFlags
 from dedalus_mcp.types.server.prompts import ListPromptsRequest
 from dedalus_mcp.types.shared.base import INVALID_PARAMS, PaginatedRequestParams
-from dedalus_mcp.server import NotificationFlags
 from tests.helpers import DummySession, run_with_context
 
 

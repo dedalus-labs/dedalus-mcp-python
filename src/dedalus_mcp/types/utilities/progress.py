@@ -5,4 +5,5 @@
 
 from mcp.types import ProgressNotification, ProgressNotificationParams
 
+
 __all__ = ["ProgressNotification", "ProgressNotificationParams"]

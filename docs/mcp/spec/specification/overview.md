@@ -18,4 +18,3 @@ MCP takes some inspiration from the
 standardizes how to add support for programming languages across a whole ecosystem of
 development tools. In a similar way, MCP standardizes how to integrate additional context
 and tools into the ecosystem of AI applications.
-

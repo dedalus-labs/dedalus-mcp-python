@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Any, Protocol, runtime_checkable
 
-from .http_api import HTTPAPIDriver, HTTPAPIClient
+from .http_api import HTTPAPIClient, HTTPAPIDriver
 
 
 @runtime_checkable

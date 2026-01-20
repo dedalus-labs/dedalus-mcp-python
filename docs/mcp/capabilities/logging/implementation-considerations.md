@@ -11,4 +11,3 @@
    * Implement log filtering/search
    * Display severity visually
    * Persist log messages
-

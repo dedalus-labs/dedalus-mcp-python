@@ -14,4 +14,3 @@ For example, applications could:
 However, implementations are free to expose resources through any interface pattern that
 suits their needs—the protocol itself does not mandate any specific user
 interaction model.
-

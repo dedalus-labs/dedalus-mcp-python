@@ -23,8 +23,11 @@ Usage:
 
 import asyncio
 import logging
+
 import httpx
+
 from dedalus_mcp.client import MCPClient
+
 
 # Suppress log noise
 for name in ("mcp", "httpx"):

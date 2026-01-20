@@ -23,7 +23,6 @@ Security model:
 
 from __future__ import annotations
 
-import asyncio
 import os
 
 from dedalus_mcp import MCPServer, tool

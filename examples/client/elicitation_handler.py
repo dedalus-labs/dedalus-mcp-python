@@ -94,10 +94,9 @@ async def elicitation_handler(_context: object, params: ElicitRequestParams) -> 
 
         if confirm.lower() == "cancel":
             return ElicitResult(action="cancel", content={})
-        elif confirm.lower() == "n":
+        if confirm.lower() == "n":
             return ElicitResult(action="decline", content={})
-        else:
-            return ElicitResult(action="accept", content=content)
+        return ElicitResult(action="accept", content=content)
 
     except Exception as e:
         return ErrorData(code=-32603, message=f"Elicitation failed: {e}")

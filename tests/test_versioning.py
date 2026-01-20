@@ -11,8 +11,8 @@ from dedalus_mcp.versioning import (
     ALL_VERSIONS,
     LATEST_VERSION,
     SUPPORTED_VERSIONS,
-    UnsupportedProtocolVersionError,
     ProtocolVersion,
+    UnsupportedProtocolVersionError,
     capabilities_for,
 )
 

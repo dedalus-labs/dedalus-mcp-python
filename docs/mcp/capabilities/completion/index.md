@@ -11,4 +11,3 @@ The Model Context Protocol (MCP) provides a standardized way for servers to offe
 argument autocompletion suggestions for prompts and resource URIs. This enables rich,
 IDE-like experiences where users receive contextual suggestions while entering argument
 values.
-

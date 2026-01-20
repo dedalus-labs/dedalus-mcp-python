@@ -12,4 +12,3 @@ resources to clients. Resources allow servers to share data that provides contex
 language models, such as files, database schemas, or application-specific information.
 Each resource is uniquely identified by a
 [URI](https://datatracker.ietf.org/doc/html/rfc3986).
-

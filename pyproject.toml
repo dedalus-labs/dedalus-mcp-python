@@ -101,7 +101,7 @@ test = [
 # Linting and static analysis tools
 lint = [
     "ruff>=0.14.13",
-    "prek>=0.2.0",    # Rust-native pre-commit replacement (faster)
+    "prek>=0.2.0",    # Rust-native pre-commit tool
     "ty>=0.0.12",     # Rust-native type checker
     "vulture>=2.14",
     "deptry>=0.21.0",

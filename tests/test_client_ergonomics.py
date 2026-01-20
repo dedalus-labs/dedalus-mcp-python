@@ -10,9 +10,8 @@ correctness guarantees (weakref.finalize for cleanup).
 
 from __future__ import annotations
 
-import warnings
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+import warnings
 
 import anyio
 import pytest
@@ -33,7 +32,7 @@ class FakeClientSession:
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.closed = False
 
-    async def __aenter__(self) -> "FakeClientSession":
+    async def __aenter__(self) -> FakeClientSession:
         return self
 
     async def __aexit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
@@ -156,7 +155,7 @@ async def test_finalizer_warns_on_unclosed(monkeypatch: pytest.MonkeyPatch) -> N
 
 @pytest.mark.anyio
 async def test_context_manager_closes_on_exit(monkeypatch: pytest.MonkeyPatch) -> None:
-    """async with MCPClient.connect(...) should close on normal exit."""
+    """Async with MCPClient.connect(...) should close on normal exit."""
     from dedalus_mcp.client import MCPClient
 
     fake_session = FakeClientSession()
@@ -170,7 +169,7 @@ async def test_context_manager_closes_on_exit(monkeypatch: pytest.MonkeyPatch) -
 
 @pytest.mark.anyio
 async def test_context_manager_closes_on_exception(monkeypatch: pytest.MonkeyPatch) -> None:
-    """async with MCPClient.connect(...) should close even if exception raised."""
+    """Async with MCPClient.connect(...) should close even if exception raised."""
     from dedalus_mcp.client import MCPClient
 
     fake_session = FakeClientSession()

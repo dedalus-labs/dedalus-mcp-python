@@ -14,13 +14,14 @@ Usage:
 """
 
 import asyncio
-import logging
 from datetime import datetime
+import logging
 from typing import Literal
 
 from pydantic import BaseModel, Field
 
 from dedalus_mcp import MCPServer, tool
+
 
 for name in ("mcp", "httpx", "uvicorn"):
     logging.getLogger(name).setLevel(logging.WARNING)

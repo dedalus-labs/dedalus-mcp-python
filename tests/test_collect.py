@@ -6,14 +6,10 @@
 from __future__ import annotations
 
 from types import ModuleType
-from typing import TYPE_CHECKING
 
 import pytest
 
-from dedalus_mcp import MCPServer, ToolSpec, completion, extract_spec, prompt, resource, resource_template, tool, types
-
-if TYPE_CHECKING:
-    pass
+from dedalus_mcp import MCPServer, ToolSpec, extract_spec, prompt, resource, tool
 
 
 class TestCollect:

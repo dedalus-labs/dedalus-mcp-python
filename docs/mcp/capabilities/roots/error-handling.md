@@ -20,4 +20,3 @@ Example error:
   }
 }
 ```
-

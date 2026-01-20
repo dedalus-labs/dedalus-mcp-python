@@ -55,4 +55,3 @@ For a SEP to be accepted it must meet certain minimum criteria:
 Once a SEP has been accepted, the reference implementation must be completed. When the reference implementation is complete and incorporated into the main source code repository, the status will be changed to "Final".
 
 A SEP can also be "Rejected" or "Withdrawn". A SEP that is "Withdrawn" may be re-submitted at a later date.
-

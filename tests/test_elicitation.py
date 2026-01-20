@@ -11,7 +11,7 @@ import pytest
 from dedalus_mcp import MCPServer
 from dedalus_mcp.types.client.elicitation import ElicitRequest, ElicitRequestParams, ElicitResult
 from dedalus_mcp.types.messages import ServerRequest
-from dedalus_mcp.types.shared.base import ErrorData, METHOD_NOT_FOUND
+from dedalus_mcp.types.shared.base import METHOD_NOT_FOUND, ErrorData
 from dedalus_mcp.types.shared.capabilities import ClientCapabilities
 from tests.helpers import run_with_context
 

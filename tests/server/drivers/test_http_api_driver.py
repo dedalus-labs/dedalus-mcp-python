@@ -5,11 +5,10 @@
 
 from __future__ import annotations
 
+from pydantic import BaseModel
 import pytest
 
-from pydantic import BaseModel
-
-from dedalus_mcp.server.connectors import SecretKeys, EnvironmentCredentialLoader, EnvironmentCredentials, define
+from dedalus_mcp.server.connectors import EnvironmentCredentialLoader, EnvironmentCredentials, SecretKeys, define
 from dedalus_mcp.server.drivers.http_api import HTTPAPIClient, HTTPAPIDriver
 
 
@@ -25,7 +24,6 @@ class HTTPAPIAuth(BaseModel):
 @pytest.fixture
 def driver() -> HTTPAPIDriver:
     """Instantiate the driver with default options."""
-
     return HTTPAPIDriver()
 
 

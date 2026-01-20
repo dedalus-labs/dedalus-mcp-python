@@ -1044,4 +1044,3 @@ Theia AI and Theia IDE's MCP integration provide users with flexibility, making 
 **Learn more:**
 
 * [Zencoder Documentation](https://docs.zencoder.ai)
-

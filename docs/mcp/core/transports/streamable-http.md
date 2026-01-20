@@ -232,4 +232,3 @@ protocol version 2024-11-05) as follows:
      * When the `endpoint` event arrives, the client can assume this is a server running
        the old HTTP+SSE transport, and should use that transport for all subsequent
        communication.
-

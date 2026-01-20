@@ -14,4 +14,3 @@ sequenceDiagram
     Server->>Client: roots/list
     Client-->>Server: Updated roots
 ```
-

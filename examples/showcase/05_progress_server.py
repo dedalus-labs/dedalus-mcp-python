@@ -14,7 +14,9 @@ Usage:
 """
 
 import asyncio
-from dedalus_mcp import MCPServer, tool, get_context
+
+from dedalus_mcp import MCPServer, get_context, tool
+
 
 server = MCPServer("progress", instructions="I report progress on long operations")
 

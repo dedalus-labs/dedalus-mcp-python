@@ -11,10 +11,11 @@ Usage:
 """
 
 import asyncio
+from datetime import datetime
 import logging
-from datetime import datetime, timedelta
 
 from dedalus_mcp import MCPServer, resource_template
+
 
 for name in ("mcp", "httpx", "uvicorn"):
     logging.getLogger(name).setLevel(logging.WARNING)

@@ -33,6 +33,7 @@ from typing import Any
 
 from dedalus_mcp import MCPServer, get_context, prompt, resource, tool
 
+
 # Suppress logs for cleaner demo output
 for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
     logging.getLogger(logger_name).setLevel(logging.CRITICAL)

@@ -35,9 +35,7 @@ import argparse
 import asyncio
 import json
 import os
-import secrets
 from typing import Any
-from urllib.parse import urlparse
 
 import httpx
 from pydantic import ValidationError
@@ -53,6 +51,7 @@ from dedalus_mcp.types import (
 )
 from dedalus_mcp.utils import to_json
 
+
 DEFAULT_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://127.0.0.1:8000/mcp")
 DEFAULT_RESOURCE = os.getenv("MCP_RESOURCE_URL", "http://127.0.0.1:8000")
 DEFAULT_ISSUER = os.getenv("AS_ISSUER", "http://localhost:4444")
@@ -66,7 +65,6 @@ class OAuthError(RuntimeError):
 
 async def fetch_access_token(args: argparse.Namespace) -> dict[str, Any]:
     """Run the RFC 8628 device authorization flow against the AS."""
-
     token_url = f"{args.issuer.rstrip('/')}/oauth2/token"
     device_url = f"{args.issuer.rstrip('/')}/oauth2/device/auth"
 

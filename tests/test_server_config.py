@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from dedalus_mcp import MCPServer, ServerConfig, SamplingConfig, ElicitationConfig, PingConfig
+from dedalus_mcp import ElicitationConfig, MCPServer, PingConfig, SamplingConfig, ServerConfig
 
 
 # --- Defaults ---

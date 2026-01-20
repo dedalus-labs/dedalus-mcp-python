@@ -9,8 +9,7 @@ Configure authorization for protected MCP servers:
     >>> from dedalus_mcp.server.auth import AuthorizationConfig, JWTValidator
     >>>
     >>> server = MCPServer(
-    ...     "my-server",
-    ...     authorization=AuthorizationConfig(enabled=True),
+    ...     "my-server", authorization=AuthorizationConfig(enabled=True)
     ... )
 """
 
@@ -35,6 +34,7 @@ from ..services.jwt_validator import (
     MissingScopeError,
     PublicKeyNotFoundError,
 )
+
 
 __all__ = [
     # Config

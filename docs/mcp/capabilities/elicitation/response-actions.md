@@ -35,4 +35,3 @@ Servers should handle each state appropriately:
 * **Accept**: Process the submitted data
 * **Decline**: Handle explicit decline (e.g., offer alternatives)
 * **Cancel**: Handle dismissal (e.g., prompt again later)
-

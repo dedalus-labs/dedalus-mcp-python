@@ -20,7 +20,6 @@ from contextlib import asynccontextmanager
 from datetime import timedelta
 
 import httpx
-
 from mcp.client.streamable_http import MCP_PROTOCOL_VERSION, streamable_http_client
 from mcp.shared._httpx_utils import create_mcp_http_client
 from mcp.types import LATEST_PROTOCOL_VERSION, Implementation

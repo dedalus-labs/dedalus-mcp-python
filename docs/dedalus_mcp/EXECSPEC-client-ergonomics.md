@@ -106,4 +106,3 @@ Phase 4: Operations — **COMPLETE**
 - Speakeasy SDK: `weakref.finalize()`, more robust async cleanup
 - FastMCP Client: Required context manager, reference counting for reentrancy
 - anyio: `aclose_forcefully()` for cancelled-scope cleanup
-

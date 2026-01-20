@@ -15,6 +15,7 @@ from mcp.types import (
     TextResourceContents,
 )
 
+
 __all__ = [
     "Annotations",
     "AudioContent",

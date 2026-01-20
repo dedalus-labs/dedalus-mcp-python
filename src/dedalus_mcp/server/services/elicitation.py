@@ -24,6 +24,7 @@ from mcp.shared.exceptions import McpError
 from ... import types
 from ...utils import get_logger
 
+
 if TYPE_CHECKING:
     from mcp.server.session import ServerSession
 
@@ -35,7 +36,7 @@ class _SessionState:
 
 class ElicitationService:
     """Proxy for ``elicitation/create`` requests.
-    
+
     See: https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation
 
     Args:

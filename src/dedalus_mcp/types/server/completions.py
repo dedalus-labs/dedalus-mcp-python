@@ -13,6 +13,7 @@ from mcp.types import (
     ResourceTemplateReference,
 )
 
+
 __all__ = [
     "CompleteRequest",
     "CompleteRequestParams",

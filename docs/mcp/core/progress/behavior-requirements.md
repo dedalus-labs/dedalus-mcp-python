@@ -25,4 +25,3 @@ sequenceDiagram
     Note over Sender,Receiver: Operation complete
     Receiver->>Sender: Method response
 ```
-

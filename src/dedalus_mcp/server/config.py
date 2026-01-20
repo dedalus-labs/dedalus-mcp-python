@@ -19,9 +19,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+
 if TYPE_CHECKING:
-    from ..types.shared.capabilities import Icon
     from .notifications import NotificationSink
+    from ..types.shared.capabilities import Icon
 
 
 @dataclass(slots=True, frozen=True)
@@ -110,16 +111,11 @@ class ServerConfig:
     """Maximum completions returned by completion/complete."""
 
     # Custom components (power users)
-    notification_sink: "NotificationSink | None" = None
+    notification_sink: NotificationSink | None = None
     """Custom notification sink. Defaults to direct session delivery."""
 
-    icons: "list[Icon] | None" = None
+    icons: list[Icon] | None = None
     """Server icons for client display."""
 
 
-__all__ = [
-    "SamplingConfig",
-    "ElicitationConfig",
-    "PingConfig",
-    "ServerConfig",
-]
+__all__ = ["SamplingConfig", "ElicitationConfig", "PingConfig", "ServerConfig"]

@@ -7,8 +7,11 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+
 from dotenv import load_dotenv
+
 from dedalus_mcp import MCPServer, tool
+
 
 load_dotenv()
 

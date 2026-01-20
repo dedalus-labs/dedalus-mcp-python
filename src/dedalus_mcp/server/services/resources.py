@@ -19,9 +19,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from ..result_normalizers import normalize_resource_payload
 from ..notifications import NotificationSink, ObserverRegistry
 from ..pagination import paginate_sequence
+from ..result_normalizers import normalize_resource_payload
 from ..subscriptions import SubscriptionManager
 from ... import types
 from ...context import context_scope

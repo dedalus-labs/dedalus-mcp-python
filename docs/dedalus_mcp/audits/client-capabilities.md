@@ -16,4 +16,3 @@ features called out in `docs/mcp/core/understanding-mcp-clients`.
 
 * Advanced UX patterns (e.g., prompt/resource argument suggestion) remain client responsibilities; Dedalus MCP exposes raw data but does not implement UI heuristics.
 * Capability handlers return the raw types from the MCP specification, keeping the wrapper thin and predictable.
-

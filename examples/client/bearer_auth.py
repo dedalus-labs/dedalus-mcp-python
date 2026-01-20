@@ -27,9 +27,8 @@ Usage:
 
 from __future__ import annotations
 
-import asyncio
-
 from dedalus_mcp.client import BearerAuth, MCPClient
+
 
 # In production: obtain from authorization server
 ACCESS_TOKEN = "your_oauth_access_token"

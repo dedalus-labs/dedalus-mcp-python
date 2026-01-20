@@ -22,15 +22,14 @@ import asyncio
 import base64
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
+import json
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
-
-import anyio
 from urllib.parse import unquote, urlparse
 import weakref
 
-import json
+import anyio
 
 
 if os.name == "nt":
@@ -39,7 +38,7 @@ if os.name == "nt":
 from mcp.shared.exceptions import McpError
 
 from ...types.client.roots import Root
-from ...types.shared.base import ErrorData, INTERNAL_ERROR, INVALID_PARAMS
+from ...types.shared.base import INTERNAL_ERROR, INVALID_PARAMS, ErrorData
 
 
 if TYPE_CHECKING:

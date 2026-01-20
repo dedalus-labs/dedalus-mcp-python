@@ -251,11 +251,10 @@ class ConnectionResolver:
         # Route based on auth type
         if metadata.auth_type == "org":
             return await self._resolve_org_credential(handle, metadata)
-        elif metadata.auth_type == "user":
+        if metadata.auth_type == "user":
             return await self._resolve_user_credential(handle, metadata, request_context)
-        else:
-            self._audit_log("resolve_failed", handle, f"invalid_auth_type: {metadata.auth_type}")
-            raise ResolverError(f"invalid auth type: {metadata.auth_type}")
+        self._audit_log("resolve_failed", handle, f"invalid_auth_type: {metadata.auth_type}")
+        raise ResolverError(f"invalid auth type: {metadata.auth_type}")
 
     async def _resolve_org_credential(self, handle: str, metadata: ConnectionMetadata) -> Any:
         """Resolve org credential: vault -> driver -> client (in-process).

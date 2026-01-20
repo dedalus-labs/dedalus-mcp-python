@@ -13,9 +13,10 @@ Implements RFC 9068 JWT Profile for OAuth 2.0 Access Tokens with:
 
 from __future__ import annotations
 
-import time
 from dataclasses import dataclass, field
+import time
 from typing import Any, Protocol
+
 
 try:
     import httpx
@@ -253,6 +254,7 @@ class JWTValidator(AuthorizationProvider):
 
                 # Convert JWK to public key using PyJWT
                 import json as _json
+
                 from jwt.algorithms import ECAlgorithm, RSAAlgorithm
 
                 kty = key_data.get("kty")
@@ -280,7 +282,6 @@ class JWTValidator(AuthorizationProvider):
 
     def _validate_claims(self, claims: dict[str, Any]) -> None:
         """Validate standard JWT claims per RFC 9068 with skew tolerance."""
-
         now = self.config.clock.now()
 
         # exp is required (enforced during decode) but still validate semantics
@@ -318,7 +319,6 @@ class JWTValidator(AuthorizationProvider):
 
     def _as_timestamp(self, value: Any) -> float | None:
         """Convert JWT time claim values to a float timestamp."""
-
         if value is None:
             return None
 

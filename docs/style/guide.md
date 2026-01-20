@@ -381,4 +381,3 @@ When the style guide doesn't cover something, match nearby code:
 - Ignoring type hints
 - Different naming conventions
 - Skipping docstrings on public APIs
-

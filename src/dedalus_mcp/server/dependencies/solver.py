@@ -5,12 +5,13 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Set
+from collections.abc import Callable
+from typing import Any
 
-from ...context import get_context
-from .models import CircularDependencyError, DependencyCall, DependencyResolutionError, ResolvedDependency
-from ...utils import maybe_await_with_args
 from . import Depends
+from .models import CircularDependencyError, DependencyCall, DependencyResolutionError, ResolvedDependency
+from ...context import get_context
+from ...utils import maybe_await_with_args
 
 
 def _get_callable_name(call: DependencyCall) -> str:
@@ -24,7 +25,7 @@ def _get_callable_name(call: DependencyCall) -> str:
 
 
 async def _resolve_dependency(
-    call: DependencyCall, cache: Dict[DependencyCall, ResolvedDependency] | None = None, seen: Set[int] | None = None
+    call: DependencyCall, cache: dict[DependencyCall, ResolvedDependency] | None = None, seen: set[int] | None = None
 ) -> Any:
     cache = cache if cache is not None else {}
     seen = seen if seen is not None else set()
@@ -79,7 +80,6 @@ async def _resolve_dependency(
 
 async def resolve(dependency: Callable[..., Any] | Depends | DependencyCall) -> Any:
     """Resolve *dependency* inside the active request scope."""
-
     if isinstance(dependency, Depends):
         call = dependency.as_call()
     elif isinstance(dependency, DependencyCall):

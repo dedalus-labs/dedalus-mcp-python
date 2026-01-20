@@ -6,9 +6,9 @@
 from __future__ import annotations
 
 import argparse
-import sys
 from importlib import metadata
 from pathlib import Path
+import sys
 
 
 def _installed_version() -> str:

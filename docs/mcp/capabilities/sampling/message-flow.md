@@ -25,4 +25,3 @@ sequenceDiagram
     Note over Server,Client: Complete request
     Client-->>Server: Return approved response
 ```
-

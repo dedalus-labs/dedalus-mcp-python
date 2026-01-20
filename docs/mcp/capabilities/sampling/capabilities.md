@@ -10,4 +10,3 @@ Clients that support sampling **MUST** declare the `sampling` capability during
   }
 }
 ```
-

@@ -15,4 +15,3 @@ Pagination starts when the server sends a **response** that includes:
   }
 }
 ```
-

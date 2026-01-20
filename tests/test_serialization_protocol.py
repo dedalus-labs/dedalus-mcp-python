@@ -14,9 +14,7 @@ from __future__ import annotations
 import json
 from typing import Any, Protocol, runtime_checkable
 
-import pytest
-
-from dedalus_mcp import Binding, Connection, SecretValues, SecretKeys
+from dedalus_mcp import Binding, Connection, SecretKeys, SecretValues
 
 
 # --- Protocol definitions (what the SDK expects) ---

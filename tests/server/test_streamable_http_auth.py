@@ -40,7 +40,7 @@ async def server() -> MCPServer:
             return "pong"
 
     srv.set_authorization_provider(DummyProvider())
-    yield srv
+    return srv
 
 
 def build_asgi_app(transport: StreamableHTTPTransport) -> tuple[Starlette, callable]:

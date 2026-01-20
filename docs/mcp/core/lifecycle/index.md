@@ -35,4 +35,3 @@ sequenceDiagram
     deactivate Server
     Note over Client,Server: Connection closed
 ```
-

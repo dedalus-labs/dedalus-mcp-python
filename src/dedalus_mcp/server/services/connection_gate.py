@@ -24,6 +24,7 @@ import re
 
 from ...utils import get_logger
 
+
 _logger = get_logger("dedalus_mcp.connection_gate")
 
 # Connection handle patterns

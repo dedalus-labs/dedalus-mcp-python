@@ -4,7 +4,7 @@
 """Tests for connection resolver with credential custody split."""
 
 from typing import Any
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import Mock
 
 import pytest
 

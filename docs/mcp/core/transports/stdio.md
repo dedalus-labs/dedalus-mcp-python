@@ -27,4 +27,3 @@ sequenceDiagram
     Client->>Server Process: Close stdin, terminate subprocess
     deactivate Server Process
 ```
-

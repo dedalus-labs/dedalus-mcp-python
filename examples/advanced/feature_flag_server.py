@@ -28,6 +28,7 @@ import logging
 
 from dedalus_mcp import MCPServer, tool
 
+
 # Suppress SDK and server logs for cleaner demo output
 for logger_name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
     logging.getLogger(logger_name).setLevel(logging.CRITICAL)

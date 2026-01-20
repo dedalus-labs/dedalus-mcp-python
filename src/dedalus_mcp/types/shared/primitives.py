@@ -4,6 +4,8 @@
 """Shared primitive types used across the MCP protocol."""
 
 from mcp.types import (
+    DEFAULT_NEGOTIATED_VERSION,
+    LATEST_PROTOCOL_VERSION,
     Cursor,
     IncludeContext,
     LoggingLevel,
@@ -11,9 +13,8 @@ from mcp.types import (
     RequestId,
     Role,
     StopReason,
-    LATEST_PROTOCOL_VERSION,
-    DEFAULT_NEGOTIATED_VERSION,
 )
+
 
 __all__ = [
     "Cursor",

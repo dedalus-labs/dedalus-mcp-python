@@ -34,4 +34,3 @@ Suggestions for the kind of information to share with core maintainers when nomi
 * Description of expected contributions moving forward (e.g. Are they eager to be a maintainer? Will they have capacity to do so?)
 * Other context about the individual (e.g. current employer, motivations behind MCP involvement)
 * Anything else you think may be relevant to consider for the nomination
-

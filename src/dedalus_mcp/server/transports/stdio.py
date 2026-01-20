@@ -5,8 +5,9 @@
 
 from __future__ import annotations
 
-from .base import BaseTransport
 from mcp.server.stdio import stdio_server
+
+from .base import BaseTransport
 
 
 def get_stdio_server():

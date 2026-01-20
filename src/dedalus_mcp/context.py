@@ -17,11 +17,11 @@ Implements context integration for MCP capabilities:
 
 from __future__ import annotations
 
-import os
 from collections.abc import AsyncIterator, Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar, Token
 from dataclasses import dataclass
+import os
 from typing import TYPE_CHECKING, Any, cast
 
 from mcp.server.lowlevel.server import request_ctx
@@ -34,6 +34,7 @@ from .progress import progress as progress_manager
 
 if TYPE_CHECKING:
     from mcp.server.session import ServerSession
+
     from .dispatch import DispatchResponse
     from .server.connectors import Connection
     from .server.core import MCPServer
@@ -78,7 +79,7 @@ class Context:
     """
 
     _request_context: RequestContext
-    dependency_cache: dict["DependencyCall", "ResolvedDependency"] | None = None
+    dependency_cache: dict[DependencyCall, ResolvedDependency] | None = None
     runtime: Mapping[str, Any] | None = None
 
     # ------------------------------------------------------------------
@@ -96,9 +97,8 @@ class Context:
         return self._request_context.session
 
     @property
-    def server(self) -> "MCPServer" | None:
+    def server(self) -> MCPServer | None:
         """Return the MCP server associated with this request, if any."""
-
         runtime = self.runtime
         if not isinstance(runtime, Mapping):
             return None
@@ -139,7 +139,7 @@ class Context:
         return None
 
     @property
-    def resolver(self) -> "ConnectionResolver" | None:
+    def resolver(self) -> ConnectionResolver | None:
         """Return the configured connection resolver for this server, if any."""
         runtime = self.runtime
         if not isinstance(runtime, Mapping):
@@ -215,7 +215,6 @@ class Context:
 
     async def resolve_client(self, handle: str, *, operation: Mapping[str, Any] | None = None) -> Any:
         """Resolve a connection handle into a driver client via the configured resolver."""
-
         if not isinstance(handle, str):
             raise TypeError("Connection handle must be a string identifier")
 
@@ -226,7 +225,7 @@ class Context:
         request_payload = self._build_resolver_context(operation)
         return await resolver.resolve_client(handle, request_payload)
 
-    async def dispatch(self, target: "Connection | str | None" = None, request: Any = None, /) -> "DispatchResponse":
+    async def dispatch(self, target: Connection | str | None = None, request: Any = None, /) -> DispatchResponse:
         """Execute authenticated HTTP request through dispatch backend.
 
         Single-connection server (target omitted):
@@ -261,7 +260,7 @@ class Context:
             >>> if response.success:
             ...     print(response.response.body)
         """
-        from .dispatch import DispatchBackend, DispatchResponse, DispatchWireRequest, HttpRequest
+        from .dispatch import DispatchBackend, DispatchWireRequest, HttpRequest
         from .server.connectors import Connection
         from .server.services.connection_gate import validate_handle_format
 

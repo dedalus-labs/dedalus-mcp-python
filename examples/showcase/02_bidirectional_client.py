@@ -17,8 +17,10 @@ Usage:
 
 import asyncio
 import logging
-from dedalus_mcp.client import MCPClient, ClientCapabilitiesConfig
+
+from dedalus_mcp.client import ClientCapabilitiesConfig, MCPClient
 from dedalus_mcp.types import CreateMessageResult, TextContent
+
 
 # Suppress log noise
 for name in ("mcp", "httpx"):
@@ -40,9 +42,9 @@ async def mock_llm(messages: list, max_tokens: int) -> str:
 
     if "sentiment" in content_lower:
         return "positive"
-    elif "summarize" in content_lower:
+    if "summarize" in content_lower:
         return "A brief overview of the key concepts."
-    elif "facts" in content_lower:
+    if "facts" in content_lower:
         return "1. Interesting fact one.\n2. Interesting fact two.\n3. Interesting fact three."
     return "I understand your request."
 

@@ -11,9 +11,9 @@ from dedalus_mcp.server.connectors import (
     Binding,
     ConnectorDefinition,
     ConnectorHandle,
-    SecretKeys,
     EnvironmentCredentialLoader,
     EnvironmentCredentials,
+    SecretKeys,
     define,
 )
 

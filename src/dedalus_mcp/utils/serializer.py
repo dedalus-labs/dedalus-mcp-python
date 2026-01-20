@@ -14,6 +14,7 @@ from typing import Any
 
 from pydantic import TypeAdapter
 
+
 # Universal serializer that handles any nested combination of:
 # - Pydantic models
 # - Lists, dicts, tuples

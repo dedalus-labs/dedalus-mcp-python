@@ -1,10 +1,11 @@
-import pytest
 import types
 
+import pytest
+
 from dedalus_mcp import MCPServer, tool
+import dedalus_mcp.context as context_module
 from dedalus_mcp.server.dependencies import Depends
 from dedalus_mcp.server.dependencies.solver import resolve
-import dedalus_mcp.context as context_module
 
 
 @pytest.mark.anyio
@@ -99,11 +100,7 @@ async def test_dependency_returns_context(monkeypatch):
 
     monkeypatch.setattr("dedalus_mcp.server.dependencies.solver.get_context", lambda: dummy_context)
     monkeypatch.setattr("dedalus_mcp.context.get_context", lambda: dummy_context)
-    monkeypatch.setattr(
-        "tests.server.test_dependencies.framework_get_context",
-        lambda: dummy_context,
-        raising=False,
-    )
+    monkeypatch.setattr("tests.server.test_dependencies.framework_get_context", lambda: dummy_context, raising=False)
 
     result = await resolve(Depends(context_module.get_context))
     assert result is dummy_context

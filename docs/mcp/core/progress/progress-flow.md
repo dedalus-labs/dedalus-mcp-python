@@ -44,4 +44,3 @@ The receiver **MAY** then send progress notifications containing:
   unknown.
 * The `progress` and the `total` values **MAY** be floating point.
 * The `message` field **SHOULD** provide relevant human readable progress information.
-

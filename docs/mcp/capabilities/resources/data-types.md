@@ -68,4 +68,3 @@ Clients can use these annotations to:
 * Filter resources based on their intended audience
 * Prioritize which resources to include in context
 * Display modification times or sort by recency
-

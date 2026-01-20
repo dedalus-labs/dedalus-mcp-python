@@ -6,4 +6,3 @@ Source: https://modelcontextprotocol.io/specification/2025-06-18/basic/authoriza
 <div id="enable-section-numbers" />
 
 <Info>**Protocol Revision**: 2025-06-18</Info>
-

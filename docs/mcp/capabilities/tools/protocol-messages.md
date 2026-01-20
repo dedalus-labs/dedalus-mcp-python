@@ -96,4 +96,3 @@ capability **SHOULD** send a notification:
   "method": "notifications/tools/list_changed"
 }
 ```
-

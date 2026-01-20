@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: MIT
 
 import asyncio
-from collections.abc import AsyncIterator
 
 import httpx
 import pytest

@@ -150,4 +150,3 @@ Phase 4: Integration — **COMPLETE**
 - `/dcs/apps/dedalus_mcp_as/dpop/dpop.go` — Go implementation (validation)
 - `/dcs/apps/enclave/dispatch-gateway/src/handlers.rs` — Gateway validation
 - `/auth-specs/auth-specs-notion.md` — Dedalus auth architecture
-

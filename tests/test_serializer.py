@@ -10,10 +10,9 @@ from enum import Enum
 from typing import Any
 from uuid import UUID
 
-import pytest
 from pydantic import BaseModel, Field
 
-from dedalus_mcp.types import CallToolResult, ErrorData, TextContent, ImageContent, EmbeddedResource
+from dedalus_mcp.types import CallToolResult, EmbeddedResource, ErrorData, ImageContent, TextContent
 from dedalus_mcp.utils.serializer import to_json
 
 

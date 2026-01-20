@@ -10,9 +10,10 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 import re
 import sys
-from pathlib import Path
+
 
 # MIT SPDX license header
 MIT_LICENSE = """# Copyright (c) 2026 Dedalus Labs, Inc. and its contributors

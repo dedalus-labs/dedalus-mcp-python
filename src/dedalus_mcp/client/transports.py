@@ -13,14 +13,13 @@ server guidance.
 
 from __future__ import annotations
 
-import contextlib
 from collections.abc import AsyncGenerator
+import contextlib
 from contextlib import asynccontextmanager
 
 import anyio
-import httpx
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
-
+import httpx
 from mcp.client.streamable_http import GetSessionIdCallback, StreamableHTTPTransport
 from mcp.shared._httpx_utils import create_mcp_http_client
 from mcp.shared.message import SessionMessage

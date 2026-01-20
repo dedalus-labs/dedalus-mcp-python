@@ -9,8 +9,8 @@ for an MCP-scoped access token. Used for user delegation flows.
 
 from __future__ import annotations
 
-import pytest
 import httpx
+import pytest
 import respx
 
 
@@ -24,8 +24,8 @@ class TestTokenExchangeAuthConstruction:
 
     def test_construction_with_server_metadata(self):
         """TokenExchangeAuth can be constructed with AS metadata."""
-        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth
         from dedalus_mcp.client.auth.models import AuthorizationServerMetadata
+        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth
 
         server_metadata = AuthorizationServerMetadata(
             issuer="https://as.example.com",
@@ -42,8 +42,8 @@ class TestTokenExchangeAuthConstruction:
 
     def test_construction_validates_grant_type_support(self):
         """TokenExchangeAuth raises if AS doesn't support token-exchange."""
-        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth, AuthConfigError
         from dedalus_mcp.client.auth.models import AuthorizationServerMetadata
+        from dedalus_mcp.client.auth.token_exchange import AuthConfigError, TokenExchangeAuth
 
         server_metadata = AuthorizationServerMetadata(
             issuer="https://as.example.com",
@@ -56,8 +56,8 @@ class TestTokenExchangeAuthConstruction:
 
     def test_construction_with_subject_token_type(self):
         """TokenExchangeAuth accepts subject_token_type parameter."""
-        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth
         from dedalus_mcp.client.auth.models import AuthorizationServerMetadata
+        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth
 
         server_metadata = AuthorizationServerMetadata(
             issuer="https://as.example.com",
@@ -76,8 +76,8 @@ class TestTokenExchangeAuthConstruction:
 
     def test_construction_default_subject_token_type(self):
         """TokenExchangeAuth defaults to access_token type."""
-        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth
         from dedalus_mcp.client.auth.models import AuthorizationServerMetadata
+        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth
 
         server_metadata = AuthorizationServerMetadata(
             issuer="https://as.example.com",
@@ -150,8 +150,8 @@ class TestTokenExchangeAuthTokenAcquisition:
     @pytest.mark.anyio
     async def test_get_token_success(self):
         """get_token exchanges subject token for access token."""
-        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth
         from dedalus_mcp.client.auth.models import AuthorizationServerMetadata
+        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth
 
         server_metadata = AuthorizationServerMetadata(
             issuer="https://as.example.com",
@@ -184,8 +184,8 @@ class TestTokenExchangeAuthTokenAcquisition:
     @pytest.mark.anyio
     async def test_get_token_sends_correct_params(self):
         """get_token sends RFC 8693 compliant parameters."""
-        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth
         from dedalus_mcp.client.auth.models import AuthorizationServerMetadata
+        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth
 
         server_metadata = AuthorizationServerMetadata(
             issuer="https://as.example.com",
@@ -218,8 +218,8 @@ class TestTokenExchangeAuthTokenAcquisition:
     @pytest.mark.anyio
     async def test_get_token_with_resource_indicator(self):
         """get_token can include resource indicator."""
-        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth
         from dedalus_mcp.client.auth.models import AuthorizationServerMetadata
+        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth
 
         server_metadata = AuthorizationServerMetadata(
             issuer="https://as.example.com",
@@ -248,8 +248,8 @@ class TestTokenExchangeAuthTokenAcquisition:
     @pytest.mark.anyio
     async def test_get_token_with_scope(self):
         """get_token can include requested scope."""
-        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth
         from dedalus_mcp.client.auth.models import AuthorizationServerMetadata
+        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth
 
         server_metadata = AuthorizationServerMetadata(
             issuer="https://as.example.com",
@@ -275,8 +275,8 @@ class TestTokenExchangeAuthTokenAcquisition:
     @pytest.mark.anyio
     async def test_get_token_error_response(self):
         """get_token raises on error response."""
-        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth, TokenError
         from dedalus_mcp.client.auth.models import AuthorizationServerMetadata
+        from dedalus_mcp.client.auth.token_exchange import TokenError, TokenExchangeAuth
 
         server_metadata = AuthorizationServerMetadata(
             issuer="https://as.example.com",
@@ -310,8 +310,8 @@ class TestTokenExchangeAuthHttpxInterface:
     @pytest.mark.anyio
     async def test_auth_flow_injects_bearer_token(self):
         """TokenExchangeAuth injects Bearer token into requests."""
-        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth
         from dedalus_mcp.client.auth.models import AuthorizationServerMetadata
+        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth
 
         server_metadata = AuthorizationServerMetadata(
             issuer="https://as.example.com",
@@ -355,8 +355,8 @@ class TestTokenExchangeAuthActorToken:
 
     def test_construction_with_actor_token(self):
         """TokenExchangeAuth accepts actor_token for delegation."""
-        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth
         from dedalus_mcp.client.auth.models import AuthorizationServerMetadata
+        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth
 
         server_metadata = AuthorizationServerMetadata(
             issuer="https://as.example.com",
@@ -378,8 +378,8 @@ class TestTokenExchangeAuthActorToken:
     @pytest.mark.anyio
     async def test_get_token_with_actor_token(self):
         """get_token includes actor_token in request when provided."""
-        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth
         from dedalus_mcp.client.auth.models import AuthorizationServerMetadata
+        from dedalus_mcp.client.auth.token_exchange import TokenExchangeAuth
 
         server_metadata = AuthorizationServerMetadata(
             issuer="https://as.example.com",

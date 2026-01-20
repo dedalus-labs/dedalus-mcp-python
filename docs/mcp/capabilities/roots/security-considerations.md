@@ -10,4 +10,3 @@
    * Handle cases where roots become unavailable
    * Respect root boundaries during operations
    * Validate all paths against provided roots
-

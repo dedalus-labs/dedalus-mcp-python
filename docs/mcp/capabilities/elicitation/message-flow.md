@@ -18,4 +18,3 @@ sequenceDiagram
 
     Note over Server: Continue processing with new information
 ```
-

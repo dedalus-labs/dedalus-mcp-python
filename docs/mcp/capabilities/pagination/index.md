@@ -14,4 +14,3 @@ than all at once.
 Pagination is especially important when connecting to external services over the
 internet, but also useful for local integrations to avoid performance issues with large
 data sets.
-

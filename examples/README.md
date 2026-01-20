@@ -179,4 +179,3 @@ tmux attach -t mcp
 # Cleanup
 tmux kill-session -t mcp
 ```
-

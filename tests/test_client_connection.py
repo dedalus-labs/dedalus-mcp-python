@@ -10,9 +10,9 @@ import httpx
 import pytest
 
 from dedalus_mcp import MCPServer, tool
+from dedalus_mcp.client import MCPClient, open_connection
 from dedalus_mcp.types.messages import ClientRequest
 from dedalus_mcp.types.server.tools import CallToolRequest, CallToolRequestParams, CallToolResult
-from dedalus_mcp.client import open_connection, MCPClient
 from dedalus_mcp.versioning import V_2024_11_05
 
 

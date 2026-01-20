@@ -23,5 +23,3 @@ Now that you've connected Claude to a remote MCP server, you can explore its cap
 </CardGroup>
 
 Remote MCP servers unlock powerful possibilities for extending Claude's capabilities. As you become familiar with these integrations, you'll discover new ways to streamline your workflows and accomplish complex tasks more efficiently.
-
-

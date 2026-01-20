@@ -13,4 +13,3 @@ including that cursor:
   }
 }
 ```
-

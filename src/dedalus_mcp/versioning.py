@@ -5,11 +5,12 @@
 
 from __future__ import annotations
 
-import datetime as dt
+from collections.abc import Callable
 from dataclasses import dataclass, field, fields, is_dataclass, replace
+import datetime as dt
 from enum import Enum, auto
 from functools import cache
-from typing import Any, Callable
+from typing import Any
 
 
 # --- Errors ------------------------------------------------------------------------

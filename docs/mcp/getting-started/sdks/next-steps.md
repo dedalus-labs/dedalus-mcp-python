@@ -11,5 +11,3 @@ Ready to start building with MCP? Choose your path:
     Create applications that connect to MCP servers
   </Card>
 </CardGroup>
-
-

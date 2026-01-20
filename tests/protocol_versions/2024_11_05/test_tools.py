@@ -21,6 +21,7 @@ from __future__ import annotations
 import pytest
 
 from dedalus_mcp import MCPServer, tool
+from dedalus_mcp.server.core import NotificationFlags
 from dedalus_mcp.types.server.tools import (
     CallToolRequest,
     CallToolRequestParams,
@@ -32,7 +33,6 @@ from dedalus_mcp.types.server.tools import (
 )
 from dedalus_mcp.types.shared.base import PaginatedRequestParams
 from dedalus_mcp.types.shared.content import TextContent
-from dedalus_mcp.server.core import NotificationFlags
 
 
 @pytest.mark.anyio

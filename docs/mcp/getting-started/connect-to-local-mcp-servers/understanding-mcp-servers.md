@@ -8,4 +8,3 @@ MCP servers are programs that run on your computer and provide specific capabili
 * Searching for files by name or content
 
 All actions require your explicit approval before execution, ensuring you maintain full control over what Claude can access and modify.
-

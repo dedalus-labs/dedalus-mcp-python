@@ -15,4 +15,3 @@
   * `values`: Array of suggestions (max 100)
   * `total`: Optional total matches
   * `hasMore`: Additional results flag
-

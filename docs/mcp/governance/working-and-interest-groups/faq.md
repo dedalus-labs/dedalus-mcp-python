@@ -12,5 +12,3 @@ These IG and WG abstractions help provide an elegant on-ramp:
 ### Where can I find a list of all current WGs and IGs?
 
 On the [MCP Contributor Discord](/community/communication#discord) there is a section of channels for each Working and Interest Group.
-
-

@@ -9,12 +9,13 @@ for an MCP-scoped access token. Used for user delegation flows.
 
 from __future__ import annotations
 
-from typing import Generator
+from collections.abc import Generator
 
 import httpx
 
 from .discovery import discover_authorization_server
 from .models import AuthorizationServerMetadata, TokenResponse
+
 
 # RFC 8693 grant type
 TOKEN_EXCHANGE_GRANT = "urn:ietf:params:oauth:grant-type:token-exchange"

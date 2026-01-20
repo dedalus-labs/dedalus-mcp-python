@@ -7,11 +7,12 @@ Validates session ID properties follow MCP spec requirements:
 - https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#session-management
 """
 
-import pytest
 import types as py_types
 
+import pytest
+
 from dedalus_mcp import MCPClient
-from dedalus_mcp.context import Context, _CURRENT_CONTEXT
+from dedalus_mcp.context import Context
 
 
 @pytest.mark.anyio
@@ -104,10 +105,11 @@ async def test_client_session_id_callback_returns_none():
 @pytest.mark.anyio
 async def test_session_scoped_authorization_pattern():
     """Test session-scoped authorization using session_id mapping."""
-    from dedalus_mcp import MCPServer, tool
-    from dedalus_mcp.server.dependencies import Depends
     from mcp.server.lowlevel.server import request_ctx
     from mcp.shared.context import RequestContext
+
+    from dedalus_mcp import MCPServer, tool
+    from dedalus_mcp.server.dependencies import Depends
 
     # Simulated session -> user mapping
     SESSION_USERS = {"session-1": "alice", "session-2": "bob"}

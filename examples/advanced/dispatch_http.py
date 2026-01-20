@@ -29,7 +29,6 @@ from dedalus_mcp import Connection, Credentials, HttpMethod, HttpRequest, MCPSer
 
 def create_github_server() -> MCPServer:
     """Server with single connection - target is implicit in dispatch."""
-
     github = Connection(
         "github", credentials=Credentials(token="GITHUB_TOKEN"), base_url="https://api.github.com", timeout_ms=30_000
     )
@@ -79,7 +78,6 @@ def create_github_server() -> MCPServer:
 
 def create_multi_api_server() -> MCPServer:
     """Server with multiple connections - target is explicit in dispatch."""
-
     github = Connection("github", credentials=Credentials(token="GITHUB_TOKEN"), base_url="https://api.github.com")
 
     openai = Connection(
@@ -117,7 +115,6 @@ def create_multi_api_server() -> MCPServer:
 
 def create_robust_server() -> MCPServer:
     """Demonstrates proper error handling for dispatch responses."""
-
     api = Connection("api", credentials=Credentials(key="API_KEY"), base_url="https://api.example.com")
 
     server = MCPServer(name="robust-api", connections=[api])
@@ -132,9 +129,9 @@ def create_robust_server() -> MCPServer:
             http = response.response
             if http.status == 200:
                 return {"data": http.body}
-            elif http.status == 404:
+            if http.status == 404:
                 return {"error": "not_found", "resource_id": resource_id}
-            elif http.status >= 400:
+            if http.status >= 400:
                 return {"error": "api_error", "status": http.status}
 
         # success=False means infrastructure failure

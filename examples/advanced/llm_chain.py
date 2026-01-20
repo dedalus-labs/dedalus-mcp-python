@@ -51,7 +51,6 @@ Requires: pip install fastapi httpx-sse (or uv pip install)
 import asyncio
 import json
 import logging
-from contextlib import asynccontextmanager
 
 import anyio
 import httpx
@@ -62,8 +61,8 @@ from starlette.routing import Route
 import uvicorn
 
 from dedalus_mcp import MCPServer, get_context, tool
-from dedalus_mcp.client import MCPClient, ClientCapabilitiesConfig
-from dedalus_mcp.types import CreateMessageRequestParams, CreateMessageResult, SamplingMessage, TextContent
+from dedalus_mcp.client import MCPClient
+
 
 # Suppress noise
 for name in ("mcp", "httpx", "uvicorn", "uvicorn.access", "uvicorn.error"):
@@ -161,8 +160,7 @@ mcp_llm_client: MCPClient | None = None
 
 @tool(description="Summarize text using chained MCP servers")
 async def summarize(text: str) -> dict:
-    """
-    This tool:
+    """This tool:
     1. Receives request from client
     2. Calls Server A's "generate" tool for LLM reasoning
     3. Returns summarized result
@@ -187,8 +185,7 @@ async def summarize(text: str) -> dict:
 
 @tool(description="Analyze text with multi-hop reasoning")
 async def deep_analyze(text: str) -> dict:
-    """
-    Multi-hop analysis:
+    """Multi-hop analysis:
     1. First LLM call: Extract key points
     2. Second LLM call: Analyze the key points
     """

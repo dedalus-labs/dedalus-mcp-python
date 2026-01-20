@@ -56,4 +56,3 @@ Lead Maintainers are administrators on all infrastructure for the MCP project wh
 The core maintainer group meets every two weeks to discuss and vote on proposals, as well as discuss any topics needed. The shared Discord server can be used to discuss and vote on smaller proposals if needed.
 
 The lead maintainer, core maintainer, and maintainer group should attempt to meet in person every three to six months.
-

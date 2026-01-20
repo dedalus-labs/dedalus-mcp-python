@@ -18,8 +18,9 @@ Usage:
 import asyncio
 import logging
 
-from dedalus_mcp.client import MCPClient, ClientCapabilitiesConfig
+from dedalus_mcp.client import ClientCapabilitiesConfig, MCPClient
 from dedalus_mcp.types import ElicitResult
+
 
 for name in ("mcp", "httpx"):
     logging.getLogger(name).setLevel(logging.WARNING)
@@ -40,7 +41,7 @@ async def elicitation_handler(context, params) -> ElicitResult:
     - Slack/Discord message
     """
     print(f"\n{'=' * 50}")
-    print(f"USER INPUT REQUESTED")
+    print("USER INPUT REQUESTED")
     print(f"{'=' * 50}")
     print(f"Message: {params.message}")
     print(f"Schema: {params.requestedSchema}")

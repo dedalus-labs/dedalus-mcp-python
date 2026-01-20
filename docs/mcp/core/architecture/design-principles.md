@@ -29,4 +29,3 @@ implementation:
    * Servers and clients evolve independently
    * Protocol designed for future extensibility
    * Backwards compatibility is maintained
-

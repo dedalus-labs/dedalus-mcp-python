@@ -9,4 +9,3 @@ users type, with the ability to filter and select from available options.
 However, implementations are free to expose completion through any interface pattern that
 suits their needs—the protocol itself does not mandate any specific user
 interaction model.
-

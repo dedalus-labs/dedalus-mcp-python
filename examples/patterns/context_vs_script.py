@@ -30,6 +30,7 @@ import logging
 
 from dedalus_mcp.client import MCPClient
 
+
 for name in ("mcp", "httpx"):
     logging.getLogger(name).setLevel(logging.WARNING)
 

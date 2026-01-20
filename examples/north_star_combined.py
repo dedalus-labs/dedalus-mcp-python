@@ -2,8 +2,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""
-North Star Combined: Multi-connection MCP Server
+"""North Star Combined: Multi-connection MCP Server
 
 Demonstrates combining multiple API connections in one server:
 - Supabase for database operations
@@ -25,6 +24,7 @@ import os
 
 from dedalus_mcp import HttpMethod, HttpRequest, MCPServer, get_context, tool
 from dedalus_mcp.auth import Connection, Credential, Credentials
+
 
 # ---------------------------------------------------------------------------
 # 1. Define connections
@@ -219,7 +219,7 @@ async def main():
     # ---------------------------------------------------------------------------
 
     if dedalus_key:
-        print(f"\nDedalus API key found - ready for full integration")
+        print("\nDedalus API key found - ready for full integration")
         print("Example SDK usage:")
         print("""
     from dedalus_labs import Dedalus

@@ -22,8 +22,9 @@ Usage:
 import asyncio
 import logging
 
-from dedalus_mcp.client import MCPClient, ClientCapabilitiesConfig
+from dedalus_mcp.client import ClientCapabilitiesConfig, MCPClient
 from dedalus_mcp.types import CreateMessageResult, TextContent
+
 
 for name in ("mcp", "httpx"):
     logging.getLogger(name).setLevel(logging.WARNING)
@@ -73,7 +74,7 @@ async def call_llm(messages: list, max_tokens: int) -> str:
 2. Include comprehensive docstring
 3. Consider edge cases"""
 
-    elif "test" in user_lower:
+    if "test" in user_lower:
         return """```python
 import pytest
 
@@ -90,16 +91,16 @@ def test_large_numbers():
     assert function(1000000, 1000000) == 2000000
 ```"""
 
-    elif "summarize" in user_lower:
+    if "summarize" in user_lower:
         return "This document outlines key technical decisions and their rationale for the project architecture."
 
-    elif "important points" in user_lower or "key points" in user_lower:
+    if "important points" in user_lower or "key points" in user_lower:
         return """1. Architecture follows microservices pattern
 2. Database uses PostgreSQL with read replicas
 3. Caching layer reduces latency by 60%
 4. CI/CD pipeline ensures deployment safety"""
 
-    elif "action" in user_lower:
+    if "action" in user_lower:
         return """1. Schedule architecture review meeting
 2. Set up monitoring dashboards
 3. Document deployment procedures

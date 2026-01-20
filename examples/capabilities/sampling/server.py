@@ -25,6 +25,7 @@ import logging
 from dedalus_mcp import MCPServer, get_context, tool
 from dedalus_mcp.types import CreateMessageRequestParams, SamplingMessage, TextContent
 
+
 for name in ("mcp", "httpx", "uvicorn"):
     logging.getLogger(name).setLevel(logging.WARNING)
 

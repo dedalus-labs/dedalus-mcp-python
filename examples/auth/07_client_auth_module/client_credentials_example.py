@@ -27,13 +27,8 @@ import argparse
 import asyncio
 import os
 
-from dedalus_mcp.client.auth import (
-    AuthorizationServerMetadata,
-    ClientCredentialsAuth,
-    TokenError,
-    discover_authorization_server,
-    fetch_authorization_server_metadata,
-)
+from dedalus_mcp.client.auth import ClientCredentialsAuth, TokenError, fetch_authorization_server_metadata
+
 
 # Defaults for preview environment
 DEFAULT_ISSUER = os.getenv("AS_ISSUER", "https://preview.as.dedaluslabs.ai")

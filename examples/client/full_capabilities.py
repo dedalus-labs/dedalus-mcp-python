@@ -18,8 +18,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-import anyio
 import anthropic
+import anyio
 
 from dedalus_mcp.client import ClientCapabilitiesConfig, open_connection
 from dedalus_mcp.types import (
@@ -106,7 +106,7 @@ async def main() -> None:
 
     async with open_connection(url=SERVER_URL, transport="streamable-http", capabilities=capabilities) as client:
         init = client.initialize_result
-        print(f"Connected with all capabilities enabled")
+        print("Connected with all capabilities enabled")
         print(f"Server: {init.serverInfo.name} | Protocol: {init.protocolVersion}")
 
         caps = init.capabilities

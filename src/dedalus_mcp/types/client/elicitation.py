@@ -3,12 +3,8 @@
 
 """Elicitation capability types."""
 
-from mcp.types import (
-    ElicitRequest,
-    ElicitRequestFormParams as ElicitRequestParams,
-    ElicitRequestURLParams,
-    ElicitResult,
-    ElicitRequestedSchema,
-)
+from mcp.types import ElicitRequest, ElicitRequestedSchema, ElicitRequestURLParams, ElicitResult
+from mcp.types import ElicitRequestFormParams as ElicitRequestParams
+
 
 __all__ = ["ElicitRequest", "ElicitRequestParams", "ElicitRequestURLParams", "ElicitResult", "ElicitRequestedSchema"]

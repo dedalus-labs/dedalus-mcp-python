@@ -1,18 +1,19 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Composable MCP server built on the reference SDK."""
+"""A composable MCP server."""
 
 from __future__ import annotations
 
 import base64
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from contextlib import AsyncExitStack, asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from functools import wraps
 import inspect
 import time
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator, Literal, Mapping
+from typing import TYPE_CHECKING, Any, Literal
 
 import anyio
 
@@ -31,29 +32,10 @@ from mcp.server.lowlevel.helper_types import ReadResourceContents
 from mcp.server.lowlevel.server import NotificationOptions, Server, request_ctx
 from mcp.server.lowlevel.server import lifespan as default_lifespan
 from mcp.server.transport_security import TransportSecuritySettings
-from mcp.shared.exceptions import McpError
 from mcp.shared.context import RequestContext
+from mcp.shared.exceptions import McpError
 from mcp.shared.message import ServerMessageMetadata
 from mcp.shared.session import RequestResponder
-
-from ..types.client.roots import ListRootsRequest, ListRootsResult, RootsListChangedNotification
-from ..types.client.sampling import CreateMessageRequestParams, CreateMessageResult
-from ..types.client.elicitation import ElicitRequestParams, ElicitResult
-from ..types.lifecycle import InitializedNotification
-from ..types.messages import ClientNotification, ClientRequest, ServerRequest, ServerResult
-from ..types.server.completions import Completion, CompletionArgument, CompletionContext, ResourceTemplateReference
-from ..types.server.prompts import GetPromptResult, ListPromptsRequest, ListPromptsResult, PromptReference
-from ..types.server.resources import (
-    ListResourcesRequest,
-    ListResourcesResult,
-    ListResourceTemplatesRequest,
-    ListResourceTemplatesResult,
-)
-from ..types.server.tools import ListToolsRequest, ListToolsResult
-from ..types.shared.base import ErrorData, INTERNAL_ERROR, INVALID_PARAMS, METHOD_NOT_FOUND, RequestParams
-from ..types.shared.capabilities import Icon, ServerCapabilities
-from ..types.shared.content import BlobResourceContents, ContentBlock, TextContent, TextResourceContents
-from ..types.shared.primitives import LATEST_PROTOCOL_VERSION, LoggingLevel
 
 from .authorization import AuthorizationConfig, AuthorizationManager, AuthorizationProvider
 from .config import ServerConfig
@@ -82,34 +64,48 @@ from .services.protocols import (
 )
 from .subscriptions import SubscriptionManager
 from .transports import ASGIRunConfig, StdioTransport, StreamableHTTPTransport
-from ..completion import CompletionSpec
-from ..completion import extract_completion_spec
+from ..completion import CompletionSpec, extract_completion_spec
 from ..completion import reset_active_server as reset_completion_server
 from ..completion import set_active_server as set_completion_server
-from ..prompt import PromptSpec
-from ..prompt import extract_prompt_spec
+from ..context import RUNTIME_CONTEXT_KEY
+from ..prompt import PromptSpec, extract_prompt_spec
 from ..prompt import reset_active_server as reset_prompt_server
 from ..prompt import set_active_server as set_prompt_server
-from ..resource import ResourceSpec
-from ..resource import extract_resource_spec
+from ..resource import ResourceSpec, extract_resource_spec
 from ..resource import reset_active_server as reset_resource_server
 from ..resource import set_active_server as set_resource_server
-from ..resource_template import ResourceTemplateSpec
-from ..resource_template import extract_resource_template_spec
+from ..resource_template import ResourceTemplateSpec, extract_resource_template_spec
 from ..resource_template import reset_active_server as reset_resource_template_server
 from ..resource_template import set_active_server as set_resource_template_server
-from ..tool import ToolSpec
-from ..tool import extract_tool_spec
+from ..tool import ToolSpec, extract_tool_spec
 from ..tool import reset_active_server as reset_tool_server
 from ..tool import set_active_server as set_tool_server
+from ..types.client.elicitation import ElicitRequestParams, ElicitResult
+from ..types.client.roots import ListRootsRequest, ListRootsResult, RootsListChangedNotification
+from ..types.client.sampling import CreateMessageRequestParams, CreateMessageResult
+from ..types.lifecycle import InitializedNotification
+from ..types.messages import ClientNotification, ClientRequest, ServerRequest, ServerResult
+from ..types.server.completions import Completion, CompletionArgument, CompletionContext, ResourceTemplateReference
+from ..types.server.prompts import GetPromptResult, ListPromptsRequest, ListPromptsResult, PromptReference
+from ..types.server.resources import (
+    ListResourcesRequest,
+    ListResourcesResult,
+    ListResourceTemplatesRequest,
+    ListResourceTemplatesResult,
+)
+from ..types.server.tools import ListToolsRequest, ListToolsResult
+from ..types.shared.base import INTERNAL_ERROR, INVALID_PARAMS, METHOD_NOT_FOUND, ErrorData, RequestParams
+from ..types.shared.capabilities import Icon, ServerCapabilities
+from ..types.shared.content import BlobResourceContents, ContentBlock, TextContent, TextResourceContents
+from ..types.shared.primitives import LoggingLevel
 from ..utils import get_logger
-from ..context import RUNTIME_CONTEXT_KEY, context_scope, get_context
 
 
 if TYPE_CHECKING:
     from anyio.abc import TaskGroup
     from mcp.server.models import InitializationOptions
     from mcp.server.session import ServerSession
+
     from .connectors import Connection
     from .resolver import ConnectionResolver
 
@@ -145,7 +141,37 @@ _SPEC_URLS = {
 
 
 class MCPServer(Server[Any, Any]):
-    """Spec-aligned server surface for MCP applications."""
+    """Spec-aligned server surface for MCP applications.
+
+    Basic usage with decorators:
+
+        >>> from dedalus_mcp import MCPServer, tool
+        >>>
+        >>> server = MCPServer("calculator")
+        >>>
+        >>> @tool(description="Add two numbers")
+        ... def add(a: int, b: int) -> int:
+        ...     return a + b
+        >>>
+        >>> server.collect(add)
+
+    With configuration:
+
+        >>> from dedalus_mcp.server import ServerConfig, SamplingConfig
+        >>>
+        >>> config = ServerConfig(
+        ...     sampling=SamplingConfig(timeout=30.0), pagination_limit=100),
+        ... )
+        >>> server = MCPServer("my-server", config=config)
+
+    With authorization:
+
+        >>> from dedalus_mcp.server.auth import AuthorizationConfig
+        >>>
+        >>> server = MCPServer(
+        ...     "protected-server", authorization=AuthorizationConfig(enabled=True)
+        ... )
+    """
 
     def __init__(
         self,
@@ -172,7 +198,7 @@ class MCPServer(Server[Any, Any]):
         connector_kind: str | None = None,
         connector_params: dict[str, type] | None = None,
         auth_methods: list[str] | None = None,
-        connections: list["Connection"] | None = None,
+        connections: list[Connection] | None = None,
     ) -> None:
         # Resolve config with param overrides taking precedence
         cfg = config or ServerConfig()
@@ -185,10 +211,10 @@ class MCPServer(Server[Any, Any]):
         self._notification_flags = notification_flags or NotificationFlags()
         self._experimental_capabilities = {key: dict(value) for key, value in (experimental_capabilities or {}).items()}
         self._base_lifespan = lifespan
-        self._connection_resolver: "ConnectionResolver" | None = None
+        self._connection_resolver: ConnectionResolver | None = None
 
         # Build connections map with duplicate name validation
-        self._connections: dict[str, "Connection"] = {}
+        self._connections: dict[str, Connection] = {}
         if connections:
             for conn in connections:
                 if conn.name in self._connections:
@@ -198,7 +224,12 @@ class MCPServer(Server[Any, Any]):
         # Dispatch backend (initialized in _build_runtime_payload)
         self._dispatch_backend: Any = None
         super().__init__(
-            name, version=version, instructions=instructions, website_url=website_url, icons=resolved_icons, lifespan=lifespan
+            name,
+            version=version,
+            instructions=instructions,
+            website_url=website_url,
+            icons=resolved_icons,
+            lifespan=lifespan,
         )
         self.lifespan = self._wrap_lifespan(self._base_lifespan)
         self._default_transport = transport.lower() if transport else "streamable-http"
@@ -402,7 +433,7 @@ class MCPServer(Server[Any, Any]):
         return self._auth_methods
 
     @property
-    def connections(self) -> dict[str, "Connection"]:
+    def connections(self) -> dict[str, Connection]:
         """Connection definitions declared by this server."""
         return self._connections
 
@@ -506,7 +537,7 @@ class MCPServer(Server[Any, Any]):
 
     def start_ping_heartbeat(
         self,
-        task_group: "TaskGroup",
+        task_group: TaskGroup,
         *,
         interval: float = 5.0,
         jitter: float = 0.2,
@@ -548,10 +579,12 @@ class MCPServer(Server[Any, Any]):
         for fn in fns:
             spec = self._extract_spec(fn)
             if spec is None:
-                raise ValueError(
-                    f"'{getattr(fn, '__name__', repr(fn))}' has no Dedalus MCP metadata. "
+                fn_name = getattr(fn, "__name__", repr(fn))
+                msg = (
+                    f"'{fn_name}' has no Dedalus MCP metadata. "
                     "Decorate with @tool, @resource, @prompt, @completion, or @resource_template."
                 )
+                raise ValueError(msg)
             self._register_spec(spec)
 
     def collect_from(self, *modules: ModuleType) -> None:
@@ -694,7 +727,6 @@ class MCPServer(Server[Any, Any]):
 
     def record_tool_mutation(self, *, operation: str) -> None:
         """Public entry point for capability services to report tool registry changes."""
-
         self._record_tool_mutation(operation=operation)
 
     def _record_tool_mutation(self, *, operation: str) -> None:
@@ -743,7 +775,7 @@ class MCPServer(Server[Any, Any]):
 
         return decorator
 
-    async def _call_roots_list(self, session: "ServerSession", params: Mapping[str, Any] | None) -> Mapping[str, Any]:
+    async def _call_roots_list(self, session: ServerSession, params: Mapping[str, Any] | None) -> Mapping[str, Any]:
         list_params: RequestParams | None = None
         if params is not None:
             list_params = RequestParams.model_validate(params)
@@ -816,14 +848,12 @@ class MCPServer(Server[Any, Any]):
         return self._authorization_manager
 
     @property
-    def connection_resolver(self) -> "ConnectionResolver" | None:
+    def connection_resolver(self) -> ConnectionResolver | None:
         """Return the configured connection resolver, if any."""
-
         return self._connection_resolver
 
-    def set_connection_resolver(self, resolver: "ConnectionResolver" | None) -> None:
+    def set_connection_resolver(self, resolver: ConnectionResolver | None) -> None:
         """Configure the resolver used by Context.resolve_client calls."""
-
         self._connection_resolver = resolver
 
     def set_authorization_provider(self, provider: AuthorizationProvider) -> None:
@@ -836,7 +866,7 @@ class MCPServer(Server[Any, Any]):
     # //////////////////////////////////////////////////////////////////
 
     @contextmanager
-    def binding(self) -> Iterator["MCPServer"]:
+    def binding(self) -> Iterator[MCPServer]:
         self._binding_depth += 1
         tool_token = set_tool_server(self)
         resource_token = set_resource_server(self)
@@ -916,7 +946,7 @@ class MCPServer(Server[Any, Any]):
         self,
         message: RequestResponder[ClientRequest, ServerResult],
         req: Any,
-        session: "ServerSession",
+        session: ServerSession,
         lifespan_context: Any,
         raise_exceptions: bool,
     ) -> None:

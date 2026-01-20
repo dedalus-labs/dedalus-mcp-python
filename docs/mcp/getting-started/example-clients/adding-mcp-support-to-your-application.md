@@ -10,4 +10,3 @@ Benefits of adding MCP support:
 * Support local-first AI workflows
 
 To get started with implementing MCP in your application, check out our [Python](https://github.com/modelcontextprotocol/python-sdk) or [TypeScript SDK Documentation](https://github.com/modelcontextprotocol/typescript-sdk)
-

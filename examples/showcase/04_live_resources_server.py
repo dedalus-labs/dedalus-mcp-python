@@ -14,10 +14,11 @@ Usage:
 """
 
 import asyncio
-import random
 from datetime import datetime
+import random
 
-from dedalus_mcp import MCPServer, resource, tool, get_context
+from dedalus_mcp import MCPServer, get_context, resource, tool
+
 
 server = MCPServer("live-resources", instructions="Subscribe to live data feeds")
 

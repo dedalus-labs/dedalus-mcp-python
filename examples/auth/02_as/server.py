@@ -40,16 +40,15 @@ calling ``supabase_select_live``.
 from __future__ import annotations
 
 import asyncio
-import os
 from dataclasses import dataclass
+import os
 from typing import Any
 
-import httpx
 from dotenv import load_dotenv
+import httpx
 
 from dedalus_mcp import MCPServer, get_context, tool
-from dedalus_mcp.server.authorization import AuthorizationConfig
-from dedalus_mcp.server.authorization import AuthorizationContext
+from dedalus_mcp.server.authorization import AuthorizationConfig, AuthorizationContext
 from dedalus_mcp.server.services.jwt_validator import JWTValidator, JWTValidatorConfig
 
 
@@ -78,7 +77,7 @@ class SupabaseCredentials:
     service_key: str
 
     @classmethod
-    def from_env(cls) -> "SupabaseCredentials":
+    def from_env(cls) -> SupabaseCredentials:
         url = os.getenv("SUPABASE_URL")
         key = os.getenv("SUPABASE_SECRET_KEY")
         if not url:
@@ -111,7 +110,6 @@ def resolve_supabase_credentials(auth_ctx: AuthorizationContext | None) -> Supab
     That keeps secrets out of the Lambda image while still letting the RS act
     on behalf of the user.
     """
-
     _ = auth_ctx  # placeholder until per-user handles are wired
     return SupabaseCredentials.from_env()
 

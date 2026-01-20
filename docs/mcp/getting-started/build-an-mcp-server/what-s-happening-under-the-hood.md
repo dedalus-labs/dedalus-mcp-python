@@ -8,4 +8,3 @@ When you ask a question:
 4. The results are sent back to Claude
 5. Claude formulates a natural language response
 6. The response is displayed to you!
-

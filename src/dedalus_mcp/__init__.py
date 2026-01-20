@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Any
 from pydantic.types import T
 
 from . import types
-from .client import MCPClient
+from .client import MCPClient, MCPConnectionError
 from .completion import CompletionResult, CompletionSpec, completion, extract_completion_spec
 from .context import Context, get_context
 from .dispatch import DispatchError, DispatchErrorCode, DispatchResponse, HttpMethod, HttpRequest, HttpResponse
@@ -34,13 +34,13 @@ from .resource_template import ResourceTemplateSpec, extract_resource_template_s
 from .server import (
     ASGIRunConfig,
     DefaultNotificationSink,
+    ElicitationConfig,
     MCPServer,
     NotificationFlags,
     NotificationSink,
-    ServerConfig,
-    SamplingConfig,
-    ElicitationConfig,
     PingConfig,
+    SamplingConfig,
+    ServerConfig,
     TransportSecuritySettings,
 )
 from .server.authorization import AuthorizationConfig
@@ -49,6 +49,7 @@ from .server.dependencies import register_injectable_type
 from .server.services.jwt_validator import JWTValidator, JWTValidatorConfig
 from .tool import ToolSpec, extract_tool_spec, tool
 from .types.shared.capabilities import Icon
+
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -127,6 +128,8 @@ __all__ = [
     "DispatchResponse",
     "DispatchError",
     "DispatchErrorCode",
+    # Client errors
+    "MCPConnectionError",
     # Capabilities
     "CapabilitySpec",
     "ToolSpec",

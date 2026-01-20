@@ -17,7 +17,7 @@ from dedalus_mcp.types.client.sampling import (
     SamplingMessage,
 )
 from dedalus_mcp.types.messages import ServerRequest
-from dedalus_mcp.types.shared.base import ErrorData, INTERNAL_ERROR, METHOD_NOT_FOUND
+from dedalus_mcp.types.shared.base import INTERNAL_ERROR, METHOD_NOT_FOUND, ErrorData
 from dedalus_mcp.types.shared.capabilities import ClientCapabilities
 from dedalus_mcp.types.shared.content import TextContent
 from tests.helpers import DummySession, run_with_context

@@ -13,10 +13,8 @@ the underlying ASGI server runtime.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-import asyncio
 from collections.abc import AsyncIterator, Callable, Iterable, Mapping  # noqa: TC003
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
-import contextlib
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -30,8 +28,8 @@ if TYPE_CHECKING:
     from starlette.routing import BaseRoute
     from starlette.types import Receive, Scope, Send
 
-    from ..core import MCPServer
     from ..authorization import AuthorizationManager
+    from ..core import MCPServer
 
 
 @dataclass(slots=True)

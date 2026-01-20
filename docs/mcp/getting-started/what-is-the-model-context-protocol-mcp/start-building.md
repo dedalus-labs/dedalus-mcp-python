@@ -9,4 +9,3 @@
     Develop applications that connect to MCP servers
   </Card>
 </CardGroup>
-

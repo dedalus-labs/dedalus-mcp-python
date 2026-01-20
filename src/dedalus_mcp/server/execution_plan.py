@@ -5,9 +5,9 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping, MutableMapping, Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any, Literal
 
-from typing_extensions import Literal
 from pydantic import BaseModel, Field, HttpUrl, constr
 
 
@@ -99,7 +99,6 @@ class ExecutionPlan(_BaseModel):
 
     def model_dump_plan(self) -> dict[str, Any]:
         """Return the plan as a JSON-serialisable dictionary."""
-
         return self.model_dump(by_alias=True, exclude_none=True)
 
 
@@ -148,7 +147,6 @@ def build_plan_from_claims(
     Raises:
         KeyError: If the requested handle is not present in the token claims.
     """
-
     connection_claim = None
     for entry in claims.get("ddls:connections", []):
         if isinstance(entry, Mapping) and entry.get("id") == handle:

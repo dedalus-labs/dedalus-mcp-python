@@ -11,4 +11,3 @@ The Model Context Protocol uses string-based version identifiers following the f
   protocol is updated, as long as the changes maintain backwards compatibility. This allows
   for incremental improvements while preserving interoperability.
 </Info>
-

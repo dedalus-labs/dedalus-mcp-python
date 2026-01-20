@@ -11,8 +11,8 @@ This tests the new dispatch interface where:
 
 from __future__ import annotations
 
-import pytest
 from pydantic import ValidationError
+import pytest
 
 
 # =============================================================================

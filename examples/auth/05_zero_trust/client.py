@@ -59,6 +59,7 @@ from dedalus_mcp.types import (
 )
 from dedalus_mcp.utils import to_json
 
+
 DEFAULT_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://127.0.0.1:8000/mcp")
 DEFAULT_RESOURCE = os.getenv("MCP_RESOURCE_URL", "http://127.0.0.1:8000")
 DEFAULT_ISSUER = os.getenv("AS_ISSUER", "http://localhost:4444")
@@ -79,7 +80,6 @@ def _generate_pkce() -> tuple[str, str]:
 
 async def fetch_access_token(args: argparse.Namespace) -> dict[str, Any]:
     """Run the OAuth 2.1 authorization code flow against the AS."""
-
     verifier, challenge = _generate_pkce()
     state = secrets.token_urlsafe(16)
 

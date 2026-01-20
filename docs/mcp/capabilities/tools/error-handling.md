@@ -42,4 +42,3 @@ Example tool execution error:
   }
 }
 ```
-

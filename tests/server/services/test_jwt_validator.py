@@ -3,16 +3,16 @@
 
 """Tests for JWT validation service."""
 
+import base64
 import time
 
-import base64
-import jwt
-import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+import jwt
+import pytest
 
 from dedalus_mcp.server.authorization import AuthorizationError
-from dedalus_mcp.server.services.jwt_validator import Clock, JWTValidator, JWTValidatorConfig, SystemClock
+from dedalus_mcp.server.services.jwt_validator import Clock, JWTValidator, JWTValidatorConfig
 
 
 def _b64url_uint(value: int) -> str:

@@ -27,14 +27,14 @@ async def get_user() -> dict:
 
 ## Connection
 
-| Parameter            | Default              | Description                              |
-| -------------------- | -------------------- | ---------------------------------------- |
-| `name`               | required             | Used in `ctx.dispatch("name", ...)`      |
-| `secrets`            | required             | Field names → env var names              |
-| `auth_header_name`   | `"Authorization"`    | HTTP header name                         |
-| `auth_header_format` | `"Bearer {api_key}"` | `{api_key}` replaced with secret value   |
-| `base_url`           | `None`               | Override provider URL                    |
-| `timeout_ms`         | `30000`              | 1000–300000 ms                           |
+| Parameter            | Default              | Description                            |
+| -------------------- | -------------------- | -------------------------------------- |
+| `name`               | required             | Used in `ctx.dispatch("name", ...)`    |
+| `secrets`            | required             | Field names → env var names            |
+| `auth_header_name`   | `"Authorization"`    | HTTP header name                       |
+| `auth_header_format` | `"Bearer {api_key}"` | `{api_key}` replaced with secret value |
+| `base_url`           | `None`               | Override provider URL                  |
+| `timeout_ms`         | `30000`              | 1000–300000 ms                         |
 
 ## SecretKeys
 

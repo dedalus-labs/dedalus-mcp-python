@@ -4,10 +4,10 @@
 """Resources capability types."""
 
 from mcp.types import (
-    ListResourceTemplatesRequest,
-    ListResourceTemplatesResult,
     ListResourcesRequest,
     ListResourcesResult,
+    ListResourceTemplatesRequest,
+    ListResourceTemplatesResult,
     ReadResourceRequest,
     ReadResourceRequestParams,
     ReadResourceResult,
@@ -21,6 +21,7 @@ from mcp.types import (
     UnsubscribeRequest,
     UnsubscribeRequestParams,
 )
+
 
 __all__ = [
     "ListResourceTemplatesRequest",

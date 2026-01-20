@@ -6,19 +6,11 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
 
-import anyio
 import pytest
-from httpx import AsyncClient
 
 from dedalus_mcp import MCPServer, tool
-from dedalus_mcp.server import NotificationFlags
 from dedalus_mcp.server.authorization import AuthorizationConfig
-
-
-if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
 
 
 @pytest.fixture

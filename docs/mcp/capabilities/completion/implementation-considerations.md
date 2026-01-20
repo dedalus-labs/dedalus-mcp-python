@@ -10,4 +10,3 @@
    * Debounce rapid completion requests
    * Cache completion results where appropriate
    * Handle missing or partial results gracefully
-

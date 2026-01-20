@@ -13,15 +13,16 @@ Usage:
 """
 
 import asyncio
-import logging
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+import logging
 from typing import Literal
 
 from pydantic import BaseModel, Field
 
 from dedalus_mcp import MCPServer, tool
+
 
 for name in ("mcp", "httpx", "uvicorn"):
     logging.getLogger(name).setLevel(logging.WARNING)

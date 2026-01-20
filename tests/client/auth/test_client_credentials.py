@@ -9,8 +9,8 @@ communication, CI/CD pipelines, and backend services.
 
 from __future__ import annotations
 
-import pytest
 import httpx
+import pytest
 import respx
 
 
@@ -40,7 +40,7 @@ class TestClientCredentialsAuthConstruction:
 
     def test_construction_validates_grant_type_support(self):
         """ClientCredentialsAuth raises if AS doesn't support client_credentials."""
-        from dedalus_mcp.client.auth.client_credentials import ClientCredentialsAuth, AuthConfigError
+        from dedalus_mcp.client.auth.client_credentials import AuthConfigError, ClientCredentialsAuth
         from dedalus_mcp.client.auth.models import AuthorizationServerMetadata
 
         server_metadata = AuthorizationServerMetadata(
@@ -199,9 +199,10 @@ class TestClientCredentialsAuthTokenAcquisition:
     @pytest.mark.anyio
     async def test_get_token_uses_basic_auth(self):
         """get_token uses HTTP Basic Auth for client authentication."""
+        import base64
+
         from dedalus_mcp.client.auth.client_credentials import ClientCredentialsAuth
         from dedalus_mcp.client.auth.models import AuthorizationServerMetadata
-        import base64
 
         server_metadata = AuthorizationServerMetadata(
             issuer="https://as.example.com",

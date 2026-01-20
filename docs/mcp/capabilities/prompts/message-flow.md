@@ -20,4 +20,3 @@ sequenceDiagram
       Server-->>Client: Updated prompts
     end
 ```
-

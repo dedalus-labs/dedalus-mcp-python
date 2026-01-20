@@ -17,4 +17,3 @@ Before executing any file system operation, Claude will request your approval. T
 </Frame>
 
 Review each request carefully before approving. You can always deny a request if you're not comfortable with the proposed action.
-

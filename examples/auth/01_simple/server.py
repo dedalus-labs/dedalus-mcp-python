@@ -17,12 +17,14 @@ import asyncio
 import os
 from typing import Any
 
-import httpx
 from dotenv import load_dotenv
+import httpx
+
 
 load_dotenv()
 
 from dedalus_mcp import MCPServer, tool
+
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY")

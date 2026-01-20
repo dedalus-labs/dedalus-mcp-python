@@ -72,4 +72,3 @@ Participation in an Interest Group (IG) is not required to start a Working Group
 * Maintainer(s) (optional)
 * Explanation of interest/use cases, ideally originating from an IG discussion; however that is not a requirement
 * First Issue/PR/SEP that the WG will work on
-

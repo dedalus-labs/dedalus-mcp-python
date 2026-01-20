@@ -41,4 +41,3 @@ When roots change, clients that support `listChanged` **MUST** send a notificati
   "method": "notifications/roots/list_changed"
 }
 ```
-

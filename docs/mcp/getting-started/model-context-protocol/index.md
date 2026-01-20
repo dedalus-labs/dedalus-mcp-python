@@ -94,5 +94,3 @@ The open protocol that connects AI applications to the systems where context liv
     </a>
   </section>
 </div>
-
-

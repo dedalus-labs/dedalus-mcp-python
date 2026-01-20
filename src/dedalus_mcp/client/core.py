@@ -110,8 +110,7 @@ class MCPClient:
         ...     token_endpoint="https://auth.example.com/token",
         ... )
         >>> async with await MCPClient.connect(
-        ...     "http://localhost:8000/mcp",
-        ...     auth=auth,
+        ...     "http://localhost:8000/mcp", auth=auth
         ... ) as client:
         ...     tools = await client.list_tools()
 

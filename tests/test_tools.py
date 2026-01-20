@@ -9,10 +9,10 @@ from typing import Any, Literal
 from mcp.shared.exceptions import McpError
 import pytest
 
-from dedalus_mcp.types.server.tools import ListToolsRequest
-from dedalus_mcp.types.shared.base import INVALID_PARAMS, PaginatedRequestParams
 from dedalus_mcp.server import MCPServer, NotificationFlags
 from dedalus_mcp.tool import tool
+from dedalus_mcp.types.server.tools import ListToolsRequest
+from dedalus_mcp.types.shared.base import INVALID_PARAMS, PaginatedRequestParams
 from dedalus_mcp.utils.schema import resolve_output_schema
 from tests.helpers import DummySession, run_with_context
 

@@ -2,8 +2,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""
-North Star: Supabase MCP Server (Supabase-ception!)
+"""North Star: Supabase MCP Server (Supabase-ception!)
 
 Wraps Supabase REST API as MCP tools, demonstrating:
 - Connection/Credential pattern for API key management
@@ -23,6 +22,7 @@ import os
 
 from dedalus_mcp import HttpMethod, HttpRequest, MCPServer, get_context, tool
 from dedalus_mcp.auth import Connection, Credential, Credentials
+
 
 # ---------------------------------------------------------------------------
 # 1. Define Supabase connection

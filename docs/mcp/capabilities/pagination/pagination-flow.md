@@ -11,4 +11,3 @@ sequenceDiagram
       Client->>Server: List Request (with cursor)
     end
 ```
-

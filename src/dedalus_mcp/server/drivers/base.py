@@ -21,7 +21,6 @@ class BaseDriver:
     @staticmethod
     def _normalize_input(data: Any) -> dict[str, Any]:
         """Coerce BaseModel/mapping inputs into plain dictionaries."""
-
         if isinstance(data, BaseModel):
             return data.model_dump()
         if hasattr(data, "model_dump"):

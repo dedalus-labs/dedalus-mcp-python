@@ -8,4 +8,3 @@ Each SDK provides the same functionality but follows the idioms and best practic
 * Protocol compliance with type safety
 
 Visit the SDK page for your chosen language to find installation instructions, documentation, and examples.
-

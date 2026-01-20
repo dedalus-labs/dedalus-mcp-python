@@ -14,8 +14,8 @@ Each error should produce a specific, actionable error message.
 
 from __future__ import annotations
 
-import pytest
 import httpx
+import pytest
 import respx
 
 
@@ -47,13 +47,13 @@ class TestConnectionErrorTypes:
 
     def test_session_expired_error_exists(self):
         """SessionExpiredError for 404 responses (session terminated)."""
-        from dedalus_mcp.client.errors import SessionExpiredError, MCPConnectionError
+        from dedalus_mcp.client.errors import MCPConnectionError, SessionExpiredError
 
         assert issubclass(SessionExpiredError, MCPConnectionError)
 
     def test_transport_error_exists(self):
         """TransportError for 405/415 responses (protocol mismatch)."""
-        from dedalus_mcp.client.errors import TransportError, MCPConnectionError
+        from dedalus_mcp.client.errors import MCPConnectionError, TransportError
 
         assert issubclass(TransportError, MCPConnectionError)
 
@@ -65,7 +65,7 @@ class TestConnectionErrorTypes:
 
     def test_server_error_exists(self):
         """ServerError for 5xx responses."""
-        from dedalus_mcp.client.errors import ServerError, MCPConnectionError
+        from dedalus_mcp.client.errors import MCPConnectionError, ServerError
 
         assert issubclass(ServerError, MCPConnectionError)
 

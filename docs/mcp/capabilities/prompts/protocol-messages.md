@@ -97,4 +97,3 @@ capability **SHOULD** send a notification:
   "method": "notifications/prompts/list_changed"
 }
 ```
-

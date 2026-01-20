@@ -12,10 +12,10 @@ from __future__ import annotations
 import httpx
 
 from .errors import (
-    MCPConnectionError,
     AuthRequiredError,
     BadRequestError,
     ForbiddenError,
+    MCPConnectionError,
     ServerError,
     SessionExpiredError,
     TransportError,
@@ -64,19 +64,19 @@ def http_error_to_mcp_error(error: httpx.HTTPStatusError) -> MCPConnectionError:
 
     if status == 400:
         return _handle_400(error_msg)
-    elif status == 401:
+    if status == 401:
         return _handle_401(error_msg, www_auth)
-    elif status == 403:
+    if status == 403:
         return _handle_403(error_msg, www_auth)
-    elif status == 404:
+    if status == 404:
         return _handle_404(error_msg)
-    elif status == 405:
+    if status == 405:
         return _handle_405(headers)
-    elif status == 415:
+    if status == 415:
         return _handle_415(error_msg)
-    elif status == 422:
+    if status == 422:
         return _handle_422(error_msg)
-    elif 500 <= status < 600:
+    if 500 <= status < 600:
         return _handle_5xx(status, error_msg, headers)
 
     # Fallback for other status codes

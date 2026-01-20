@@ -42,7 +42,7 @@ class TestContextDispatch:
             # Return (base_url, header_name, header_value) for test connections
             if "github" in handle:
                 return ("https://api.github.com", "Authorization", "Bearer mock_github_token")
-            elif "slack" in handle:
+            if "slack" in handle:
                 return ("https://slack.com/api", "Authorization", "Bearer mock_slack_token")
             return ("https://example.com", "Authorization", "Bearer mock_token")
 

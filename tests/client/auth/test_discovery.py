@@ -11,8 +11,8 @@ MCP clients MUST:
 
 from __future__ import annotations
 
-import pytest
 import httpx
+import pytest
 import respx
 
 
@@ -51,7 +51,7 @@ class TestFetchResourceMetadata:
     @pytest.mark.anyio
     async def test_fetch_resource_metadata_not_found(self):
         """fetch_resource_metadata raises on 404."""
-        from dedalus_mcp.client.auth.discovery import fetch_resource_metadata, DiscoveryError
+        from dedalus_mcp.client.auth.discovery import DiscoveryError, fetch_resource_metadata
 
         respx.get("https://mcp.example.com/.well-known/oauth-protected-resource").mock(return_value=httpx.Response(404))
 
@@ -63,7 +63,7 @@ class TestFetchResourceMetadata:
     @pytest.mark.anyio
     async def test_fetch_resource_metadata_invalid_json(self):
         """fetch_resource_metadata raises on invalid JSON."""
-        from dedalus_mcp.client.auth.discovery import fetch_resource_metadata, DiscoveryError
+        from dedalus_mcp.client.auth.discovery import DiscoveryError, fetch_resource_metadata
 
         respx.get("https://mcp.example.com/.well-known/oauth-protected-resource").mock(
             return_value=httpx.Response(200, content=b"not json")
@@ -128,7 +128,7 @@ class TestFetchASMetadata:
     @pytest.mark.anyio
     async def test_fetch_authorization_server_metadata_not_found(self):
         """fetch_authorization_server_metadata raises on 404."""
-        from dedalus_mcp.client.auth.discovery import fetch_authorization_server_metadata, DiscoveryError
+        from dedalus_mcp.client.auth.discovery import DiscoveryError, fetch_authorization_server_metadata
 
         respx.get("https://as.example.com/.well-known/oauth-authorization-server").mock(
             return_value=httpx.Response(404)
@@ -193,7 +193,7 @@ class TestDiscoverAuthorizationServer:
     @pytest.mark.anyio
     async def test_discover_no_401_raises(self):
         """discover_authorization_server raises if no 401 received."""
-        from dedalus_mcp.client.auth.discovery import discover_authorization_server, DiscoveryError
+        from dedalus_mcp.client.auth.discovery import DiscoveryError, discover_authorization_server
 
         # Server returns 200 (not protected)
         respx.get("https://mcp.example.com/mcp").mock(return_value=httpx.Response(200))
@@ -206,7 +206,7 @@ class TestDiscoverAuthorizationServer:
     @pytest.mark.anyio
     async def test_discover_missing_www_authenticate(self):
         """discover_authorization_server raises if 401 lacks WWW-Authenticate."""
-        from dedalus_mcp.client.auth.discovery import discover_authorization_server, DiscoveryError
+        from dedalus_mcp.client.auth.discovery import DiscoveryError, discover_authorization_server
 
         respx.get("https://mcp.example.com/mcp").mock(return_value=httpx.Response(401))
 
@@ -218,7 +218,7 @@ class TestDiscoverAuthorizationServer:
     @pytest.mark.anyio
     async def test_discover_missing_resource_metadata_param(self):
         """discover_authorization_server raises if WWW-Authenticate lacks resource_metadata."""
-        from dedalus_mcp.client.auth.discovery import discover_authorization_server, DiscoveryError
+        from dedalus_mcp.client.auth.discovery import DiscoveryError, discover_authorization_server
 
         respx.get("https://mcp.example.com/mcp").mock(
             return_value=httpx.Response(401, headers={"WWW-Authenticate": 'Bearer error="invalid_token"'})

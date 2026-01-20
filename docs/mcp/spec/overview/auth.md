@@ -12,4 +12,3 @@ For further discussions and contributions to the evolution of MCP’s auth mecha
 us in
 [GitHub Discussions](https://github.com/modelcontextprotocol/specification/discussions)
 to help shape the future of the protocol!
-

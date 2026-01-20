@@ -22,5 +22,3 @@ Now that you've successfully connected Claude Desktop to a local MCP server, exp
     Dive deeper into how MCP works and its architecture
   </Card>
 </CardGroup>
-
-

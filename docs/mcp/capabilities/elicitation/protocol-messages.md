@@ -118,4 +118,3 @@ To request information from a user, servers send an `elicitation/create` request
   }
 }
 ```
-

@@ -19,6 +19,7 @@ from mcp.types import (
     ToolsCapability,
 )
 
+
 __all__ = [
     "ClientCapabilities",
     "CompletionsCapability",

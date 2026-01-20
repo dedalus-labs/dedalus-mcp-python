@@ -18,4 +18,3 @@ model.
   * Allow users to review and modify their responses before sending
   * Respect user privacy and provide clear decline and cancel options
 </Warning>
-

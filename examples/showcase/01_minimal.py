@@ -12,7 +12,9 @@ Usage:
 """
 
 import asyncio
+
 from dedalus_mcp import MCPServer, tool
+
 
 server = MCPServer("minimal")
 

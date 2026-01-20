@@ -246,4 +246,3 @@ Servers **MUST** return appropriate HTTP status codes for authorization errors:
 | 401         | Unauthorized | Authorization required or token invalid    |
 | 403         | Forbidden    | Invalid scopes or insufficient permissions |
 | 400         | Bad Request  | Malformed authorization request            |
-

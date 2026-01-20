@@ -2,8 +2,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""
-North Star: End-to-end MCP server with credential provisioning.
+"""North Star: End-to-end MCP server with credential provisioning.
 
 Usage:
     export GITHUB_TOKEN="ghp_..."

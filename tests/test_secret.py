@@ -168,7 +168,7 @@ class TestConnectionSchema:
         assert "schema" not in result
 
     def test_repr_includes_schema(self) -> None:
-        """repr includes schema class name."""
+        """Repr includes schema class name."""
         from pydantic import BaseModel
 
         class MySchema(BaseModel):
@@ -361,7 +361,7 @@ class TestSecretValuesRepr:
     """Test SecretValues string representation."""
 
     def test_repr_hides_values(self) -> None:
-        """repr does not expose secret values."""
+        """Repr does not expose secret values."""
         conn = Connection("github", secrets=SecretKeys(token="GITHUB_TOKEN"))
 
         cred = SecretValues(conn, token="ghp_supersecret")
@@ -372,7 +372,7 @@ class TestSecretValuesRepr:
         assert "token" in repr_str  # Key names are OK
 
     def test_str_hides_values(self) -> None:
-        """str does not expose secret values."""
+        """Str does not expose secret values."""
         conn = Connection("github", secrets=SecretKeys(token="GITHUB_TOKEN"))
 
         cred = SecretValues(conn, token="ghp_supersecret")

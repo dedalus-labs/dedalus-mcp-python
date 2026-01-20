@@ -13,5 +13,3 @@
    * Validate tool results before passing to LLM
    * Implement timeouts for tool calls
    * Log tool usage for audit purposes
-
-

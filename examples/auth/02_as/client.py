@@ -37,17 +37,16 @@ import argparse
 import asyncio
 import base64
 import hashlib
+from http.server import BaseHTTPRequestHandler
 import json
 import os
 import secrets
+import socketserver
 import string
 import threading
-import webbrowser
 from typing import Any
 from urllib.parse import parse_qs, urlparse
-
-from http.server import BaseHTTPRequestHandler
-import socketserver
+import webbrowser
 
 import httpx
 from pydantic import ValidationError
@@ -62,6 +61,7 @@ from dedalus_mcp.types import (
     ListToolsResult,
 )
 from dedalus_mcp.utils import to_json
+
 
 DEFAULT_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://127.0.0.1:8000/mcp")
 DEFAULT_RESOURCE = os.getenv("MCP_RESOURCE_URL", "http://127.0.0.1:8000")

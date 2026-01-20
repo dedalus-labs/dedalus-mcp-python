@@ -7,10 +7,10 @@ import base64
 from dataclasses import dataclass
 import json
 
+from dedalus_mcp.server.result_normalizers import normalize_resource_payload, normalize_tool_result
 from dedalus_mcp.types.server.resources import ReadResourceResult
 from dedalus_mcp.types.server.tools import CallToolResult
 from dedalus_mcp.types.shared.content import BlobResourceContents, TextContent, TextResourceContents
-from dedalus_mcp.server.result_normalizers import normalize_resource_payload, normalize_tool_result
 
 
 def test_normalize_tool_result_from_string() -> None:
