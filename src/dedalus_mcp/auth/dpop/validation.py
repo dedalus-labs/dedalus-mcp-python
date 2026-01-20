@@ -27,12 +27,13 @@ References:
 
 from __future__ import annotations
 
-import json
-import time
 from collections import OrderedDict
 from dataclasses import dataclass, field
+import json
+import time
 from typing import Any, Protocol
 from urllib.parse import urlparse
+
 
 try:
     import jwt
@@ -41,7 +42,7 @@ except ImportError:
     jwt = None  # type: ignore
     InvalidTokenError = Exception  # type: ignore
 
-from dedalus_mcp.dpop.thumbprint import compute_access_token_hash, compute_jwk_thumbprint
+from dedalus_mcp.auth.dpop.thumbprint import compute_access_token_hash, compute_jwk_thumbprint
 from dedalus_mcp.utils import get_logger
 
 
@@ -259,7 +260,7 @@ class DPoPValidator:
             raise ImportError("DPoP validation requires pyjwt. Install with: uv add pyjwt cryptography")
 
         self.config = config or DPoPValidatorConfig()
-        self._logger = get_logger("dedalus_mcp.dpop")
+        self._logger = get_logger("dedalus_mcp.auth.dpop")
         self._jti_cache = _JTICache(
             max_size=self.config.jti_cache_size, ttl=self.config.jti_cache_ttl, clock=self.config.clock
         )
@@ -449,10 +450,9 @@ class DPoPValidator:
 
         if kty == "EC":
             return ECAlgorithm.from_jwk(jwk_json)
-        elif kty == "RSA":
+        if kty == "RSA":
             return RSAAlgorithm.from_jwk(jwk_json)
-        else:
-            raise ValueError(f"unsupported key type: {kty}")
+        raise ValueError(f"unsupported key type: {kty}")
 
 
 __all__ = [

@@ -36,7 +36,7 @@ Public API:
         - DPoPThumbprintMismatchError: Key binding mismatch
 
 Example (client-side):
-    >>> from dedalus_mcp.dpop import generate_dpop_keypair, generate_dpop_proof
+    >>> from dedalus_mcp.auth.dpop import generate_dpop_keypair, generate_dpop_proof
     >>>
     >>> # Generate keypair
     >>> private_key, public_jwk = generate_dpop_keypair()
@@ -49,7 +49,7 @@ Example (client-side):
     ... )
 
 Example (server-side):
-    >>> from dedalus_mcp.dpop import DPoPValidator
+    >>> from dedalus_mcp.auth.dpop import DPoPValidator
     >>>
     >>> validator = DPoPValidator()
     >>> result = validator.validate_proof(
@@ -66,24 +66,25 @@ References:
     RFC 7515: JSON Web Signature (JWS)
 """
 
-from dedalus_mcp.dpop.validation import (
+from dedalus_mcp.auth.dpop.keypair import generate_dpop_keypair
+from dedalus_mcp.auth.dpop.proof import BearerAuth, DPoPAuth, generate_dpop_proof
+from dedalus_mcp.auth.dpop.thumbprint import compute_access_token_hash, compute_jwk_thumbprint
+from dedalus_mcp.auth.dpop.validation import (
     Clock,
-    SystemClock,
+    DPoPExpiredError,
+    DPoPMethodMismatchError,
+    DPoPNonceMismatchError,
+    DPoPProofResult,
+    DPoPReplayError,
+    DPoPThumbprintMismatchError,
+    DPoPUrlMismatchError,
+    DPoPValidationError,
     DPoPValidator,
     DPoPValidatorConfig,
-    DPoPProofResult,
-    DPoPValidationError,
     InvalidDPoPProofError,
-    DPoPReplayError,
-    DPoPMethodMismatchError,
-    DPoPUrlMismatchError,
-    DPoPExpiredError,
-    DPoPThumbprintMismatchError,
-    DPoPNonceMismatchError,
+    SystemClock,
 )
-from dedalus_mcp.dpop.thumbprint import compute_jwk_thumbprint, compute_access_token_hash
-from dedalus_mcp.dpop.proof import generate_dpop_proof, DPoPAuth, BearerAuth
-from dedalus_mcp.dpop.keypair import generate_dpop_keypair
+
 
 __all__ = [
     # Client-side: proof generation

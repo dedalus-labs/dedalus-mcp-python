@@ -16,8 +16,8 @@ import json
 
 import pytest
 
-from dedalus_mcp.dpop import compute_jwk_thumbprint, compute_access_token_hash
-from dedalus_mcp.dpop.thumbprint import b64url_encode, b64url_decode
+from dedalus_mcp.auth.dpop import compute_access_token_hash, compute_jwk_thumbprint
+from dedalus_mcp.auth.dpop.thumbprint import b64url_decode, b64url_encode
 
 
 class TestB64UrlEncode:

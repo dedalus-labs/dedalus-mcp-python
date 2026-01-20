@@ -13,16 +13,16 @@ These tests verify that generated proofs conform to RFC 9449 requirements:
 from __future__ import annotations
 
 import time
-import jwt
-import pytest
 
-from dedalus_mcp.dpop import (
+import jwt
+
+from dedalus_mcp.auth.dpop import (
+    BearerAuth,
+    DPoPAuth,
+    compute_access_token_hash,
+    compute_jwk_thumbprint,
     generate_dpop_keypair,
     generate_dpop_proof,
-    DPoPAuth,
-    BearerAuth,
-    compute_jwk_thumbprint,
-    compute_access_token_hash,
 )
 
 
@@ -81,7 +81,7 @@ class TestGenerateDPoPProof:
         assert "iat" in claims
 
     def test_htm_is_uppercase(self, es256_keypair):
-        """htm should be uppercase HTTP method."""
+        """Htm should be uppercase HTTP method."""
         proof = generate_dpop_proof(
             private_key=es256_keypair,
             method="post",  # Lowercase input
@@ -92,7 +92,7 @@ class TestGenerateDPoPProof:
         assert claims["htm"] == "POST"  # Uppercase output
 
     def test_htu_strips_query(self, es256_keypair):
-        """htu should not include query parameters per RFC 9449."""
+        """Htu should not include query parameters per RFC 9449."""
         proof = generate_dpop_proof(
             private_key=es256_keypair, method="POST", url="https://mcp.example.com/messages?foo=bar&baz=qux"
         )
@@ -102,7 +102,7 @@ class TestGenerateDPoPProof:
         assert "?" not in claims["htu"]
 
     def test_htu_strips_fragment(self, es256_keypair):
-        """htu should not include fragment per RFC 9449."""
+        """Htu should not include fragment per RFC 9449."""
         proof = generate_dpop_proof(
             private_key=es256_keypair, method="POST", url="https://mcp.example.com/messages#section"
         )
@@ -122,7 +122,7 @@ class TestGenerateDPoPProof:
         assert claims1["jti"] != claims2["jti"]
 
     def test_iat_is_current_time(self, es256_keypair):
-        """iat should be close to current time."""
+        """Iat should be close to current time."""
         before = int(time.time())
 
         proof = generate_dpop_proof(private_key=es256_keypair, method="POST", url="https://mcp.example.com/messages")
@@ -133,7 +133,7 @@ class TestGenerateDPoPProof:
         assert before <= claims["iat"] <= after
 
     def test_ath_included_when_access_token_provided(self, es256_keypair):
-        """ath claim should be present when access_token provided."""
+        """Ath claim should be present when access_token provided."""
         access_token = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.test"
 
         proof = generate_dpop_proof(
@@ -145,14 +145,14 @@ class TestGenerateDPoPProof:
         assert claims["ath"] == compute_access_token_hash(access_token)
 
     def test_ath_not_included_without_access_token(self, es256_keypair):
-        """ath claim should not be present when no access_token."""
+        """Ath claim should not be present when no access_token."""
         proof = generate_dpop_proof(private_key=es256_keypair, method="POST", url="https://mcp.example.com/messages")
 
         claims = jwt.decode(proof, options={"verify_signature": False})
         assert "ath" not in claims
 
     def test_nonce_included_when_provided(self, es256_keypair):
-        """nonce claim should be present when provided."""
+        """Nonce claim should be present when provided."""
         nonce = "server-nonce-12345"
 
         proof = generate_dpop_proof(
@@ -163,7 +163,7 @@ class TestGenerateDPoPProof:
         assert claims["nonce"] == nonce
 
     def test_nonce_not_included_without_value(self, es256_keypair):
-        """nonce claim should not be present when not provided."""
+        """Nonce claim should not be present when not provided."""
         proof = generate_dpop_proof(private_key=es256_keypair, method="POST", url="https://mcp.example.com/messages")
 
         claims = jwt.decode(proof, options={"verify_signature": False})
@@ -171,8 +171,9 @@ class TestGenerateDPoPProof:
 
     def test_signature_verifies_with_embedded_key(self, es256_keypair):
         """Proof signature should verify with the embedded JWK."""
-        from jwt.algorithms import ECAlgorithm
         import json
+
+        from jwt.algorithms import ECAlgorithm
 
         proof = generate_dpop_proof(private_key=es256_keypair, method="POST", url="https://mcp.example.com/messages")
 
@@ -219,8 +220,9 @@ class TestGenerateDPoPKeypair:
         proof = generate_dpop_proof(private_key=private_key, method="POST", url="https://example.com/token")
 
         # Verify with public key
-        from jwt.algorithms import ECAlgorithm
         import json
+
+        from jwt.algorithms import ECAlgorithm
 
         public_key = ECAlgorithm.from_jwk(json.dumps(public_jwk))
         claims = jwt.decode(proof, public_key, algorithms=["ES256"])
@@ -361,7 +363,7 @@ class TestDPoPAuth:
         assert claims2["nonce"] == "new-nonce"
 
     def test_thumbprint_property(self, es256_keypair):
-        """thumbprint property should return key thumbprint."""
+        """Thumbprint property should return key thumbprint."""
         auth = DPoPAuth(access_token="test-token", dpop_key=es256_keypair)
 
         thumbprint = auth.thumbprint

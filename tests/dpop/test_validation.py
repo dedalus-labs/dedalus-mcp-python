@@ -24,26 +24,19 @@ import uuid
 
 import pytest
 
-from dedalus_mcp.dpop import (
+from dedalus_mcp.auth.dpop import (
+    DPoPExpiredError,
+    DPoPMethodMismatchError,
+    DPoPNonceMismatchError,
+    DPoPReplayError,
+    DPoPThumbprintMismatchError,
+    DPoPUrlMismatchError,
     DPoPValidator,
     DPoPValidatorConfig,
     InvalidDPoPProofError,
-    DPoPReplayError,
-    DPoPMethodMismatchError,
-    DPoPUrlMismatchError,
-    DPoPExpiredError,
-    DPoPThumbprintMismatchError,
-    DPoPNonceMismatchError,
 )
 
-from .conftest import (
-    FakeClock,
-    b64url_encode,
-    build_dpop_proof,
-    compute_ath,
-    compute_jwk_thumbprint,
-    get_thumbprint_from_proof,
-)
+from .conftest import b64url_encode, build_dpop_proof, compute_ath, get_thumbprint_from_proof
 
 
 # =============================================================================

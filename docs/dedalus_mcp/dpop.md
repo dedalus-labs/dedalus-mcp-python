@@ -62,7 +62,7 @@ auth.set_nonce(nonce_from_response)
 For custom integrations:
 
 ```python
-from dedalus_mcp.dpop import generate_dpop_proof
+from dedalus_mcp.auth.dpop import generate_dpop_proof
 
 proof = generate_dpop_proof(
     dpop_key=private_key,
@@ -78,7 +78,7 @@ proof = generate_dpop_proof(
 The `DPoPValidator` validates incoming proofs:
 
 ```python
-from dedalus_mcp.dpop import DPoPValidator, DPoPValidatorConfig
+from dedalus_mcp.auth.dpop import DPoPValidator, DPoPValidatorConfig
 
 config = DPoPValidatorConfig(leeway=60, jti_cache_ttl=120)
 validator = DPoPValidator(config)
@@ -99,9 +99,9 @@ Validation checks: signature, `typ`/`alg` headers, JWK presence (no private key 
 
 | Component | Role |
 |-----------|------|
-| `dedalus_mcp.dpop.DPoPAuth` | Client-side auth handler |
-| `dedalus_mcp.dpop.generate_dpop_proof` | Standalone proof generation |
-| `dedalus_mcp.dpop.DPoPValidator` | Server-side proof validation |
+| `dedalus_mcp.auth.dpop.DPoPAuth` | Client-side auth handler |
+| `dedalus_mcp.auth.dpop.generate_dpop_proof` | Standalone proof generation |
+| `dedalus_mcp.auth.dpop.DPoPValidator` | Server-side proof validation |
 | `apps/dedalus_mcp_as/dpop/dpop.go` | AS validation (Go) |
 
 ## What DPoP Does Not Protect

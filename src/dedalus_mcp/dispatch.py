@@ -43,16 +43,18 @@ References:
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from enum import Enum, StrEnum
 import hashlib
 import hmac
 import time
-from enum import Enum, StrEnum
-from typing import Any, Callable, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 from urllib.parse import quote
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .utils import get_logger
+
 
 _logger = get_logger("dedalus_mcp.dispatch")
 
@@ -198,12 +200,12 @@ class DispatchResponse(BaseModel):
     error: DispatchError | None = None
 
     @classmethod
-    def ok(cls, response: HttpResponse) -> "DispatchResponse":
+    def ok(cls, response: HttpResponse) -> DispatchResponse:
         """Factory for successful dispatch."""
         return cls(success=True, response=response)
 
     @classmethod
-    def fail(cls, code: DispatchErrorCode, message: str, *, retryable: bool = False) -> "DispatchResponse":
+    def fail(cls, code: DispatchErrorCode, message: str, *, retryable: bool = False) -> DispatchResponse:
         """Factory for failed dispatch."""
         return cls(success=False, error=DispatchError(code=code, message=message, retryable=retryable))
 
@@ -553,19 +555,18 @@ class EnclaveDispatchBackend:
                         body=http_resp.get("body"),
                     )
                 )
-            else:
-                error_data = data.get("error", {})
-                code_str = error_data.get("code", "DOWNSTREAM_UNREACHABLE")
-                try:
-                    code = DispatchErrorCode(code_str)
-                except ValueError:
-                    _logger.warning(
-                        "unknown dispatch error code", extra={"event": "dispatch.unknown_code", "code": code_str}
-                    )
-                    code = DispatchErrorCode.DOWNSTREAM_UNREACHABLE
-                return DispatchResponse.fail(
-                    code, error_data.get("message", "Unknown error"), retryable=error_data.get("retryable", False)
+            error_data = data.get("error", {})
+            code_str = error_data.get("code", "DOWNSTREAM_UNREACHABLE")
+            try:
+                code = DispatchErrorCode(code_str)
+            except ValueError:
+                _logger.warning(
+                    "unknown dispatch error code", extra={"event": "dispatch.unknown_code", "code": code_str}
                 )
+                code = DispatchErrorCode.DOWNSTREAM_UNREACHABLE
+            return DispatchResponse.fail(
+                code, error_data.get("message", "Unknown error"), retryable=error_data.get("retryable", False)
+            )
 
         except httpx.TimeoutException:
             return DispatchResponse.fail(
@@ -619,7 +620,7 @@ class EnclaveDispatchBackend:
         if self._dpop_key is None:
             return ""
 
-        from dedalus_mcp.dpop import generate_dpop_proof
+        from dedalus_mcp.auth.dpop import generate_dpop_proof
 
         return generate_dpop_proof(private_key=self._dpop_key, method=method, url=url, access_token=self._access_token)
 

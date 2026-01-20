@@ -15,13 +15,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from dedalus_mcp.dpop.thumbprint import b64url_encode
+from dedalus_mcp.auth.dpop.thumbprint import b64url_encode
+
 
 if TYPE_CHECKING:
     from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 
 
-def generate_dpop_keypair() -> tuple["EllipticCurvePrivateKey", dict[str, str]]:
+def generate_dpop_keypair() -> tuple[EllipticCurvePrivateKey, dict[str, str]]:
     """Generate an ES256 (P-256) keypair for DPoP.
 
     Returns a private key object and the corresponding public key as a JWK dict.

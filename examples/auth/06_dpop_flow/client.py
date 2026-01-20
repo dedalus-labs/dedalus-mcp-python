@@ -28,17 +28,15 @@ import hashlib
 import json
 import os
 import secrets
-import time
-import uuid
-from urllib.parse import urlencode, urlparse, parse_qs
+from urllib.parse import urlencode
 
-import httpx
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
+import httpx
 
-from dedalus_mcp.client import MCPClient, DPoPAuth
-from dedalus_mcp.dpop import generate_dpop_proof
+from dedalus_mcp.client import DPoPAuth
+from dedalus_mcp.auth.dpop import generate_dpop_proof
 
 
 def b64url(data: bytes) -> str:
@@ -198,7 +196,7 @@ async def main() -> None:
         print("\n2. Building authorization URL with DPoP binding...")
         auth_url, code_verifier, state = oauth.build_authorization_url(resource=mcp_url)
         print(f"   DPoP JKT: {oauth.dpop_jkt[:20]}...")
-        print(f"   Open this URL to authorize:")
+        print("   Open this URL to authorize:")
         print(f"   {auth_url[:100]}...")
 
         # Step 3: Simulate callback (in real app, user completes OAuth in browser)
