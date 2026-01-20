@@ -4,7 +4,7 @@ Minimal, spec-faithful Python framework for building Model Context Protocol (MCP
 
 [![Y Combinator S25](https://img.shields.io/badge/Y%20Combinator-S25-orange?style=flat&logo=ycombinator&logoColor=white)](https://www.ycombinator.com/launches/Od1-dedalus-labs-build-deploy-complex-agents-in-5-lines-of-code)
 
-Dedalus MCP wraps the official MCP reference SDK with ergonomic decorators, automatic schema inference, and production-grade operational features. 98% protocol compliance with MCP 2025-06-18.
+Dedalus MCP wraps the official MCP reference SDK with ergonomic decorators, automatic schema inference, and production-grade operational features. Full compliance with MCP.
 
 ## Who this is for
 
@@ -97,7 +97,7 @@ auth = DPoPAuth(access_token="eyJ...", dpop_key=dpop_key)
 client = await MCPClient.connect("https://mcp.example.com/mcp", auth=auth)
 ```
 
-## Capabilities
+<!-- ## Capabilities
 
 ### Tools
 
@@ -224,9 +224,9 @@ Servers request structured user input. Schema validation, timeouts, accept/decli
 
 **Custom**: `register_transport("name", factory)` then `await server.serve(transport="name")`.
 
-[`docs/dedalus_mcp/transports.md`](docs/dedalus_mcp/transports.md)
+[`docs/dedalus_mcp/transports.md`](docs/dedalus_mcp/transports.md) -->
 
-## Authorization
+<!-- ## Authorization
 
 [4 tools called]
 
@@ -270,13 +270,13 @@ result = await dispatch("query_database", {"table": "users", "limit": 100})
 
 **Open-Source vs Proprietary Split:**
 
-The Dedalus MCP SDK (open-source) defines `DispatchBackend` as an abstract interface. Dedalus Cloud injects the concrete implementation that talks to the Enclave over mTLS. OSS users can run in "direct mode" with env var credentials (no zero-trust guarantees) or bring their own vault.
+The Dedalus MCP SDK (open-source) defines `DispatchBackend` as an abstract interface. OSS users can run in "direct mode" with env var credentials (no zero-trust guarantees) or bring their own vault.
 
 **Marketplace Isolation:**
 
-Third-party MCP servers can orchestrate business logic but cannot access plaintext credentials. Even if compromised, they only see encrypted blobs. The Enclave is the single point where decryption happens, and it's not user-accessible.
+Third-party MCP servers can orchestrate business logic but cannot access plaintext credentials. Even if compromised, they only see encrypted blobs. The Enclave is the single point where decryption happens, and it's not user-accessible. -->
 
----
+<!-- ---
 
 **Questions / Ambiguities I noticed:**
 
@@ -412,7 +412,7 @@ Covers: protocol lifecycle, registration, schema inference, subscriptions, pagin
 6. **SDK delegation**: Reuse reference SDK for JSON-RPC/transport
 7. **Dependency discipline**: Pydantic (schemas), anyio (async), starlette/uvicorn (HTTP). Optional extras stay out of the core.
 
-**Extend**: Add services in `src/dedalus_mcp/server/services/`, transports via `register_transport()`, auth via `AuthorizationProvider`.
+**Extend**: Add services in `src/dedalus_mcp/server/services/`, transports via `register_transport()`, auth via `AuthorizationProvider`. -->
 
 ## License
 
