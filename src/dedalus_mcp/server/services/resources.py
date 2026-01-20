@@ -1,18 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Resource capability service (resources, templates, subscriptions).
-
-Implements the resources capability as specified in the Model Context Protocol:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/server/resources
-  (resources capability, list/read/subscribe operations, templates, notifications)
-- https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/pagination
-  (cursor-based pagination for resources/list and templates/list)
-
-Manages resource registration, subscription lifecycle with session weak references,
-resource update notifications, and list-changed broadcasts.
-"""
+"""Resources capability service (resources, templates, subscriptions)."""
 
 from __future__ import annotations
 

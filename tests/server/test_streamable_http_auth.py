@@ -26,7 +26,7 @@ class DummyProvider(AuthorizationProvider):
     async def validate(self, token: str) -> AuthorizationContext:
         if token != self.expected_token:
             raise AuthorizationError("invalid token")
-        return AuthorizationContext(subject="demo", scopes=["mcp:tools:call"], claims={"ddls:connections": []})
+        return AuthorizationContext(subject="demo", scopes=["tools:call"], claims={"ddls:connections": []})
 
 
 @pytest.fixture

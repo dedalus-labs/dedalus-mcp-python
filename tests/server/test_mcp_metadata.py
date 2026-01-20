@@ -351,7 +351,7 @@ async def test_metadata_comprehensive_example() -> None:
     auth_config = AuthorizationConfig(
         enabled=True,
         authorization_servers=["https://auth.example.com"],
-        required_scopes=["mcp:read", "mcp:write", "mcp:execute"],
+        required_scopes=["read", "write", "execute"],
     )
 
     server = MCPServer(
@@ -399,4 +399,4 @@ async def test_metadata_comprehensive_example() -> None:
     assert "comprehensive_tool_2" in metadata["tools"]
     assert "comprehensive_tool_3" in metadata["tools"]
 
-    assert metadata["required_scopes"] == ["mcp:read", "mcp:write", "mcp:execute"]
+    assert metadata["required_scopes"] == ["read", "write", "execute"]

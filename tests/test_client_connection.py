@@ -79,7 +79,7 @@ async def test_open_connection_unknown_transport() -> None:
 
 @pytest.mark.anyio
 async def test_streamable_http_allows_preinitialize_get(unused_tcp_port: int) -> None:
-    server = MCPServer("preinit-get")
+    server = MCPServer("preinit-get", streamable_http_stateless=False)
 
     host = "127.0.0.1"
     port = unused_tcp_port
@@ -160,7 +160,7 @@ async def test_streamable_http_stateless_allows_preinitialize_get(unused_tcp_por
 
 @pytest.mark.anyio
 async def test_streamable_http_preinitialize_get_requires_session(unused_tcp_port: int) -> None:
-    server = MCPServer("stateful-get")
+    server = MCPServer("stateful-get", streamable_http_stateless=False)
 
     host = "127.0.0.1"
     port = unused_tcp_port

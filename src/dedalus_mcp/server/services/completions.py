@@ -1,16 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Completion capability service.
-
-Implements the completion capability as specified in the Model Context Protocol:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/server/completion
-  (completion capability, complete request handling, 100-item limit)
-
-Handles completion execution for prompt arguments and resource template parameters,
-coercing various return types to spec-compliant Completion responses.
-"""
+"""Completion capability service."""
 
 from __future__ import annotations
 

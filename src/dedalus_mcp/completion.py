@@ -3,16 +3,7 @@
 
 # Copyright (c) Dedalus Labs, Inc. and affiliates.
 
-"""Completion registration utilities.
-
-Implements argument completion as specified in the Model Context Protocol:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/server/completion
-  (completion capability, prompt and resource template argument completion)
-
-Registered callables provide completion suggestions for prompt arguments and
-resource template parameters via the ambient registration pattern.
-"""
+"""Argument completion for prompts and resource templates."""
 
 from __future__ import annotations
 

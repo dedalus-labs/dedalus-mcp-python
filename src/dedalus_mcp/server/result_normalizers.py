@@ -1,16 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Normalization helpers for server-facing handler results.
-
-The adapters keep the capability services thin while ensuring all outbound
-results conform to the structures defined in the MCP specification:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/server/tools
-  (tools/call result normalization)
-- https://modelcontextprotocol.io/specification/2025-06-18/server/resources
-  (resources/read result normalization)
-"""
+"""Result normalization for tool and resource handlers."""
 
 from __future__ import annotations
 

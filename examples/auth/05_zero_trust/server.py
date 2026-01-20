@@ -19,7 +19,7 @@ Quick start::
     #            ID: "supabase-cli",
     #            RedirectURIs: []string{"https://127.0.0.1/callback"},
     #            GrantTypes: []string{"authorization_code", "refresh_token"},
-    #            Scopes: []string{"mcp:tools:call", "offline_access"},
+    #            Scopes: []string{"tools:call", "offline_access"},
     #        })
     #    (A proper /oauth2/register endpoint is coming soon.)
 
@@ -28,7 +28,7 @@ Quick start::
     $ export SUPABASE_SECRET_KEY="<service_role_key>"
     $ export AS_ISSUER="http://localhost:4444"
     $ export MCP_RESOURCE_URL="http://127.0.0.1:8000"
-    $ export MCP_REQUIRED_SCOPES="mcp:tools:call"
+    $ export MCP_REQUIRED_SCOPES="tools:call"
 
     # 4. Start the MCP Resource Server
     $ cd ~/Desktop/dedalus-labs/codebase/dedalus-mcp
@@ -58,7 +58,7 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY")
 AS_ISSUER = os.getenv("AS_ISSUER", "http://localhost:4444").rstrip("/")
 MCP_RESOURCE_URL = os.getenv("MCP_RESOURCE_URL", "http://127.0.0.1:8000").rstrip("/")
-REQUIRED_SCOPES = [scope for scope in os.getenv("MCP_REQUIRED_SCOPES", "mcp:tools:call").split() if scope]
+REQUIRED_SCOPES = [scope for scope in os.getenv("MCP_REQUIRED_SCOPES", "tools:call").split() if scope]
 JWKS_URI = os.getenv("AS_JWKS_URI", f"{AS_ISSUER}/.well-known/jwks.json")
 
 if not SUPABASE_URL:

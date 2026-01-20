@@ -14,7 +14,6 @@ from mcp.server.transport_security import TransportSecuritySettings
 from .authorization import AuthorizationConfig
 from .config import ElicitationConfig, PingConfig, SamplingConfig, ServerConfig
 from .core import MCPServer, NotificationFlags, ServerValidationError, TransportLiteral
-from .execution_plan import ExecutionPlan, build_plan_from_claims
 from .notifications import DefaultNotificationSink, NotificationSink
 from .transports import ASGIRunConfig
 
@@ -35,9 +34,6 @@ __all__ = [
     "ASGIRunConfig",
     # Authorization
     "AuthorizationConfig",
-    # Execution
-    "ExecutionPlan",
-    "build_plan_from_claims",
     # Notifications
     "NotificationSink",
     "DefaultNotificationSink",

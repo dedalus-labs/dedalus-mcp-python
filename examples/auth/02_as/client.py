@@ -66,7 +66,7 @@ from dedalus_mcp.utils import to_json
 DEFAULT_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://127.0.0.1:8000/mcp")
 DEFAULT_RESOURCE = os.getenv("MCP_RESOURCE_URL", "http://127.0.0.1:8000")
 DEFAULT_ISSUER = os.getenv("AS_ISSUER", "http://localhost:4444")
-DEFAULT_SCOPE = os.getenv("MCP_REQUIRED_SCOPES", "mcp:tools:call")
+DEFAULT_SCOPE = os.getenv("MCP_REQUIRED_SCOPES", "tools:call")
 DEFAULT_CLIENT_ID = os.getenv("MCP_CLIENT_ID", "dedalus-browser")
 DEFAULT_CALLBACK_PORT = int(os.getenv("MCP_CALLBACK_PORT", "8400"))
 

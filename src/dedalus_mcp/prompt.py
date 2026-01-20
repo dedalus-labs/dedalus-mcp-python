@@ -1,16 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Prompt registration utilities.
-
-Implements the prompts capability as specified in the Model Context Protocol:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/server/prompts
-  (prompts capability, list and get operations, argument handling)
-
-Supports the ambient authoring pattern where decorated callables are registered
-as prompt templates with the MCP server.
-"""
+"""Prompt registration utilities."""
 
 from __future__ import annotations
 

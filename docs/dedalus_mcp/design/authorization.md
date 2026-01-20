@@ -50,7 +50,7 @@ Extend `MCPServer` to accept an optional `authorization` configuration block:
 AuthorizationConfig(
     enabled=True,
     metadata_path="/.well-known/oauth-protected-resource",
-    required_scopes=["mcp:read", "mcp:write"],
+    required_scopes=["read", "write"],
     fail_open=False,  # allow local/dev to bypass auth on AS outage
     cache_ttl=300,
 )

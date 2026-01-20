@@ -1,15 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Sampling capability adapter for MCP servers.
-
-Implements the sampling capability as specified in the Model Context Protocol:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/client/sampling
-  (sampling capability, createMessage request for LLM interaction)
-
-Provides adapter interface for servers to handle client LLM sampling requests.
-"""
+"""Sampling capability service for LLM interaction requests."""
 
 from __future__ import annotations
 

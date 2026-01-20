@@ -262,7 +262,7 @@ class TestTokenExchangeAuthTokenAcquisition:
         )
 
         auth = TokenExchangeAuth(
-            server_metadata=server_metadata, client_id="dedalus-sdk", subject_token="token", scope="openid mcp:read"
+            server_metadata=server_metadata, client_id="dedalus-sdk", subject_token="token", scope="openid read"
         )
 
         await auth.get_token()

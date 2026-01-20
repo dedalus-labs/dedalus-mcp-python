@@ -1,17 +1,11 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Progress utilities for emitting MCP-compliant telemetry.
+"""Progress notification utilities.
 
-Implements progress notifications as specified in the Model Context Protocol:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress
-  (progress notification semantics, token requirements, progress flow)
-
-Compared to the reference SDK helper, this implementation adds:
-
-* Monotonicity enforcement so progress never regresses (per spec).
-* Coalescing with configurable emission cadence and jitter to provide
+Features:
+- Monotonicity enforcement (progress never regresses)
+- Coalescing with configurable emission cadence and jitter to provide
   gentle backpressure while keeping latency low.
 * At-least-once delivery with retry and final flush semantics.
 * Optional telemetry hooks for observability and integration with

@@ -1,11 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Error extraction and conversion utilities for MCPClient.
-
-This module handles the conversion of low-level transport errors (httpx, anyio)
-into user-friendly MCPConnectionError subclasses with actionable messages.
-"""
+"""Error extraction and conversion for MCPClient."""
 
 from __future__ import annotations
 

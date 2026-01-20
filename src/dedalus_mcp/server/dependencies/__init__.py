@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Public dependency helpers for Dedalus MCP."""
+"""Dependency injection helpers."""
 
 from __future__ import annotations
 

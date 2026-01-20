@@ -1,18 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Internal connector machinery for Dedalus MCP.
-
-This module provides the internal framework for connector definitions and
-environment-based credential loading. User-facing types (Connection, SecretKeys,
-etc.) live in `auth/connection.py`.
-
-Key components:
-
-* :class:`ConnectorDefinition` – Declarative schema for connection types
-* :func:`define` – Factory for creating connection type handles
-* :class:`ConnectorHandle` – Runtime representation of an active connection
-"""
+"""Internal connector machinery for connection definitions and credential loading."""
 
 from __future__ import annotations
 

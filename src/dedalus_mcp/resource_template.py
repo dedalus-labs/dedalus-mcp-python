@@ -1,13 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Resource template registration utilities for Dedalus MCP.
-
-Implements resource templates as specified in the Model Context Protocol:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/server/resources
-  (resource templates with URI template patterns)
-"""
+"""Resource template registration with URI patterns."""
 
 from __future__ import annotations
 

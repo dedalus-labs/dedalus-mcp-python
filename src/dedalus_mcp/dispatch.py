@@ -1,44 +1,11 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Dispatch backend for privileged operations.
+"""Dispatch backend for executing authenticated HTTP requests through connection handles.
 
-This module provides the interface for tools to execute authenticated HTTP
-requests through connection handles. Two backend implementations are provided:
-
-- `DirectDispatchBackend`: OSS mode - calls downstream APIs directly using
-  credentials loaded from environment variables or local configuration.
-
-- `EnclaveDispatchBackend`: Production mode - forwards requests to the
-  Dedalus Enclave with DPoP-bound access tokens for secure credential isolation.
-
-Security model:
-    MCP server code specifies *what to call* (method, path, body).
-    The enclave handles *credentials* and executes the request.
-    Credentials never leave the enclave - only HTTP responses are returned.
-
-The dispatch flow:
-1. Tool calls `ctx.dispatch(connection, HttpRequest(...))`
-2. Framework resolves connection name to handle
-3. Handle format validated locally
-4. Gateway validates authorization against org's connections at runtime
-5. Backend executes the HTTP request (locally or via Enclave)
-6. HttpResponse returned to tool
-
-Example:
-    >>> @server.tool()
-    >>> async def create_issue(ctx: Context, title: str) -> dict:
-    ...     response = await ctx.dispatch(
-    ...         HttpRequest(
-    ...             method=HttpMethod.POST,
-    ...             path="/repos/owner/repo/issues",
-    ...             body={"title": title, "body": "Auto-created"},
-    ...         )
-    ...     )
-    ...     return response.body
-
-References:
-    /dcs/docs/design/dispatch-interface.md (security model)
+Backends:
+- DirectDispatchBackend: Local credentials from environment
+- EnclaveDispatchBackend: Secure credential isolation via enclave
 """
 
 from __future__ import annotations

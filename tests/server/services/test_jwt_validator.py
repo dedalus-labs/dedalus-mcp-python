@@ -91,7 +91,7 @@ def create_test_token(rsa_keypair, claims: dict | None = None, headers: dict | N
         "aud": "https://mcp.example.com",
         "exp": time.time() + 900,  # 15 min
         "iat": time.time(),
-        "scope": "mcp:tools:call offline_access",
+        "scope": "tools:call offline_access",
         "client_id": "test_client",
         "jti": "test-jti-123",
     }
@@ -112,7 +112,7 @@ async def test_valid_jwt_validation(httpx_mock, rsa_keypair, mock_jwks_server):
         jwks_uri="https://as.example.com/.well-known/jwks.json",
         issuer="https://as.example.com",
         audience="https://mcp.example.com",
-        required_scopes=["mcp:tools:call"],
+        required_scopes=["tools:call"],
     )
 
     validator = JWTValidator(config)
@@ -121,7 +121,7 @@ async def test_valid_jwt_validation(httpx_mock, rsa_keypair, mock_jwks_server):
     context = await validator.validate(token)
 
     assert context.subject == "user_123"
-    assert "mcp:tools:call" in context.scopes
+    assert "tools:call" in context.scopes
     assert context.claims["client_id"] == "test_client"
     assert context.claims["iss"] == "https://as.example.com"
 
@@ -221,14 +221,14 @@ async def test_missing_required_scopes_rejected(httpx_mock, rsa_keypair, mock_jw
         jwks_uri="https://as.example.com/.well-known/jwks.json",
         issuer="https://as.example.com",
         audience="https://mcp.example.com",
-        required_scopes=["mcp:tools:call", "mcp:admin:write"],
+        required_scopes=["tools:call", "admin:write"],
     )
 
     validator = JWTValidator(config)
 
     token = create_test_token(
         rsa_keypair,
-        claims={"scope": "mcp:tools:call"},  # Missing mcp:admin:write
+        claims={"scope": "tools:call"},  # Missing admin:write
     )
 
     with pytest.raises(AuthorizationError, match="insufficient scopes"):

@@ -1,17 +1,9 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Request context helpers for Dedalus MCP handlers.
+"""Request context helpers for MCP handlers.
 
-The utilities in this module provide a stable surface over the reference
-SDK's ``request_ctx`` primitive so application code can access
-capabilities such as logging and progress without importing SDK internals.
-
-Implements context integration for MCP capabilities:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging
-  (server-to-client logging notifications)
-- https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress
+Provides access to logging, progress, and session info within tool/resource handlers.
   (progress notifications during long-running operations)
 """
 

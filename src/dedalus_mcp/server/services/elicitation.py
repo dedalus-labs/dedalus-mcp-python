@@ -1,15 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Elicitation capability adapter.
-
-Implements the elicitation capability as specified in the Model Context Protocol:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation
-  (elicitation capability, create request for user input prompts)
-
-Provides adapter interface for servers to request user input from clients.
-"""
+"""Elicitation capability service for requesting user input."""
 
 from __future__ import annotations
 

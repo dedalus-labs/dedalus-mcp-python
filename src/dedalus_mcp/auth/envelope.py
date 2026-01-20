@@ -1,15 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Wire format types for credential envelopes.
-
-These TypedDicts define the shape of encrypted credentials sent to the enclave.
-
-Consumed by ``SecretValues.values_for_encryption()`` and the enclave's credential
-decryption logic.
-
-Internal wire format; most users won't import these directly.
-"""
+"""Wire format types for credential envelopes."""
 
 from __future__ import annotations
 

@@ -115,7 +115,7 @@ def auth_context() -> AuthorizationContext:
     """Create auth context with authorized handles."""
     return AuthorizationContext(
         subject="user_123",
-        scopes=["mcp:tools:call"],
+        scopes=["tools:call"],
         claims={
             "ddls:connectors": ["ddls:conn_org", "ddls:conn_user"],
             "ddls:fingerprints": {"ddls:conn_org": "fp_org_123", "ddls:conn_user": "fp_user_456"},
@@ -303,7 +303,7 @@ async def test_resolve_user_credential_missing_encrypted_cred(
     # Auth context without encrypted credential
     auth_context = AuthorizationContext(
         subject="user_123",
-        scopes=["mcp:tools:call"],
+        scopes=["tools:call"],
         claims={
             "ddls:connectors": ["ddls:conn_user"]
             # Missing ddls:credential
@@ -338,7 +338,7 @@ async def test_unauthorized_handle_rejected(
     # Auth context WITHOUT unauthorized handle
     auth_context = AuthorizationContext(
         subject="user_123",
-        scopes=["mcp:tools:call"],
+        scopes=["tools:call"],
         claims={
             "ddls:connectors": ["ddls:conn_org"]  # Different handle
         },
@@ -384,7 +384,7 @@ async def test_validate_handle_in_connections_claim(
 
     # Auth context with handle in connections
     auth_context = AuthorizationContext(
-        subject="user_123", scopes=["mcp:tools:call"], claims={"ddls:connectors": ["ddls:conn_test", "ddls:conn_other"]}
+        subject="user_123", scopes=["tools:call"], claims={"ddls:connectors": ["ddls:conn_test", "ddls:conn_other"]}
     )
 
     request_context = {"dedalus_mcp.auth": auth_context}
@@ -414,7 +414,7 @@ async def test_validate_fingerprint_from_token_claim(
     # Auth context with matching fingerprint
     auth_context = AuthorizationContext(
         subject="user_123",
-        scopes=["mcp:tools:call"],
+        scopes=["tools:call"],
         claims={"ddls:connectors": ["ddls:conn_fp"], "ddls:fingerprints": {"ddls:conn_fp": "fp_correct_123"}},
     )
 
@@ -444,7 +444,7 @@ async def test_per_handle_scopes_validation(
     # Future: ddls:connection_scopes claim
     auth_context = AuthorizationContext(
         subject="user_123",
-        scopes=["mcp:tools:call"],
+        scopes=["tools:call"],
         claims={
             "ddls:connectors": ["ddls:conn_scoped"]
             # Future: "ddls:connection_scopes": {
@@ -473,7 +473,7 @@ async def test_vault_disabled(mock_driver: MockDriver) -> None:
     resolver = ConnectionResolver(config, vault=None)
 
     auth_context = AuthorizationContext(
-        subject="user_123", scopes=["mcp:tools:call"], claims={"ddls:connectors": ["ddls:conn_test"]}
+        subject="user_123", scopes=["tools:call"], claims={"ddls:connectors": ["ddls:conn_test"]}
     )
 
     request_context = {"dedalus_mcp.auth": auth_context}
@@ -550,7 +550,7 @@ async def test_register_multiple_drivers(resolver_config: ResolverConfig, mock_v
     )
 
     auth_context = AuthorizationContext(
-        subject="user_123", scopes=["mcp:tools:call"], claims={"ddls:connectors": ["ddls:conn_postgres"]}
+        subject="user_123", scopes=["tools:call"], claims={"ddls:connectors": ["ddls:conn_postgres"]}
     )
 
     request_context = {"dedalus_mcp.auth": auth_context}
@@ -578,7 +578,7 @@ async def test_driver_initialization_with_registry(
     )
 
     auth_context = AuthorizationContext(
-        subject="user_123", scopes=["mcp:tools:call"], claims={"ddls:connectors": ["ddls:conn_supabase"]}
+        subject="user_123", scopes=["tools:call"], claims={"ddls:connectors": ["ddls:conn_supabase"]}
     )
 
     request_context = {"dedalus_mcp.auth": auth_context}
@@ -676,7 +676,7 @@ async def test_end_to_end_org_credential_flow(
     # Auth context with all claims
     auth_context = AuthorizationContext(
         subject="org_user_123",
-        scopes=["mcp:tools:call", "mcp:connections:read"],
+        scopes=["tools:call", "connections:read"],
         claims={
             "ddls:connectors": ["ddls:conn_e2e_org"],
             "ddls:fingerprints": {"ddls:conn_e2e_org": "fp_e2e_123"},
@@ -717,7 +717,7 @@ async def test_end_to_end_user_credential_flow(
     # Auth context with encrypted credential
     auth_context = AuthorizationContext(
         subject="end_user_789",
-        scopes=["mcp:tools:call"],
+        scopes=["tools:call"],
         claims={
             "ddls:connectors": ["ddls:conn_e2e_user"],
             "ddls:fingerprints": {"ddls:conn_e2e_user": "fp_user_e2e"},

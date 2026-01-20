@@ -1,17 +1,10 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""High-level MCP client wrapper built on the reference SDK.
+"""MCP client implementation.
 
-Implements MCP client behavior per the specification.
-
-`MCPClient` manages the initialization handshake, capability negotiation,
-optional client-side features (sampling, elicitation, roots, logging), and
-exposes convenience helpers for protocol operations.  It stays thin by
-leveraging the official `ClientSession` class while providing ergonomic hooks
-and safety checks for host applications.
-
-The client supports both script-style usage (with explicit `close()`) and
+`MCPClient` handles initialization, capability negotiation, and protocol
+operations. Supports script-style usage (explicit `close()`) and
 context manager patterns:
 
     # Script-style (recommended for simple scripts)

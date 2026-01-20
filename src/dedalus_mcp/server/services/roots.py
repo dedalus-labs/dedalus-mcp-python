@@ -1,20 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Roots capability support for MCP servers.
-
-Implements the roots capability as specified in the Model Context Protocol:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/client/roots
-  (client-advertised filesystem roots with list-changed notifications)
-- https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/pagination
-  (cursor-based pagination for roots/list)
-
-Implements cache-aside pattern where each session maintains immutable snapshots
-of client-advertised roots alongside RootGuard reference monitor for filesystem
-access validation. Supports debounced refresh on list-changed notifications with
-version-stable pagination cursors across snapshot updates.
-"""
+"""Roots capability service with filesystem access validation."""
 
 from __future__ import annotations
 

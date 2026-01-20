@@ -232,7 +232,7 @@ class TestForbiddenErrors:
 
         respx.post("https://mcp.example.com/mcp").mock(
             return_value=httpx.Response(
-                403, headers={"WWW-Authenticate": 'Bearer error="insufficient_scope", scope="mcp:admin"'}
+                403, headers={"WWW-Authenticate": 'Bearer error="insufficient_scope", scope="admin"'}
             )
         )
 

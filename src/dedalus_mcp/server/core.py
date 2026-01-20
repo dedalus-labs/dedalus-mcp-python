@@ -295,8 +295,10 @@ class MCPServer(Server[Any, Any]):
             auth_config = authorization
             auto_configure_jwt = False
         elif connections:
-            # Connections require auth to resolve name → handle from JWT
-            auth_config = AuthorizationConfig(enabled=True)
+            # Connections require auth to resolve name → handle from JWT.
+            # Pass authorization_server to AuthorizationConfig so it appears in
+            # the /.well-known/oauth-protected-resource metadata (RFC 9728).
+            auth_config = AuthorizationConfig(enabled=True, authorization_servers=[authorization_server])
             auto_configure_jwt = True
         else:
             auth_config = AuthorizationConfig()
@@ -305,7 +307,13 @@ class MCPServer(Server[Any, Any]):
         self._authorization_manager: AuthorizationManager | None = None
         if auth_config.enabled:
             self._authorization_manager = AuthorizationManager(auth_config)
-            # Auto-configure JWT validator when connections trigger auto-enable
+            # Auto-configure JWT validator when connections trigger auto-enable.
+            #
+            # TODO(RFC 9728): Support multi-issuer JWT validation. Per RFC 9728,
+            # authorization_servers is a list because a resource MAY trust tokens
+            # from multiple AS's. Currently we only validate against one issuer.
+            # For enterprise multi-IdP scenarios, we'd need to try validation
+            # against each configured AS until one succeeds.
             if auto_configure_jwt:
                 from .services.jwt_validator import JWTValidator, JWTValidatorConfig
 

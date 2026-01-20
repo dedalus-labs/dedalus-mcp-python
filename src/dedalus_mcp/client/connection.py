@@ -1,17 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""High-level client entrypoint.
-
-`open_connection` wraps transport selection and :class:`~dedalus_mcp.client.MCPClient`
-so applications can talk to an MCP server with a single ``async with`` block.
-
-The helper deliberately keeps the surface tiny: callers choose a transport via
-``transport=`` (defaulting to streamable HTTP) and receive an
-:class:`~dedalus_mcp.client.MCPClient` instance that already negotiated
-capabilities. Power users can still reach the underlying transport by using
-the lower-level helpers directly.
-"""
+"""High-level client connection helper."""
 
 from __future__ import annotations
 

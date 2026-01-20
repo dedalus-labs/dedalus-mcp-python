@@ -18,7 +18,7 @@ Quick start::
     $ export SUPABASE_SECRET_KEY="<service_role_key>"
     $ export AS_ISSUER="http://localhost:4444"
     $ export MCP_RESOURCE_URL="http://127.0.0.1:8000"
-    $ export MCP_REQUIRED_SCOPES="mcp:tools:call"
+    $ export MCP_REQUIRED_SCOPES="tools:call"
 
     # 3. Start the protected MCP Resource Server
     $ cd ~/Desktop/dedalus-labs/codebase/dedalus-mcp
@@ -57,7 +57,7 @@ load_dotenv()
 
 AS_ISSUER = os.getenv("AS_ISSUER", "http://localhost:4444").rstrip("/")
 MCP_RESOURCE_URL = os.getenv("MCP_RESOURCE_URL", "http://127.0.0.1:8000").rstrip("/")
-REQUIRED_SCOPES = [scope for scope in os.getenv("MCP_REQUIRED_SCOPES", "mcp:tools:call").split() if scope]
+REQUIRED_SCOPES = [scope for scope in os.getenv("MCP_REQUIRED_SCOPES", "tools:call").split() if scope]
 JWKS_URI = os.getenv("AS_JWKS_URI", f"{AS_ISSUER}/.well-known/jwks.json")
 
 if not REQUIRED_SCOPES:

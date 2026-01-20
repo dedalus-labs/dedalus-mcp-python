@@ -64,10 +64,10 @@ class TestClientCredentialsAuthConstruction:
         )
 
         auth = ClientCredentialsAuth(
-            server_metadata=server_metadata, client_id="m2m", client_secret="secret123", scope="openid mcp:read"
+            server_metadata=server_metadata, client_id="m2m", client_secret="secret123", scope="openid read"
         )
 
-        assert auth.scope == "openid mcp:read"
+        assert auth.scope == "openid read"
 
 
 # =============================================================================
@@ -185,7 +185,7 @@ class TestClientCredentialsAuthTokenAcquisition:
         )
 
         auth = ClientCredentialsAuth(
-            server_metadata=server_metadata, client_id="m2m", client_secret="secret123", scope="openid mcp:read"
+            server_metadata=server_metadata, client_id="m2m", client_secret="secret123", scope="openid read"
         )
 
         await auth.get_token()

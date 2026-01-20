@@ -1,19 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Tool capability service.
-
-Implements the tools capability as specified in the Model Context Protocol:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/server/tools
-  (tools capability declaration, list and call operations)
-- https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/pagination
-  (cursor-based pagination for tools/list)
-
-Supports ambient tool registration, argument schema inference from type hints,
-output schema inference with MCP content type blocklisting, and list-changed
-notifications per the specification requirements.
-"""
+"""Tools capability service."""
 
 from __future__ import annotations
 
@@ -113,6 +101,7 @@ class ToolsService:
                     continue
                 if not await self._tool_enabled_this_request(spec):
                     continue
+                # TODO: optionally filter by granted scopes here for UX (not spec-required)
                 filtered.append(tool_def)
 
             page, next_cursor = paginate_sequence(filtered, cursor, limit=self._pagination_limit)
@@ -132,6 +121,11 @@ class ToolsService:
                     content=[types.TextContent(type="text", text=f'Tool "{name}" is temporarily unavailable')],
                     isError=True,
                 )
+
+            # Per-tool scope enforcement (OAuth 2.1 compliance)
+            scope_error = self._check_tool_scopes(spec)
+            if scope_error is not None:
+                return scope_error
 
             call_kwargs = await self._build_call_kwargs(spec, arguments)
 
@@ -166,20 +160,18 @@ class ToolsService:
             if not self._is_tool_enabled(spec):
                 continue
 
-            annotations_payload: dict[str, Any] = dict(spec.annotations or {})
+            annotations_payload: dict[str, Any] = (
+                spec.annotations.model_dump(exclude_none=True) if spec.annotations else {}
+            )
             if spec.tags:
                 existing = annotations_payload.get("tags", [])
                 combined = {*(existing if isinstance(existing, (list, tuple, set)) else [existing]), *spec.tags}
                 annotations_payload["tags"] = sorted(str(tag) for tag in combined if tag not in (None, ""))
             if spec.title is not None and "title" not in annotations_payload:
                 annotations_payload = {**annotations_payload, "title": spec.title}
-            annotations = None
-            if annotations_payload:
-                annotations = types.ToolAnnotations.model_validate(annotations_payload)
+            annotations = types.ToolAnnotations.model_validate(annotations_payload) if annotations_payload else None
 
-            icons = None
-            if spec.icons is not None:
-                icons = [types.Icon.model_validate(icon) for icon in spec.icons]
+            icons = spec.icons
 
             tool_def = types.Tool(
                 name=spec.name,
@@ -211,6 +203,52 @@ class ToolsService:
             result = await resolve_dependency(enabled)
             return bool(result)
         return bool(await maybe_await_with_args(enabled, self._server))
+
+    def _check_tool_scopes(self, spec: ToolSpec) -> types.CallToolResult | None:
+        """Check if the current request has sufficient scopes to invoke the tool.
+
+        Returns:
+            CallToolResult with error if scopes are insufficient, None if allowed.
+        """
+        if not spec.required_scopes:
+            return None
+
+        try:
+            ctx = get_context()
+        except LookupError:
+            # No request context (e.g., direct call in tests)
+            return None
+
+        auth_context = ctx.auth_context
+        if auth_context is None:
+            # No authorization configured or enforced
+            return None
+
+        granted = set(getattr(auth_context, "scopes", []) or [])
+        missing = spec.required_scopes - granted
+
+        if missing:
+            self._logger.warning(
+                "tool scope enforcement",
+                extra={
+                    "event": "tool.scope.reject",
+                    "tool": spec.name,
+                    "missing": sorted(missing),
+                    "granted": sorted(granted),
+                },
+            )
+            return types.CallToolResult(
+                content=[
+                    types.TextContent(
+                        type="text",
+                        text=f'Tool "{spec.name}" requires scopes: {sorted(spec.required_scopes)}. '
+                        f"Missing: {sorted(missing)}",
+                    )
+                ],
+                isError=True,
+            )
+
+        return None
 
     async def _build_call_kwargs(self, spec: ToolSpec, arguments: dict[str, Any]) -> dict[str, Any]:
         kwargs = dict(arguments)

@@ -1,15 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""HTTP transport helpers for :mod:`dedalus_mcp.client`.
-
-This module provides variants of the streamable HTTP transport described in the
-Model Context Protocol specification. ``lambda_http_client`` mirrors
-the reference SDK implementation but deliberately avoids registering a
-server-push GET stream so that it works with stateless environments such as AWS
-Lambda. The behavior aligns with the "POST-only" pattern noted in the spec's
-server guidance.
-"""
+"""HTTP transport helpers for MCP clients."""
 
 from __future__ import annotations
 

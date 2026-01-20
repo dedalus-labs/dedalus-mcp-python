@@ -1,22 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Connection handle authorization gate.
-
-Authorization is handled by the enclave gateway at runtime. The gateway calls
-Admin API to validate that the requested connection handle belongs to the
-org in the JWT's `ddls:org` claim.
-
-The SDK performs only format validation - it does not authorize handles locally.
-This ensures the gateway is the single source of truth for authorization.
-
-Key responsibilities:
-- Validate connection handle format
-- Provide clear error types for invalid handles
-
-References:
-    /dcs/apps/enclave/IMPLEMENTATION_SPEC.md (connection handle format)
-"""
+"""Connection handle format validation."""
 
 from __future__ import annotations
 

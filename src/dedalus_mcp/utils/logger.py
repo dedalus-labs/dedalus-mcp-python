@@ -1,14 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Minimal logging utilities for Dedalus MCP.
-
-The default setup uses only Python's standard library to stay lightweight and
-dependency-free. You can enable structured JSON output and plug in a faster
-serializer like orjson without increasing the base footprint
-
-See examples/advanced/custom_logging for example usage.
-"""
+"""Logging utilities with optional JSON output."""
 
 from __future__ import annotations
 

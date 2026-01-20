@@ -1,11 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""User-facing connection and credential types for MCP servers.
-
-This module contains the public API for declaring connections and binding secrets.
-Internal connector machinery lives in `server/connectors.py`.
-"""
+"""Connection and credential types for MCP servers."""
 
 from __future__ import annotations
 

@@ -31,13 +31,13 @@ class TestResourceMetadata:
         meta = ResourceMetadata(
             resource="https://mcp.example.com",
             authorization_servers=["https://as.example.com", "https://as2.example.com"],
-            scopes_supported=["openid", "mcp:read", "mcp:write"],
+            scopes_supported=["openid", "read", "write"],
             bearer_methods_supported=["header"],
             resource_signing_alg_values_supported=["RS256", "ES256"],
         )
         assert meta.resource == "https://mcp.example.com"
         assert len(meta.authorization_servers) == 2
-        assert meta.scopes_supported == ["openid", "mcp:read", "mcp:write"]
+        assert meta.scopes_supported == ["openid", "read", "write"]
         assert meta.bearer_methods_supported == ["header"]
         assert meta.resource_signing_alg_values_supported == ["RS256", "ES256"]
 
@@ -207,13 +207,13 @@ class TestTokenResponse:
             token_type="Bearer",
             expires_in=3600,
             refresh_token="refresh_token_value",
-            scope="openid mcp:read",
+            scope="openid read",
         )
         assert token.access_token == "eyJhbGciOiJFUzI1NiIs..."
         assert token.token_type == "Bearer"
         assert token.expires_in == 3600
         assert token.refresh_token == "refresh_token_value"
-        assert token.scope == "openid mcp:read"
+        assert token.scope == "openid read"
 
     def test_construction_minimal(self):
         """TokenResponse can be constructed with minimal fields."""

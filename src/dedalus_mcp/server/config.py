@@ -1,18 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Server configuration dataclasses with sane defaults.
-
-All parameters are tunable. Import and customize as needed:
-
-    from dedalus_mcp.server import ServerConfig, SamplingConfig
-
-    config = ServerConfig(
-        pagination_limit=100,
-        sampling=SamplingConfig(timeout=120.0, max_concurrent=8),
-    )
-    server = MCPServer("my-server", config=config)
-"""
+"""Server configuration dataclasses."""
 
 from __future__ import annotations
 

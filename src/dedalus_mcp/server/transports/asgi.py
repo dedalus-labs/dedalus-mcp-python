@@ -1,14 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Shared ASGI transport primitives.
-
-This module provides reusable building blocks for transports that expose an
-``MCPServer`` over an ASGI-compatible surface.  Concrete subclasses supply the
-session manager implementation and route configuration while this base class
-handles lifecycle management, optional authorization wrapping, and startup of
-the underlying ASGI server runtime.
-"""
+"""ASGI transport primitives for MCP servers."""
 
 from __future__ import annotations
 

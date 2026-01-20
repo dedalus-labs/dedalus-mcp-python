@@ -1,15 +1,9 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Resource registration utilities for Dedalus MCP.
+"""Resource registration utilities.
 
-Implements the resources capability as specified in the Model Context Protocol:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/server/resources
-  (resources capability, list and read operations)
-
-Usage mirrors the :mod:`dedalus_mcp.tool` ambient registration pattern. Decorated
-functions return text (str) or binary (bytes) content for resource URIs.
+Decorated functions return text (str) or binary (bytes) content for resource URIs.
 """
 
 from __future__ import annotations

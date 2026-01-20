@@ -1,19 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Connection resolver with credential custody split.
-
-Resolves connection handles to clients with security split:
-- Org credentials: vault -> driver -> client (in-process)
-- User credentials: backend -> execution -> result (forwarded)
-
-Defense-in-depth:
-- Token validation before resolution
-- Handle authorization checks
-- Fingerprint validation
-- Secret zeroization
-- Audit logging
-"""
+"""Connection handle resolution with credential custody split."""
 
 from __future__ import annotations
 

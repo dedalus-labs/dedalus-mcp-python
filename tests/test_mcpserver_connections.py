@@ -80,3 +80,74 @@ class TestMCPServerConnectionValidation:
             MCPServer(name="dupe-names", connections=[conn1, conn2])
 
         assert "duplicate" in str(exc.value).lower()
+
+
+# =============================================================================
+# MCPServer Authorization Server Tests (RFC 9728)
+# =============================================================================
+
+
+class TestMCPServerAuthorizationServer:
+    """Tests for authorization_server parameter propagation to OAuth metadata.
+
+    Per RFC 9728 (OAuth Protected Resource Metadata), the authorization_servers
+    field tells clients which AS(s) can issue tokens for this resource. When
+    MCPServer auto-enables authorization (due to connections), it must pass
+    the authorization_server param to AuthorizationConfig so it appears in
+    the /.well-known/oauth-protected-resource metadata.
+    """
+
+    def test_connections_propagate_authorization_server_to_metadata(self):
+        """authorization_server should appear in PRM when connections auto-enable auth."""
+        from dedalus_mcp import Connection, MCPServer, SecretKeys
+
+        github = Connection("github", secrets=SecretKeys(token="GITHUB_TOKEN"))
+        server = MCPServer(
+            name="github-tools",
+            connections=[github],
+            authorization_server="http://localhost:8443",
+        )
+
+        # Server should have auto-enabled authorization
+        assert server._authorization_manager is not None
+        # The AS URL should be in the config
+        assert server._authorization_manager.config.authorization_servers == ["http://localhost:8443"]
+
+    def test_default_authorization_server_used_when_not_specified(self):
+        """Default AS (as.dedaluslabs.ai) should be used when not specified."""
+        from dedalus_mcp import Connection, MCPServer, SecretKeys
+
+        github = Connection("github", secrets=SecretKeys(token="GITHUB_TOKEN"))
+        server = MCPServer(name="github-tools", connections=[github])
+
+        assert server._authorization_manager is not None
+        assert server._authorization_manager.config.authorization_servers == ["https://as.dedaluslabs.ai"]
+
+    def test_explicit_authorization_config_overrides_authorization_server(self):
+        """Explicit authorization= param should override authorization_server."""
+        from dedalus_mcp import Connection, MCPServer, SecretKeys
+        from dedalus_mcp.server.authorization import AuthorizationConfig
+
+        github = Connection("github", secrets=SecretKeys(token="GITHUB_TOKEN"))
+        explicit_config = AuthorizationConfig(
+            enabled=True,
+            authorization_servers=["https://custom-as.example.com"],
+        )
+        server = MCPServer(
+            name="github-tools",
+            connections=[github],
+            authorization=explicit_config,
+            authorization_server="http://localhost:8443",  # Should be ignored
+        )
+
+        # Explicit config should take precedence
+        assert server._authorization_manager.config.authorization_servers == ["https://custom-as.example.com"]
+
+    def test_no_connections_no_auto_auth(self):
+        """Without connections, authorization should not be auto-enabled."""
+        from dedalus_mcp import MCPServer
+
+        server = MCPServer(name="standalone", authorization_server="http://localhost:8443")
+
+        # No auto-enabled auth without connections
+        assert server._authorization_manager is None

@@ -615,6 +615,22 @@ class ProtocolProfile:
     def for_version(cls, version: ProtocolVersion) -> ProtocolProfile:
         return cls(capabilities_for(version))
 
+    @classmethod
+    def parse(cls, version_string: str) -> ProtocolProfile | None:
+        """Create a profile from a version string.
+
+        Returns None if the string is malformed or the version is unsupported.
+        """
+        try:
+            version = ProtocolVersion.parse(version_string)
+        except (ValueError, TypeError):
+            return None
+
+        if version not in SUPPORTED_VERSIONS:
+            return None
+
+        return cls.for_version(version)
+
 
 # --- Drift Detection (for tests) ---------------------------------------------------
 

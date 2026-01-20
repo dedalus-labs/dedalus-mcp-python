@@ -1,19 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Dedalus MCP framework primitives.
-
-This module exports the core API surface for building MCP servers and clients.
-Advanced features like dependency injection, authorization configuration, and
-context management are available through their respective submodules:
-
-- ``dedalus_mcp.context`` - Context access and management
-- ``dedalus_mcp.server.dependencies`` - Dependency injection utilities
-- ``dedalus_mcp.server.authorization`` - Authorization configuration
-- ``dedalus_mcp.server`` - Server configuration flags
-
-See the module docstrings for detailed usage patterns.
-"""
+"""Dedalus MCP framework for building MCP servers and clients."""
 
 from __future__ import annotations
 

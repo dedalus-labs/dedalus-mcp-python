@@ -26,7 +26,7 @@ server = MCPServer(
     ),
     authorization=AuthorizationConfig(
         enabled=True,
-        required_scopes=["mcp:read"],
+        required_scopes=["read"],
         authorization_servers=["https://as.dedaluslabs.ai"],
         fail_open=False,
     ),
@@ -102,7 +102,7 @@ Static mode raises an error if you attempt to mutate capabilities after `serve()
 - `normalize_resource_payload` converts dataclasses/pydantic models to JSON text and wraps bytes as
   base64 blobs.
 - Pagination default is 50 items; override via `_PAGINATION_LIMIT` or custom service.
-- Templates: `@resource_template(uri_template=..., argument_schema=...)` adds parameterised resources.
+- Templates: `@resource_template(uri_template=..., argument_schema=...)` adds parameterized resources.
 
 ### Prompts & Completions
 

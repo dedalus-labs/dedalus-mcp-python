@@ -54,7 +54,7 @@ class TestContextDispatch:
         """Auth context with connections MAP (required for dispatch)."""
         return AuthorizationContext(
             subject="user123",
-            scopes=["mcp:tools:call"],
+            scopes=["tools:call"],
             claims={
                 "ddls:org": "org_123",
                 "ddls:connections": {
@@ -242,7 +242,7 @@ class TestContextDispatch:
                 "supabase": "ddls:conn:019b2464-d1c1-7751-a409-ed273f51da83",
             },
         }
-        auth_context = AuthorizationContext(subject="user_123", scopes=["mcp:tools:call"], claims=jwt_claims)
+        auth_context = AuthorizationContext(subject="user_123", scopes=["tools:call"], claims=jwt_claims)
 
         mock_request_ctx = MockRequestContext(lifespan_context={"dedalus_mcp.runtime": {"dispatch_backend": backend}})
         mock_request = MagicMock()

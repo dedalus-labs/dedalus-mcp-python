@@ -86,10 +86,10 @@ class MockDPoPProvider(AuthorizationProvider):
 
     async def validate(self, token: str) -> AuthorizationContext:
         # Mock validation - just return context with cnf.jkt claim
-        claims = {"sub": "user123", "scope": "mcp:tools:call"}
+        claims = {"sub": "user123", "scope": "tools:call"}
         if self._expected_thumbprint:
             claims["cnf"] = {"jkt": self._expected_thumbprint}
-        return AuthorizationContext(subject="user123", scopes=["mcp:tools:call"], claims=claims)
+        return AuthorizationContext(subject="user123", scopes=["tools:call"], claims=claims)
 
 
 @pytest.fixture

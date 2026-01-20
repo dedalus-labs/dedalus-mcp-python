@@ -1,15 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""JWT validation service for OAuth 2.1 resource servers.
-
-Implements RFC 9068 JWT Profile for OAuth 2.0 Access Tokens with:
-- JWKS fetching and caching (RFC 7517)
-- Signature verification (RS256/ES256)
-- Standard claims validation (exp, iss, aud, nbf)
-- Scope validation
-- Clock skew tolerance
-"""
+"""JWT validation service implementing RFC 9068."""
 
 from __future__ import annotations
 
@@ -133,7 +125,7 @@ class JWTValidator(AuthorizationProvider):
         ...     jwks_uri="https://as.dedaluslabs.ai/.well-known/jwks.json",
         ...     issuer="https://as.dedaluslabs.ai",
         ...     audience="https://mcp.example.com",
-        ...     required_scopes=["mcp:tools:call"],
+        ...     required_scopes=["tools:call"],
         ... )
         >>> validator = JWTValidator(config)
         >>> context = await validator.validate("eyJhbGci...")

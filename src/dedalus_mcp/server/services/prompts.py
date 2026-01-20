@@ -1,18 +1,7 @@
 # Copyright (c) 2026 Dedalus Labs, Inc. and its contributors
 # SPDX-License-Identifier: MIT
 
-"""Prompt capability service.
-
-Implements the prompts capability as specified in the Model Context Protocol:
-
-- https://modelcontextprotocol.io/specification/2025-06-18/server/prompts
-  (prompts capability, list and get operations, list-changed notifications)
-- https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/pagination
-  (cursor-based pagination for prompts/list)
-
-Handles prompt registration, argument validation, and result coercion from
-various return types (GetPromptResult, tuples, dicts) to MCP message format.
-"""
+"""Prompts capability service."""
 
 from __future__ import annotations
 
