@@ -11,14 +11,14 @@ works with the production stack once the missing UI pieces land.
 Usage::
 
     # 1. Make sure the Authorization Server is running
-    $ cd ~/Desktop/dedalus-labs/codebase/mcp-knox/openmcp-authorization-server
+    $ cd ~/Desktop/dedalus-labs/codebase/mcp-knox/dedalus-mcp-authorization-server
     $ go run ./cmd/serve
 
     # 2. Ensure the client_id + redirect_uri below exist in the AS store
     #    (see the comment in server.py for a quick helper.)
 
     # 3. Start the resource server (separate shell)
-    $ cd ~/Desktop/dedalus-labs/codebase/openmcp
+    $ cd ~/Desktop/dedalus-labs/codebase/dedalus-mcp
     $ uv run python examples/auth/02_as/server.py
 
     # 4. Run the client; it will fetch a token and call supabase_select_live

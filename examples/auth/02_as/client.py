@@ -11,11 +11,11 @@ works with the production stack once the missing UI pieces land.
 Usage::
 
     # 1. Start the Go Authorization Server (dedalus-browser is seeded)
-    $ cd ~/Desktop/dedalus-labs/codebase/mcp-knox/openmcp-authorization-server
+    $ cd ~/Desktop/dedalus-labs/codebase/mcp-knox/dedalus-mcp-authorization-server
     $ go run ./cmd/serve
 
     # 2. Start the protected resource server (new shell)
-    $ cd ~/Desktop/dedalus-labs/codebase/openmcp
+    $ cd ~/Desktop/dedalus-labs/codebase/dedalus-mcp
     $ uv run python examples/auth/02_as/server.py
 
     # 3. Run the PKCE client locally; it hosts http://127.0.0.1:8400/callback,

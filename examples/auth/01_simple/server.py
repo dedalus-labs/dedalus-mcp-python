@@ -7,7 +7,7 @@ Quick start::
 
     $ export SUPABASE_URL="https://<project>.supabase.co"
     $ export SUPABASE_SECRET_KEY="<service_role_key>"
-    $ cd ~/Desktop/dedalus-labs/codebase/openmcp
+    $ cd ~/Desktop/dedalus-labs/codebase/dedalus-mcp
     $ uv run python examples/auth/01_simple/server.py
 """
 

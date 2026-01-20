@@ -10,7 +10,7 @@ access tokens issued by the Go Authorization Server that lives in the
 Quick start::
 
     # 1. Launch the authorization server (client "dedalus-browser" is seeded)
-    $ cd ~/Desktop/dedalus-labs/codebase/mcp-knox/openmcp-authorization-server
+    $ cd ~/Desktop/dedalus-labs/codebase/mcp-knox/dedalus-mcp-authorization-server
     $ go run ./cmd/serve
 
     # 2. Export Supabase + resource server settings
@@ -21,7 +21,7 @@ Quick start::
     $ export MCP_REQUIRED_SCOPES="mcp:tools:call"
 
     # 3. Start the protected MCP Resource Server
-    $ cd ~/Desktop/dedalus-labs/codebase/openmcp
+    $ cd ~/Desktop/dedalus-labs/codebase/dedalus-mcp
     $ uv run python examples/auth/02_as/server.py
 
 Client command (separate shell)::
