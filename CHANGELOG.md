@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.6.0](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.5.0...v0.6.0) (2026-01-20)
+
+
+### Features
+
+* **server:** add ServerConfig for centralized parameterization ([07ae1c5](https://github.com/dedalus-labs/dedalus-mcp-python/commit/07ae1c52b8aaa4ebe04ccdda6fed0f9362513934))
+
+
+### Bug Fixes
+
+* ergonomic papercuts ([0d22064](https://github.com/dedalus-labs/dedalus-mcp-python/commit/0d22064bdb3bc00ea520639eaf32e732c04cf464))
+
+
+### Documentation
+
+* **api:** add doctest examples to core classes and decorators ([a45fdf9](https://github.com/dedalus-labs/dedalus-mcp-python/commit/a45fdf935f6684178988067fecbc29f2d61b89a9))
+* **auth:** rewrite connectors.md for Connection/SecretKeys API ([ca6de8b](https://github.com/dedalus-labs/dedalus-mcp-python/commit/ca6de8b30a81cc1ef25370c96428469aa7130995))
+* **style:** add enum preference guideline ([1ba5f87](https://github.com/dedalus-labs/dedalus-mcp-python/commit/1ba5f8746bf5e9a75ccecf862b896f5b1e39450b))
+
 ## [0.5.0](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.4.1...v0.5.0) (2025-12-18)
 
 
