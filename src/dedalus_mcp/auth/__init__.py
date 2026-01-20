@@ -5,16 +5,9 @@
 
 from __future__ import annotations
 
-from .connection import (
-    ApiKeyCredentialEnvelope,
-    Binding,
-    Connection,
-    CredentialEnvelope,
-    OAuth2CredentialEnvelope,
-    ProviderMetadata,
-    SecretKeys,
-    SecretValues,
-)
+from .connection import Binding, Connection, SecretKeys, SecretValues
+from .envelope import ApiKeyCredentialEnvelope, CredentialEnvelope, OAuth2CredentialEnvelope, ProviderMetadata
+
 
 __all__ = [
     "ApiKeyCredentialEnvelope",

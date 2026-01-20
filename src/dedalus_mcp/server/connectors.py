@@ -16,24 +16,16 @@ Key components:
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass, field
+import os
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast
 
 from pydantic import BaseModel, create_model
 
 # Import user-facing types from auth module (canonical location)
-from ..auth.connection import (
-    ApiKeyCredentialEnvelope,
-    Binding,
-    Connection,
-    CredentialEnvelope,
-    OAuth2CredentialEnvelope,
-    ProviderMetadata,
-    SecretKeys,
-    SecretValues,
-    _UNSET,
-)
+from ..auth.connection import _UNSET, Binding, Connection, SecretKeys, SecretValues
+from ..auth.envelope import ApiKeyCredentialEnvelope, CredentialEnvelope, OAuth2CredentialEnvelope, ProviderMetadata
+
 
 if TYPE_CHECKING:
     from .drivers import Driver
@@ -139,7 +131,7 @@ class _ConnectorType:
     def __init__(self, definition: ConnectorDefinition) -> None:
         self._definition = definition
         fields = {name: (param_type, ...) for name, param_type in definition.params.items()}
-        # mypy can't understand **dict spread in create_model
+        # type checker can't understand **dict spread in create_model
         self._config_model = cast(
             type[BaseModel],
             create_model(  # type: ignore[call-overload]
@@ -155,12 +147,10 @@ class _ConnectorType:
     @property
     def config_model(self) -> type[BaseModel]:
         """Return the Pydantic model for this connector's configuration."""
-
         return self._config_model
 
     def parse_config(self, data: dict[str, Any]) -> BaseModel:
         """Parse configuration payload into the typed model."""
-
         return self._config_model(**data)
 
     def validate(self, handle: ConnectorHandle) -> None:
@@ -276,7 +266,7 @@ class ResolvedConnector:
     config: BaseModel
     auth: BaseModel
 
-    async def build_client(self, driver: "Driver") -> Any:
+    async def build_client(self, driver: Driver) -> Any:
         """Instantiate a client using the provided driver."""
         return await driver.create_client(self.config.model_dump(), self.auth.model_dump())
 
@@ -336,7 +326,7 @@ class EnvironmentCredentialLoader:
         config_model = self._connector.config_model(**config_values)
 
         secret_fields = {name: (value.cast, ...) for name, value in mapping.secrets.entries.items()}
-        # mypy can't understand **dict spread in create_model
+        # type checker can't understand **dict spread in create_model
         AuthModel = cast(
             type[BaseModel],
             create_model(  # type: ignore[call-overload]

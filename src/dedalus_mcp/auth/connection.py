@@ -10,48 +10,14 @@ Internal connector machinery lives in `server/connectors.py`.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal, TypedDict, cast
+from typing import Any, cast
 
 from pydantic import BaseModel, create_model
 
+from .envelope import ApiKeyCredentialEnvelope, ProviderMetadata
+
+
 _UNSET = object()
-
-
-# =============================================================================
-# Credential Envelope Types (wire format for enclave consumption)
-# =============================================================================
-
-
-class ProviderMetadata(TypedDict, total=False):
-    """Provider metadata for credential envelope."""
-
-    base_url: str | None
-
-
-class ApiKeyCredentialEnvelope(TypedDict):
-    """API key credential envelope for enclave decryption.
-
-    This is the format that gets encrypted and stored. The enclave parses this
-    to build the authentication header for downstream HTTP requests.
-    """
-
-    type: Literal["api_key"]
-    api_key: str
-    header_name: str
-    header_template: str
-    provider_metadata: ProviderMetadata | None
-
-
-class OAuth2CredentialEnvelope(TypedDict):
-    """OAuth2 credential envelope for enclave decryption."""
-
-    type: Literal["oauth2"]
-    access_token: str
-    token_type: str
-    provider_metadata: ProviderMetadata | None
-
-
-CredentialEnvelope = ApiKeyCredentialEnvelope | OAuth2CredentialEnvelope
 
 
 # =============================================================================
