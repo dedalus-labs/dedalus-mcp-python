@@ -9,7 +9,7 @@ communication, CI/CD pipelines, and backend services.
 
 from __future__ import annotations
 
-from typing import Generator
+from collections.abc import Generator
 
 import httpx
 
@@ -30,6 +30,18 @@ class ClientCredentialsAuth(httpx.Auth):
 
     Implements httpx.Auth for transparent token injection into HTTP requests.
     Acquires tokens using the client_credentials grant type.
+
+    Recommended: use the factory method for automatic discovery:
+
+        >>> auth = await ClientCredentialsAuth.from_resource(
+        ...     resource_url="https://mcp.example.com/mcp",
+        ...     client_id="my-service",
+        ...     client_secret=os.environ["CLIENT_SECRET"],
+        ... )
+        >>> async with await MCPClient.connect(
+        ...     "https://mcp.example.com/mcp", auth=auth
+        ... ) as client:
+        ...     tools = await client.list_tools()
     """
 
     def __init__(

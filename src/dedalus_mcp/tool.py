@@ -96,6 +96,24 @@ def tool(
 ) -> Callable[[ToolFn], ToolFn]:
     """Decorator that marks a callable as an MCP tool.
 
+    Basic usage:
+
+        >>> from dedalus_mcp import MCPServer, tool
+        >>>
+        >>> @tool(description="Add two numbers")
+        ... def add(a: int, b: int) -> int:
+        ...     return a + b
+        >>>
+        >>> server = MCPServer("calculator")
+        >>> server.collect(add)
+
+    With tags and custom name:
+
+        >>> @tool(name="math/multiply", tags=["math", "arithmetic"])
+        ... def multiply(x: float, y: float) -> float:
+        ...     '''Multiply two numbers.'''
+        ...     return x * y
+
     The decorator attaches a :class:`ToolSpec` to the function and, if a server
     is actively binding, registers it immediately.
     """

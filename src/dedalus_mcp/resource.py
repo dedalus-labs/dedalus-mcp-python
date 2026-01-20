@@ -63,8 +63,25 @@ def resource(
 ) -> Callable[[ResourceFn], ResourceFn]:
     """Register a resource-producing callable.
 
+    Text resource:
+
+        >>> from dedalus_mcp import MCPServer, resource
+        >>>
+        >>> @resource("file:///config.json", mime_type="application/json")
+        ... def config() -> str:
+        ...     return '{"debug": true}'
+        >>>
+        >>> server = MCPServer("my-server")
+        >>> server.collect(config)
+
+    Binary resource:
+
+        >>> @resource("file:///logo.png", mime_type="image/png")
+        ... def logo() -> bytes:
+        ...     return open("logo.png", "rb").read()
+
     The decorated function must return ``str`` (text) or ``bytes`` (binary)
-    content.  Registration happens immediately if inside
+    content. Registration happens immediately if inside
     :meth:`dedalus_mcp.server.MCPServer.binding`.
     """
 

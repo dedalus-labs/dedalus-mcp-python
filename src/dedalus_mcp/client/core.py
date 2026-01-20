@@ -26,27 +26,25 @@ context manager patterns:
 
 from __future__ import annotations
 
-import warnings
-import weakref
 from collections.abc import Awaitable, Callable, Iterable
 from contextlib import AsyncExitStack
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import Any, TypeVar
+import warnings
+import weakref
 
 from anyio import Lock
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 import httpx
-
 from mcp.client.session import ClientSession
 
-from .errors import MCPConnectionError, SessionExpiredError
 from .error_handling import (
     extract_http_error,
     extract_network_error,
     http_error_to_mcp_error,
     network_error_to_mcp_error,
 )
-
+from .errors import MCPConnectionError, SessionExpiredError
 from ..types.client.elicitation import ElicitRequestParams, ElicitResult
 from ..types.client.roots import ListRootsResult, Root
 from ..types.client.sampling import CreateMessageRequestParams, CreateMessageResult
@@ -62,9 +60,6 @@ from ..types.shared.primitives import RequestId
 from ..types.utilities.cancellation import CancelledNotification, CancelledNotificationParams
 from ..types.utilities.ping import PingRequest
 from ..utils.coro import maybe_await_with_args
-
-if TYPE_CHECKING:
-    pass
 
 
 SamplingHandler = Callable[
@@ -92,16 +87,33 @@ class ClientCapabilitiesConfig:
 class MCPClient:
     """Lifecycle-aware wrapper around :class:`mcp.client.session.ClientSession`.
 
-    Supports both script-style usage and context managers:
+    Script-style usage:
 
-        # Script-style
-        client = await MCPClient.connect("http://localhost:8000/mcp")
-        tools = await client.list_tools()
-        await client.close()
+        >>> client = await MCPClient.connect("http://localhost:8000/mcp")
+        >>> tools = await client.list_tools()
+        >>> await client.close()
 
-        # Context manager
-        async with await MCPClient.connect("http://localhost:8000/mcp") as client:
-            tools = await client.list_tools()
+    Context manager (recommended):
+
+        >>> async with await MCPClient.connect(
+        ...     "http://localhost:8000/mcp"
+        ... ) as client:
+        ...     tools = await client.list_tools()
+
+    With authentication:
+
+        >>> from dedalus_mcp.client.auth import ClientCredentialsAuth
+        >>>
+        >>> auth = ClientCredentialsAuth(
+        ...     client_id="my-client",
+        ...     client_secret="secret",
+        ...     token_endpoint="https://auth.example.com/token",
+        ... )
+        >>> async with await MCPClient.connect(
+        ...     "http://localhost:8000/mcp",
+        ...     auth=auth,
+        ... ) as client:
+        ...     tools = await client.list_tools()
 
     Parameters correspond to the optional client features described in
     the MCP specification. Hosts can provide handlers for sampling, elicitation,
@@ -182,7 +194,7 @@ class MCPClient:
             sse_read_timeout: SSE read timeout in seconds
             headers: Optional HTTP headers
             auth: Optional httpx.Auth handler for authorization. Use
-                `dedalus_mcp.dpop.DPoPAuth` for DPoP-bound tokens.
+                `dedalus_mcp.auth.dpop.DPoPAuth` for DPoP-bound tokens.
             _transport_override: Internal use only (for testing)
 
         Returns:

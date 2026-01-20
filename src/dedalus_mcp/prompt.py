@@ -81,6 +81,25 @@ def prompt(
 ) -> Callable[[PromptFunction], PromptFunction]:
     """Register a prompt renderer.
 
+    Basic usage:
+
+        >>> from dedalus_mcp import MCPServer, prompt
+        >>> from dedalus_mcp.types import PromptArgument
+        >>>
+        >>> @prompt(
+        ...     "code-review",
+        ...     description="Review code for issues",
+        ...     arguments=[PromptArgument(name="language", required=True)],
+        ... )
+        ... def code_review(arguments):
+        ...     lang = arguments.get("language", "python")
+        ...     return (
+        ...         f"Review the following {lang} code for bugs and style issues."
+        ...     )
+        >>>
+        >>> server = MCPServer("assistant")
+        >>> server.collect(code_review)
+
     See: https://modelcontextprotocol.io/specification/2025-06-18/server/prompts
     """
 

@@ -41,7 +41,22 @@ except ImportError:
 
 @dataclass(slots=True)
 class AuthorizationConfig:
-    """Server-side authorization configuration."""
+    """Server-side authorization configuration.
+
+    Enable token-based authorization:
+
+        >>> from dedalus_mcp import MCPServer
+        >>> from dedalus_mcp.server.auth import AuthorizationConfig
+        >>>
+        >>> server = MCPServer(
+        ...     "protected-server",
+        ...     authorization=AuthorizationConfig(
+        ...         enabled=True,
+        ...         authorization_servers=["https://as.dedaluslabs.ai"],
+        ...         required_scopes=["mcp:tools:call"],
+        ...     ),
+        ... )
+    """
 
     enabled: bool = False
     metadata_path: str = "/.well-known/oauth-protected-resource"
@@ -195,7 +210,7 @@ class AuthorizationManager:
         self, request: Request, proof: str, access_token: str, claims: dict[str, Any]
     ) -> None:
         """Validate DPoP proof against request and token binding."""
-        from dedalus_mcp.dpop import DPoPValidator, DPoPValidatorConfig, DPoPValidationError
+        from dedalus_mcp.auth.dpop import DPoPValidationError, DPoPValidator, DPoPValidatorConfig
 
         config = DPoPValidatorConfig(leeway=self.config.dpop_leeway)
         validator = DPoPValidator(config)
