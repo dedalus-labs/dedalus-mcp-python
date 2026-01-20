@@ -38,7 +38,7 @@ classifiers = [
 
 dependencies = [
     "pydantic>=2.12.0",
-    "mcp>=1.24.0",
+    "mcp>=1.25.0",
     "pyjwt[crypto]>=2.10.1",
     "typing_extensions>=4.0.0",
 ]
@@ -75,7 +75,7 @@ dedalus_mcp = "dedalus_mcp.cli:main"
 
 [dependency-groups]
 # CLI tooling (excluded from production builds)
-cli = ["typer>=0.19.2", "griffe>=1.14.0"]
+cli = ["typer>=0.21.1", "griffe>=1.14.0"]
 
 # Test suite dependencies
 test = [
@@ -85,37 +85,30 @@ test = [
     "pytest-cov>=7.0.0",
     "pytest-xdist>=3.8.0",
     "pytest-benchmark>=5.1.0",
-    "jsonschema>=4.23.0",
+    "jsonschema>=4.26.0",
     "httpx>=0.28.1",
     "pytest-httpx>=0.35.0",
     "respx>=0.22.0",
-    "hypothesis>=6.140.2",
-    "faker>=37.8.0",
+    "hypothesis>=6.150.2",
+    "faker>=40.1.2",
     "fakeredis>=2.32.0",
-    "anyio>=4.11.0",
+    "anyio>=4.12.1",
     "trio>=0.32.0",
     "inline-snapshot>=0.29.2",
     "exceptiongroup>=1.0.0",
 ]
 
 # Linting and static analysis tools
-#
-# NOTE: We use mypy>=1.18.2 for now but will migrate to `ty` once it reaches GA/stable.
-#       ty is significantly faster (5-10x) but still in alpha. Migration plan:
-#       - Keep mypy as fallback until ty is production-ready
-#       - ty config already in place (tool.ty.*)
-#       - Switch when: ty hits 1.0.0 or enters beta with backwards compatibility
 lint = [
-    "ruff>=0.13.3",
-    "pre-commit>=4.3.0",
-    "mypy>=1.18.2",      # Latest mypy - will migrate to ty when stable
-    "ty>=0.0.1a21",      # Alpha - evaluating for future migration
+    "ruff>=0.14.13",
+    "prek>=0.2.0",    # Rust-native pre-commit replacement (faster)
+    "ty>=0.0.12",     # Rust-native type checker
     "vulture>=2.14",
     "deptry>=0.21.0",
 ]
 
 # Debugging tools
-debug = ["pdbpp>=0.10.3", "icecream>=2.1.8"]
+debug = ["pdbpp>=0.12.0", "icecream>=2.1.9"]
 
 # Developer convenience bundle (includes all dev groups)
 dev = [
@@ -129,12 +122,12 @@ dev = [
 docs = [
     "mkdocs>=1.6.0",
     "mkdocs-material>=9.5.0",
-    "mkdocstrings[python]>=0.26.0",
+    "mkdocstrings[python]>=1.0.1",
 ]
 
 # Profiling helpers for performance investigations
 performance = [
-    "pyinstrument>=4.7.0",
+    "pyinstrument>=5.1.2",
     "memory-profiler>=0.61.0",
     "line-profiler>=4.1.0",
 ]
@@ -190,7 +183,6 @@ exclude = [
     "**/__pycache__",
     "**/build",
     "**/.pytest_cache",
-    "**/.mypy_cache",
     "internals",
 ]
 
@@ -206,7 +198,7 @@ extend-exclude = [
     "dist/",
     ".venv/",
     "__pycache__/",
-    "dedalus_mcp/",     # Deployment directory placeholder
+    "dedalus_mcp/", # Deployment directory placeholder
 ]
 
 
@@ -217,7 +209,7 @@ extend-exclude = [
 [tool.ruff.format]
 docstring-code-format = true     # Format code in docstrings
 docstring-code-line-length = 72  # Google style for docstrings
-skip-magic-trailing-comma = true # Preserve one-liners, don't auto-expand 
+skip-magic-trailing-comma = true # Preserve one-liners, don't auto-expand
 quote-style = "double"           # Google style uses double quotes
 indent-style = "space"           # Google style uses spaces (4 spaces)
 
@@ -413,26 +405,7 @@ exclude_lines = [
 ]
 
 # =============================================================================
-# MYPY CONFIGURATION - STRICT TYPE CHECKING
-# =============================================================================
-
-[tool.mypy]
-python_version = "3.10"
-mypy_path = "src"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_any_generics = true
-check_untyped_defs = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_unreachable = true
-strict_equality = true
-namespace_packages = true
-
-# =============================================================================
-# TY CONFIGURATION - ULTRA-FAST TYPE CHECKING
+# TY CONFIGURATION - STRICT TYPE CHECKING (Rust-native, 5-10x faster)
 # =============================================================================
 
 [tool.ty.rules]
@@ -445,9 +418,7 @@ unresolved-reference = "error"
 invalid-base = "error"
 conflicting-metaclass = "error"
 subclass-of-final-class = "error"
-possibly-unbound-attribute = "warn"
 undefined-reveal = "warn"
-unknown-rule = "warn"
 division-by-zero = "ignore"
 unused-ignore-comment = "ignore"
 
@@ -482,6 +453,5 @@ exclude = [
     "*.egg-info/**",
     ".pytest_cache/**",
     ".ruff_cache/**",
-    ".mypy_cache/**",
 ]
 respect-ignore-files = true

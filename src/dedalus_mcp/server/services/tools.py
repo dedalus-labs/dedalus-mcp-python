@@ -21,9 +21,8 @@ import inspect
 import types as pytypes
 from typing import TYPE_CHECKING, Any, get_args, get_origin, get_type_hints
 
-from typing_extensions import NotRequired, TypedDict
-
 from pydantic import TypeAdapter
+from typing_extensions import NotRequired, TypedDict
 
 from ..dependencies import Depends
 from ..dependencies.solver import resolve as resolve_dependency
@@ -90,7 +89,7 @@ class ToolsService:
             if spec is None:
                 spec = ToolSpec(name=getattr(fn, "__name__", "anonymous"), fn=fn)
 
-        assert spec is not None  # narrow for mypy
+        assert spec is not None  # narrow for type checker
         self._tool_specs[spec.name] = spec
         self._server.record_tool_mutation(operation="register")
         self._refresh_tools()
