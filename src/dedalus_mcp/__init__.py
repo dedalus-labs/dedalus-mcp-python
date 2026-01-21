@@ -15,6 +15,7 @@ from .client import MCPClient, MCPConnectionError
 from .completion import CompletionResult, CompletionSpec, completion, extract_completion_spec
 from .context import Context, get_context
 from .dispatch import DispatchError, DispatchErrorCode, DispatchResponse, HttpMethod, HttpRequest, HttpResponse
+from .exceptions import ToolError
 from .progress import progress
 from .prompt import PromptSpec, extract_prompt_spec, prompt
 from .resource import ResourceSpec, extract_resource_spec, resource
@@ -118,6 +119,8 @@ __all__ = [
     "DispatchErrorCode",
     # Client errors
     "MCPConnectionError",
+    # Tool errors
+    "ToolError",
     # Capabilities
     "CapabilitySpec",
     "ToolSpec",
