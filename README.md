@@ -42,7 +42,7 @@ Context objects are plain async helpers (`get_context().progress()`, `get_contex
 
 **Spec traceability.** Every Dedalus MCP feature cites its MCP spec clause in `docs/mcp/spec/`. Debugging why a client rejects your response? Trace back to the exact protocol requirement. FastMCP docs cover usage. Ours cover correctness.
 
-**Size.** 137 KB vs 8.2 MB. We're 60x smaller. They ship docs, tests, and PNG screenshots. We ship code.
+**Size.** 122 KB vs 8.2 MB. We're 70x smaller. They ship docs, tests, and PNG screenshots. We ship code.
 
 **Client ergonomics.** `client = await MCPClient.connect(url)` returns a ready-to-use client. No nested context managers required. Explicit `close()` or optional `async with` for cleanup. `weakref.finalize()` safety net warns if you forget. FastMCP requires `async with mcp.run_client():` context manager nesting.
 
