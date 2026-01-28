@@ -19,8 +19,10 @@ from ..pagination import paginate_sequence
 from ..result_normalizers import normalize_tool_result
 from ... import types
 from ...context import Context, context_scope, get_context
+from ...exceptions import ToolError
 from ...tool import ToolSpec, extract_tool_spec
 from ...utils import maybe_await_with_args
+from ...utils.docstring import parse_docstring_params
 from ...utils.schema import SchemaError, resolve_output_schema
 
 
@@ -131,6 +133,11 @@ class ToolsService:
 
             try:
                 result = await maybe_await_with_args(spec.fn, **call_kwargs)
+            except ToolError as exc:
+                error_text = f"[{exc.code}] {exc}"
+                return types.CallToolResult(
+                    content=[types.TextContent(type="text", text=error_text)], isError=True
+                )
             except TypeError as exc:  # argument mismatch
                 return types.CallToolResult(
                     content=[types.TextContent(type="text", text=f"Invalid arguments: {exc}")], isError=True
@@ -300,15 +307,16 @@ class ToolsService:
     def _build_input_schema(self, fn: Callable[..., Any]) -> dict[str, Any]:
         signature = inspect.signature(fn)
         annotations: dict[str, Any] = {}
-        descriptions: dict[str, str] = {}
         default_values: dict[str, Any] = {}
+
+        # Extract parameter descriptions from docstring
+        docstring_params = parse_docstring_params(fn.__doc__)
 
         for name, param in signature.parameters.items():
             if param.kind not in (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY):
                 return {"type": "object"}
 
             annotation = param.annotation if param.annotation is not inspect.Parameter.empty else Any
-            descriptions[name] = f"Parameter {name}"
 
             if param.default is inspect.Parameter.empty:
                 annotations[name] = annotation
@@ -334,8 +342,10 @@ class ToolsService:
 
         properties = schema.setdefault("properties", {})
         required = []
-        for name, desc in descriptions.items():
+        for name in annotations:
             properties.setdefault(name, {})
+            # Use docstring description if available, otherwise generic fallback
+            desc = docstring_params.get(name, f"Parameter {name}")
             properties[name].setdefault("description", desc)
             if name in default_values:
                 properties[name].setdefault("default", default_values[name])

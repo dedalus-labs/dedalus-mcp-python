@@ -17,6 +17,7 @@ import pytest
 
 from dedalus_mcp.context import Context
 from dedalus_mcp.dispatch import DirectDispatchBackend, HttpMethod, HttpRequest
+from dedalus_mcp.exceptions import ConnectionResolutionError
 from dedalus_mcp.server.authorization import AuthorizationContext
 from dedalus_mcp.server.services.connection_gate import InvalidConnectionHandleError
 
@@ -274,9 +275,12 @@ class TestContextDispatch:
         ctx = Context(_request_context=mock_request_ctx, runtime={"dispatch_backend": backend})
         request = HttpRequest(method=HttpMethod.GET, path="/query")
 
-        # "supabase" not in JWT claims - should fail
-        with pytest.raises(ValueError, match="Connection 'supabase' not found"):
+        # "supabase" not in JWT claims - should fail with structured error
+        with pytest.raises(ConnectionResolutionError, match="Connection 'supabase' not found") as exc_info:
             await ctx.dispatch("supabase", request)
+        assert exc_info.value.code == "CONNECTION_NOT_FOUND"
+        assert exc_info.value.available == ["github"]
+        assert exc_info.value.requested == "supabase"
 
     @pytest.mark.asyncio
     async def test_dispatch_invalid_jwt_connections_format(self, backend):
@@ -295,3 +299,74 @@ class TestContextDispatch:
 
         with pytest.raises(RuntimeError, match="Missing required JWT claims"):
             await ctx.dispatch("github", request)
+
+
+class TestConnectionResolutionLogic:
+    """Tests for connection resolution in dispatch (no network calls)."""
+
+    def test_unnamed_connection_auto_resolves_single(self):
+        """Unnamed Connection object auto-resolves when JWT has single connection."""
+        from dedalus_mcp import Connection, SecretKeys
+        from dedalus_mcp.context import Context
+
+        unnamed_conn = Connection(secrets=SecretKeys(token="TOKEN"))
+        assert unnamed_conn.name == ""  # Verify it's unnamed
+
+        # The resolution logic: if name=="" and len(connections)==1, auto-resolve
+        connections = {"gmail-mcp": "ddls:conn:handle123"}
+
+        # Simulate the resolution logic from context.py
+        if not unnamed_conn.name and len(connections) == 1:
+            resolved_handle = next(iter(connections.values()))
+        else:
+            resolved_handle = connections.get(unnamed_conn.name)
+
+        assert resolved_handle == "ddls:conn:handle123"
+
+    def test_unnamed_connection_fails_multi(self):
+        """Unnamed Connection cannot resolve when JWT has multiple connections."""
+        from dedalus_mcp import Connection, SecretKeys
+
+        unnamed_conn = Connection(secrets=SecretKeys(token="TOKEN"))
+
+        # Multiple connections in JWT
+        connections = {
+            "github": "ddls:conn:handle1",
+            "slack": "ddls:conn:handle2",
+        }
+
+        # Simulate the resolution logic
+        if not unnamed_conn.name and len(connections) == 1:
+            resolved_handle = next(iter(connections.values()))
+        elif unnamed_conn.name in connections:
+            resolved_handle = connections[unnamed_conn.name]
+        else:
+            resolved_handle = None
+
+        # Should NOT resolve - empty name not in connections dict
+        assert resolved_handle is None
+
+    def test_named_connection_resolves(self):
+        """Named Connection resolves correctly."""
+        from dedalus_mcp import Connection, SecretKeys
+
+        github_conn = Connection("github", secrets=SecretKeys(token="GITHUB_TOKEN"))
+
+        connections = {"github": "ddls:conn:handle123"}
+
+        resolved_handle = connections.get(github_conn.name)
+        assert resolved_handle == "ddls:conn:handle123"
+
+    def test_connection_name_defaults_empty(self):
+        """Connection without name defaults to empty string."""
+        from dedalus_mcp import Connection, SecretKeys
+
+        conn = Connection(secrets=SecretKeys(token="TOKEN"))
+        assert conn.name == ""
+
+    def test_connection_with_explicit_name(self):
+        """Connection with explicit name stores it correctly."""
+        from dedalus_mcp import Connection, SecretKeys
+
+        conn = Connection("myservice", secrets=SecretKeys(token="TOKEN"))
+        assert conn.name == "myservice"

@@ -81,6 +81,55 @@ class TestMCPServerConnectionValidation:
 
         assert "duplicate" in str(exc.value).lower()
 
+    def test_single_connection_unnamed_allowed(self):
+        """Single connection with empty name is allowed (auto-dispatch pattern)."""
+        from dedalus_mcp import Connection, MCPServer, SecretKeys
+
+        # name="" is the default for single-connection servers
+        unnamed = Connection(secrets=SecretKeys(token="TOKEN"))
+
+        server = MCPServer(name="single-unnamed", connections=[unnamed])
+
+        assert "" in server.connections
+        assert server.connections[""] is unnamed
+
+    def test_multi_connection_unnamed_rejected(self):
+        """Multi-connection servers must have names for all connections."""
+        from dedalus_mcp import Connection, MCPServer, SecretKeys
+
+        unnamed1 = Connection(secrets=SecretKeys(token="TOKEN1"))
+        unnamed2 = Connection(secrets=SecretKeys(token="TOKEN2"))
+
+        with pytest.raises(ValueError) as exc:
+            MCPServer(name="multi-unnamed", connections=[unnamed1, unnamed2])
+
+        assert "require all connections to have names" in str(exc.value)
+
+    def test_multi_connection_partial_unnamed_rejected(self):
+        """Multi-connection servers reject mix of named and unnamed."""
+        from dedalus_mcp import Connection, MCPServer, SecretKeys
+
+        named = Connection("github", secrets=SecretKeys(token="GITHUB_TOKEN"))
+        unnamed = Connection(secrets=SecretKeys(token="SLACK_TOKEN"))
+
+        with pytest.raises(ValueError) as exc:
+            MCPServer(name="partial-unnamed", connections=[named, unnamed])
+
+        assert "require all connections to have names" in str(exc.value)
+
+    def test_multi_connection_all_named_allowed(self):
+        """Multi-connection servers with all named connections work."""
+        from dedalus_mcp import Connection, MCPServer, SecretKeys
+
+        github = Connection("github", secrets=SecretKeys(token="GITHUB_TOKEN"))
+        slack = Connection("slack", secrets=SecretKeys(token="SLACK_TOKEN"))
+
+        server = MCPServer(name="multi-named", connections=[github, slack])
+
+        assert len(server.connections) == 2
+        assert "github" in server.connections
+        assert "slack" in server.connections
+
 
 # =============================================================================
 # MCPServer Authorization Server Tests (RFC 9728)

@@ -213,12 +213,23 @@ class MCPServer(Server[Any, Any]):
         self._base_lifespan = lifespan
         self._connection_resolver: ConnectionResolver | None = None
 
-        # Build connections map with duplicate name validation
+        # Build connections map with validation
         self._connections: dict[str, Connection] = {}
         if connections:
+            # Multi-connection servers require all connections to have non-empty names
+            if len(connections) > 1:
+                unnamed = [c for c in connections if not c.name]
+                if unnamed:
+                    msg = (
+                        "Multi-connection servers require all connections to have names. "
+                        f"Found {len(unnamed)} connection(s) without names."
+                    )
+                    raise ValueError(msg)
+
             for conn in connections:
                 if conn.name in self._connections:
-                    raise ValueError(f"Duplicate connection name: '{conn.name}'")
+                    msg = f"Duplicate connection name: {conn.name!r}"
+                    raise ValueError(msg)
                 self._connections[conn.name] = conn
 
         # Dispatch backend (initialized in _build_runtime_payload)

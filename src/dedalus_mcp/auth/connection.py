@@ -88,13 +88,17 @@ class SecretKeys:
 
 
 class Connection:
-    """Named connection to an external service.
+    """Connection to an external service.
 
     MCP server authors use this to declare what external services their server
     needs. The framework resolves logical names to connection handles at runtime.
 
+    For single-connection servers using auto-dispatch, the `name` parameter is
+    optional. Multi-connection servers must provide unique names.
+
     Attributes:
         name: Logical name (e.g., "github", "openai"). Used in dispatch() calls.
+              Optional for single-connection servers using auto-dispatch.
         secrets: Mapping from secret fields to their sources (e.g., env var names).
         schema: Optional Pydantic model for connection config validation.
         base_url: Override default base URL (for enterprise/self-hosted).
@@ -103,33 +107,32 @@ class Connection:
         auth_header_format: Format string for header value (default: "Bearer {api_key}").
 
     Example:
-        >>> github = Connection("github", secrets=SecretKeys(token="GITHUB_TOKEN"))
-        >>> supabase = Connection(
-        ...     "supabase",
-        ...     secrets=SecretKeys(key="SUPABASE_SECRET_KEY"),
-        ...     auth_header_name="apikey",
-        ...     auth_header_format="{api_key}",
-        ... )
+        >>> # Single-connection (name optional)
+        >>> gmail = Connection(secrets=SecretKeys(token="GMAIL_TOKEN"))
+        >>> # Multi-connection (names required)
+        >>> github = Connection(name="github", secrets=SecretKeys(token="GITHUB_TOKEN"))
+        >>> slack = Connection("slack", secrets=SecretKeys(token="SLACK_TOKEN"))
     """
 
     __slots__ = ("_name", "_secrets", "_schema", "_base_url", "_timeout_ms", "_auth_header_name", "_auth_header_format")
 
     def __init__(
         self,
-        name: str,
-        secrets: SecretKeys | dict[str, Any],
+        name: str = "",
         *,
+        secrets: SecretKeys | dict[str, Any],
         schema: type[BaseModel] | dict[str, type] | None = None,
         base_url: str | None = None,
         timeout_ms: int = 30_000,
         auth_header_name: str = "Authorization",
         auth_header_format: str = "Bearer {api_key}",
     ) -> None:
-        """Create a named connection.
+        """Create a connection.
 
         Args:
-            name: Logical name for this connection. Must be unique within a server.
-            secrets: Secret key bindings. Can be SecretKeys or a dict.
+            name: Logical name for this connection. Required for multi-connection
+                  servers, optional for single-connection servers using auto-dispatch.
+            secrets: Secret key bindings. Can be SecretKeys or a dict. Required.
             schema: Optional config schema (BaseModel subclass or dict[str, type]).
             base_url: Optional base URL override.
             timeout_ms: Default timeout for requests (1000-300000 ms).
@@ -137,10 +140,8 @@ class Connection:
             auth_header_format: Format string for the header value ({api_key} placeholder).
 
         Raises:
-            ValueError: If name is empty or timeout_ms is out of range.
+            ValueError: If timeout_ms is out of range.
         """
-        if not name:
-            raise ValueError("Connection name must be non-empty")
         if not (1000 <= timeout_ms <= 300_000):
             raise ValueError(f"timeout_ms must be 1000-300000, got {timeout_ms}")
         if "{api_key}" not in auth_header_format:
@@ -163,10 +164,11 @@ class Connection:
             return schema
         if isinstance(schema, dict):
             fields = {field: (field_type, ...) for field, field_type in schema.items()}
+            model_name = name.title().replace("-", "").replace("_", "") if name else "Connection"
             return cast(
                 type[BaseModel],
                 create_model(  # type: ignore[call-overload]
-                    f"{name.title().replace('-', '').replace('_', '')}Schema", __base__=BaseModel, **fields
+                    f"{model_name}Schema", __base__=BaseModel, **fields
                 ),
             )
         raise TypeError(f"schema must be a BaseModel subclass or dict[str, type], got {type(schema).__name__}")

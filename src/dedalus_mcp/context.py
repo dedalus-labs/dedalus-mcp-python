@@ -20,6 +20,7 @@ from mcp.server.lowlevel.server import request_ctx
 from mcp.shared.context import RequestContext
 from mcp.types import LoggingLevel, ProgressToken
 
+from .exceptions import ConnectionResolutionError
 from .progress import ProgressConfig, ProgressTelemetry, ProgressTracker
 from .progress import progress as progress_manager
 
@@ -286,24 +287,48 @@ class Context:
         if connection_target is None:
             # Single-connection server: use the only connection
             if len(connections) == 0:
-                raise RuntimeError("No connections configured")
+                raise ConnectionResolutionError(
+                    "No connections configured. The server has no OAuth connections available.",
+                    code="NO_CONNECTIONS",
+                    available=[],
+                )
             if len(connections) > 1:
-                raise ValueError("Multiple connections configured; target is required")
+                available = list(connections.keys())
+                raise ConnectionResolutionError(
+                    f"Multiple connections configured ({available}); specify target in dispatch().",
+                    code="CONNECTION_AMBIGUOUS",
+                    available=available,
+                )
             connection_handle = next(iter(connections.values()))
         elif isinstance(connection_target, str):
             # String name lookup
             if connection_target not in connections:
                 available = list(connections.keys())
-                raise ValueError(f"Connection '{connection_target}' not found. Available: {available}")
+                raise ConnectionResolutionError(
+                    f"Connection '{connection_target}' not found. Available: {available}",
+                    code="CONNECTION_NOT_FOUND",
+                    available=available,
+                    requested=connection_target,
+                )
             connection_handle = connections[connection_target]
         elif isinstance(connection_target, Connection):
             # Connection object lookup
-            if connection_target.name not in connections:
+            # For unnamed connections (single-connection servers), we auto-resolve
+            if not connection_target.name and len(connections) == 1:
+                connection_handle = next(iter(connections.values()))
+            elif connection_target.name not in connections:
                 available = list(connections.keys())
-                raise ValueError(f"Connection '{connection_target.name}' not found. Available: {available}")
-            connection_handle = connections[connection_target.name]
+                raise ConnectionResolutionError(
+                    f"Connection '{connection_target.name}' not found. Available: {available}",
+                    code="CONNECTION_NOT_FOUND",
+                    available=available,
+                    requested=connection_target.name,
+                )
+            else:
+                connection_handle = connections[connection_target.name]
         else:
-            raise TypeError(f"target must be Connection, str, or None; got {type(connection_target).__name__}")
+            msg = f"target must be Connection, str, or None; got {type(connection_target).__name__}"
+            raise TypeError(msg)
 
         # Validate handle format (authorization is done by gateway at runtime)
         validate_handle_format(connection_handle)
