@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.6.0...v0.7.0) (2026-01-28)
+
+
+### Features
+
+* **connection:** make name optional for single-connection servers ([7ee84b8](https://github.com/dedalus-labs/dedalus-mcp-python/commit/7ee84b8ce8842e49a5ad2cbcb800c21f822f0442))
+* **dispatch:** use structured errors for connection resolution ([b0fc7b4](https://github.com/dedalus-labs/dedalus-mcp-python/commit/b0fc7b4423935f52f1f2450bd93567ea921f070b))
+* **exceptions:** add ToolErrorCode enum and ConnectionResolutionError ([6f8043e](https://github.com/dedalus-labs/dedalus-mcp-python/commit/6f8043e4ae3bb46fd9ad801ed1c6e4d83e436765))
+* **testing:** add ConnectionTester for local debugging ([6da1bea](https://github.com/dedalus-labs/dedalus-mcp-python/commit/6da1bea97a05cc265c209f5a764c8d22fb51057e))
+* **testing:** add ToolError and mock_context utilities ([699abca](https://github.com/dedalus-labs/dedalus-mcp-python/commit/699abcab69e1672c13fc77c7cda6b31e488e4d43))
+* **tools:** catch ToolError and format for LLM ([3c443ae](https://github.com/dedalus-labs/dedalus-mcp-python/commit/3c443aeeeae83b0c7fceecade7aac7e3dc3cd59c))
+
 ## [0.6.0](https://github.com/dedalus-labs/dedalus-mcp-python/compare/v0.5.0...v0.6.0) (2026-01-20)
 
 
