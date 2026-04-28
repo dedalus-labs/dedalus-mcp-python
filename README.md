@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/dedalus-labs-dedalus-mcp-python-badge.png)](https://mseep.ai/app/dedalus-labs-dedalus-mcp-python)
+
 # Dedalus MCP
 
 Minimal, spec-faithful Python framework for building Model Context Protocol (MCP) clients and servers.
