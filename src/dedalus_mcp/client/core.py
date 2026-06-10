@@ -22,6 +22,7 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable, Iterable
 from contextlib import AsyncExitStack
 from dataclasses import dataclass
+import time
 from typing import Any, TypeVar
 import warnings
 import weakref
@@ -31,6 +32,7 @@ from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStre
 import httpx
 from mcp.client.session import ClientSession
 
+from .diagnostics import ClientRequestHistory, ClientRequestRecord, elapsed_ms_since
 from .error_handling import (
     extract_http_error,
     extract_network_error,
@@ -135,6 +137,7 @@ class MCPClient:
         self._root_lock = Lock()
         self._roots_version = 0
         self._roots: list[Root] = [self._normalize_root(root) for root in initial_roots]
+        self._request_history = ClientRequestHistory()
 
         self._session: ClientSession | None = None
         self.initialize_result: InitializeResult | None = None
@@ -210,6 +213,7 @@ class MCPClient:
             client._root_lock = Lock()
             client._roots_version = 0
             client._roots = []
+            client._request_history = ClientRequestHistory()
             client._session = _transport_override
             client._closed = False
             client._finalizer = weakref.finalize(client, cls._warn_unclosed, id(client))
@@ -423,7 +427,67 @@ class MCPClient:
         progress_callback: Callable[[float, float | None, str | None], Awaitable[None] | None] | None = None,
     ) -> T_RequestResult:
         """Forward a request to the server and await the result."""
-        return await self.session.send_request(request, result_type, progress_callback=progress_callback)
+        started_at_ns = time.perf_counter_ns()
+        try:
+            result = await self.session.send_request(request, result_type, progress_callback=progress_callback)
+        except Exception as exc:
+            self._request_history.record_error(
+                request=request,
+                result_type=result_type,
+                session_id=self.session_id,
+                started_at_ns=started_at_ns,
+                duration_ms=elapsed_ms_since(started_at_ns),
+                error=exc,
+            )
+            raise
+
+        self._request_history.record_success(
+            request=request,
+            result_type=result_type,
+            session_id=self.session_id,
+            started_at_ns=started_at_ns,
+            duration_ms=elapsed_ms_since(started_at_ns),
+        )
+        return result
+
+    def request_history(self) -> tuple[ClientRequestRecord, ...]:
+        """Return privacy-safe metadata for recent client requests.
+
+        The history intentionally excludes request parameters and results. It is
+        meant for debugging slow, failed, or unexpectedly repeated MCP calls.
+        """
+        return self._request_history.snapshot()
+
+    def clear_request_history(self) -> None:
+        """Clear retained request diagnostics."""
+        self._request_history.clear()
+
+    async def _record_session_operation(
+        self, method: str, result_type: type[T_RequestResult], operation: Callable[[], Awaitable[T_RequestResult]]
+    ) -> T_RequestResult:
+        """Record metadata around a convenience ClientSession call."""
+        started_at_ns = time.perf_counter_ns()
+        try:
+            result = await operation()
+        except Exception as exc:
+            self._request_history.record_method_error(
+                method=method,
+                result_type=result_type,
+                session_id=self.session_id,
+                started_at_ns=started_at_ns,
+                duration_ms=elapsed_ms_since(started_at_ns),
+                error=exc,
+            )
+            raise
+
+        self._request_history.record_method_success(
+            method=method,
+            result_type=result_type,
+            session_id=self.session_id,
+            started_at_ns=started_at_ns,
+            duration_ms=elapsed_ms_since(started_at_ns),
+        )
+        return result
 
     async def cancel_request(self, request_id: RequestId, *, reason: str | None = None) -> None:
         """Emit notifications/cancelled.
@@ -468,42 +532,48 @@ class MCPClient:
 
         See: https://modelcontextprotocol.io/specification/2024-11-05/server/tools
         """
-        return await self.session.list_tools()
+        return await self._record_session_operation("tools/list", ListToolsResult, self.session.list_tools)
 
     async def call_tool(self, name: str, arguments: dict[str, Any] | None = None) -> CallToolResult:
         """Call a tool on the server.
 
         See: https://modelcontextprotocol.io/specification/2024-11-05/server/tools
         """
-        return await self.session.call_tool(name, arguments)
+        return await self._record_session_operation(
+            "tools/call", CallToolResult, lambda: self.session.call_tool(name, arguments)
+        )
 
     async def list_resources(self) -> ListResourcesResult:
         """List all resources available on the server.
 
         See: https://modelcontextprotocol.io/specification/2024-11-05/server/resources
         """
-        return await self.session.list_resources()
+        return await self._record_session_operation("resources/list", ListResourcesResult, self.session.list_resources)
 
     async def read_resource(self, uri: str) -> ReadResourceResult:
         """Read a resource from the server.
 
         See: https://modelcontextprotocol.io/specification/2024-11-05/server/resources
         """
-        return await self.session.read_resource(uri)
+        return await self._record_session_operation(
+            "resources/read", ReadResourceResult, lambda: self.session.read_resource(uri)
+        )
 
     async def list_prompts(self) -> ListPromptsResult:
         """List all prompts available on the server.
 
         See: https://modelcontextprotocol.io/specification/2024-11-05/server/prompts
         """
-        return await self.session.list_prompts()
+        return await self._record_session_operation("prompts/list", ListPromptsResult, self.session.list_prompts)
 
     async def get_prompt(self, name: str, arguments: dict[str, Any] | None = None) -> GetPromptResult:
         """Get a prompt from the server.
 
         See: https://modelcontextprotocol.io/specification/2024-11-05/server/prompts
         """
-        return await self.session.get_prompt(name, arguments)
+        return await self._record_session_operation(
+            "prompts/get", GetPromptResult, lambda: self.session.get_prompt(name, arguments)
+        )
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -557,4 +627,4 @@ class MCPClient:
         return Root.model_validate(value)
 
 
-__all__ = ["MCPClient", "ClientCapabilitiesConfig"]
+__all__ = ["ClientCapabilitiesConfig", "MCPClient"]

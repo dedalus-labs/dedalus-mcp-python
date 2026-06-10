@@ -38,9 +38,11 @@ class FakeClientSession:
         self.logging_callback = logging_callback
         self.client_info = client_info
         self.send_request_calls: list[tuple[ClientRequest, type[Any], dict[str, Any]]] = []
+        self.tool_calls: list[tuple[str, dict[str, Any] | None]] = []
         self.notifications: list[ClientNotification] = []
         self.roots_notifications = 0
         self.next_result: Any = EmptyResult()
+        self.next_error: BaseException | None = None
 
     async def __aenter__(self) -> FakeClientSession:
         return self
@@ -63,10 +65,18 @@ class FakeClientSession:
         progress_callback: Callable[[float, float | None, str | None], Any] | None = None,
     ) -> Any:
         self.send_request_calls.append((request, result_type, {"progress_callback": progress_callback}))
+        if self.next_error is not None:
+            raise self.next_error
         return self.next_result
 
     async def send_notification(self, notification: ClientNotification) -> None:
         self.notifications.append(notification)
+
+    async def call_tool(self, name: str, arguments: dict[str, Any] | None = None) -> Any:
+        self.tool_calls.append((name, arguments))
+        if self.next_error is not None:
+            raise self.next_error
+        return self.next_result
 
     async def send_roots_list_changed(self) -> None:
         self.roots_notifications += 1
@@ -147,6 +157,70 @@ async def test_send_request_and_ping_delegate_to_session(monkeypatch: pytest.Mon
         assert request.root.method == "ping"
         assert result_type is EmptyResult
         assert extras["progress_callback"] is None
+
+
+@pytest.mark.anyio
+async def test_send_request_records_privacy_safe_history(monkeypatch: pytest.MonkeyPatch) -> None:
+    factory = SessionFactory()
+    monkeypatch.setattr("dedalus_mcp.client.core.ClientSession", factory)
+
+    recv, send = anyio.create_memory_object_stream(0)
+    async with MCPClient(recv, send, get_session_id=lambda: "session-123") as client:
+        session = factory.instances[0]
+        session.next_result = EmptyResult()
+        await client.ping()
+
+        history = client.request_history()
+        assert len(history) == 1
+        record = history[0]
+        assert record.method == "ping"
+        assert record.result_type == "EmptyResult"
+        assert record.session_id == "session-123"
+        assert record.duration_ms >= 0
+        assert record.ok is True
+        assert record.error_type is None
+
+
+@pytest.mark.anyio
+async def test_call_tool_history_does_not_store_arguments(monkeypatch: pytest.MonkeyPatch) -> None:
+    factory = SessionFactory()
+    monkeypatch.setattr("dedalus_mcp.client.core.ClientSession", factory)
+
+    recv, send = anyio.create_memory_object_stream(0)
+    async with MCPClient(recv, send) as client:
+        await client.call_tool("fetch_customer", {"customer_id": "cust_123", "api_token": "secret-token"})
+
+        record = client.request_history()[-1]
+        assert record.method == "tools/call"
+        assert record.ok is True
+        history_text = repr(record)
+        assert "cust_123" not in history_text
+        assert "secret-token" not in history_text
+        assert "api_token" not in history_text
+
+
+@pytest.mark.anyio
+async def test_send_request_records_errors_and_can_clear_history(monkeypatch: pytest.MonkeyPatch) -> None:
+    factory = SessionFactory()
+    monkeypatch.setattr("dedalus_mcp.client.core.ClientSession", factory)
+
+    recv, send = anyio.create_memory_object_stream(0)
+    async with MCPClient(recv, send) as client:
+        session = factory.instances[0]
+        session.next_error = RuntimeError("server closed stream after partial response")
+
+        with pytest.raises(RuntimeError):
+            await client.ping()
+
+        history = client.request_history()
+        assert len(history) == 1
+        assert history[0].method == "ping"
+        assert history[0].ok is False
+        assert history[0].error_type == "RuntimeError"
+        assert "partial response" in (history[0].error_message or "")
+
+        client.clear_request_history()
+        assert client.request_history() == ()
 
 
 @pytest.mark.anyio
