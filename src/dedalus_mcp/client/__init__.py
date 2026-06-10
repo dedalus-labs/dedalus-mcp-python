@@ -19,6 +19,7 @@ from dedalus_mcp.auth.dpop import BearerAuth, DPoPAuth, generate_dpop_proof
 
 from .connection import open_connection
 from .core import ClientCapabilitiesConfig, MCPClient
+from .diagnostics import ClientRequestHistory, ClientRequestRecord
 from .errors import (
     AuthRequiredError,
     BadRequestError,
@@ -30,23 +31,22 @@ from .errors import (
 )
 from .transports import lambda_http_client
 
+
 __all__ = [
-    # Core
-    "MCPClient",
-    "ClientCapabilitiesConfig",
-    "open_connection",
-    # Auth
-    "BearerAuth",
-    "DPoPAuth",
-    "generate_dpop_proof",
-    # Transports
-    "lambda_http_client",
-    # Errors
-    "MCPConnectionError",
     "AuthRequiredError",
     "BadRequestError",
+    "BearerAuth",
+    "ClientCapabilitiesConfig",
+    "ClientRequestHistory",
+    "ClientRequestRecord",
+    "DPoPAuth",
     "ForbiddenError",
+    "MCPClient",
+    "MCPConnectionError",
     "ServerError",
     "SessionExpiredError",
     "TransportError",
+    "generate_dpop_proof",
+    "lambda_http_client",
+    "open_connection",
 ]
