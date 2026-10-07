@@ -132,3 +132,190 @@ async def test_progress_throttle_event_emitted() -> None:
 
     assert throttled, "expected throttle telemetry when emit_hz is low"
     assert session.notifications[-1].progress == 2
+
+
+def _assert_monotonic(notifications: list[RecordedNotification]) -> None:
+    values = [n.progress for n in notifications]
+    assert values == sorted(values), f"progress went backwards: {values}"
+
+
+@pytest.mark.anyio
+async def test_close_during_throttled_send_does_not_regress() -> None:
+    """Closing while a throttled update is in flight must not re-send an older value."""
+    session = FakeSession()
+    closes: list[ProgressCloseEvent] = []
+    telemetry = ProgressTelemetry(on_close=lambda evt: closes.append(evt))
+
+    async with with_request_context(token="tok", session=session):
+        async with progress(total=4, telemetry=telemetry, config=ProgressConfig(emit_hz=20)) as tracker:
+            await tracker.advance(1, "one")
+            await anyio.sleep(0.005)  # first update delivered immediately
+            await tracker.set(4, message="done")  # throttled
+            await anyio.sleep(0.001)  # emitter picks it up; still in flight at close
+
+    _assert_monotonic(session.notifications)
+    assert session.notifications[-1].progress == 4
+    assert closes
+    assert closes[-1].final_progress == 4
+    assert closes[-1].final_message == "done"
+
+
+@pytest.mark.anyio
+async def test_advance_uses_in_flight_state_as_base() -> None:
+    """``advance`` must build on an update that is in flight, not the last delivered one."""
+    session = FakeSession()
+
+    async with with_request_context(token="tok", session=session):
+        async with progress(total=10, config=ProgressConfig(emit_hz=20)) as tracker:
+            await tracker.advance(1)
+            await anyio.sleep(0.005)  # first update delivered immediately
+            await tracker.set(3)  # throttled
+            await anyio.sleep(0.001)  # emitter picks it up and waits out the throttle
+            assert await tracker.advance(1) == 4
+
+    _assert_monotonic(session.notifications)
+    assert session.notifications[-1].progress == 4
+
+
+class HeldSession(FakeSession):
+    """FakeSession that holds each send until the test releases it.
+
+    While a send is held, the emitter keeps that state in flight, so tests can act
+    inside the race window without relying on sleeps. ``fail_attempts`` lists send
+    attempts (1-based, across all sends) that raise after being released.
+    """
+
+    def __init__(self, *, fail_attempts: tuple[int, ...] = ()) -> None:
+        super().__init__()
+        self.attempts = 0
+        self._fail_attempts = fail_attempts
+        self._holding = True
+        self._started = anyio.Event()
+        self._gate = anyio.Event()
+
+    async def send_progress_notification(
+        self,
+        progress_token: str | int,
+        progress_value: float,
+        *,
+        total: float | None = None,
+        message: str | None = None,
+    ) -> None:
+        self.attempts += 1
+        attempt = self.attempts
+        if self._holding:
+            gate = self._gate
+            self._started.set()
+            await gate.wait()
+        if attempt in self._fail_attempts:
+            raise RuntimeError("simulated send failure")
+        await super().send_progress_notification(progress_token, progress_value, total=total, message=message)
+
+    async def wait_for_send(self) -> None:
+        """Wait until the emitter is blocked inside a send."""
+        await self._started.wait()
+
+    def release(self) -> None:
+        """Let the held send finish; the next send will be held again."""
+        gate = self._gate
+        self._started = anyio.Event()
+        self._gate = anyio.Event()
+        gate.set()
+
+    def stop_holding(self) -> None:
+        """Release the held send, if any, and let all later sends through."""
+        self._holding = False
+        self.release()
+
+
+_HELD_CONFIG = ProgressConfig(emit_hz=0, retry_backoff=(0.0, 0.0))
+
+
+async def _stop_holding_once_blocked(session: HeldSession) -> None:
+    """Release sends only once ``close()`` is waiting, so it runs while a state is in flight."""
+    await anyio.wait_all_tasks_blocked()
+    session.stop_holding()
+
+
+@pytest.mark.anyio
+async def test_close_while_send_in_flight_does_not_regress() -> None:
+    """Deterministic version of the close race: the send of 4 is held while close() runs."""
+    session = HeldSession()
+    closes: list[ProgressCloseEvent] = []
+    telemetry = ProgressTelemetry(on_close=lambda evt: closes.append(evt))
+
+    async with with_request_context(token="tok", session=session), anyio.create_task_group() as tg:
+        async with progress(total=4, telemetry=telemetry, config=_HELD_CONFIG) as tracker:
+            await tracker.advance(1, "one")
+            await session.wait_for_send()
+            session.release()  # 1 delivered
+            await tracker.set(4, message="done")
+            await session.wait_for_send()  # 4 is in flight
+            tg.start_soon(_stop_holding_once_blocked, session)
+
+    assert [n.progress for n in session.notifications] == [1, 4]
+    assert closes[-1].final_progress == 4
+    assert closes[-1].final_message == "done"
+
+
+@pytest.mark.anyio
+async def test_advance_builds_on_held_in_flight_send() -> None:
+    """Deterministic version of the advance race: the send of 3 is held while advance() runs."""
+    session = HeldSession()
+
+    async with with_request_context(token="tok", session=session):
+        async with progress(total=10, config=_HELD_CONFIG) as tracker:
+            await tracker.advance(1)
+            await session.wait_for_send()
+            session.release()  # 1 delivered
+            await tracker.set(3)
+            await session.wait_for_send()  # 3 is in flight
+            try:
+                assert await tracker.advance(1) == 4
+            finally:
+                session.stop_holding()
+
+    _assert_monotonic(session.notifications)
+    assert session.notifications[-1].progress == 4
+
+
+@pytest.mark.anyio
+async def test_close_during_retry_does_not_regress() -> None:
+    """A state being retried after a failed send is still in flight; close() must not re-send an older one."""
+    session = HeldSession(fail_attempts=(2,))
+
+    async with with_request_context(token="tok", session=session), anyio.create_task_group() as tg:
+        async with progress(total=4, config=_HELD_CONFIG) as tracker:
+            await tracker.set(1)
+            await session.wait_for_send()
+            session.release()  # attempt 1: 1 delivered
+            await tracker.set(4)
+            await session.wait_for_send()
+            session.release()  # attempt 2: sending 4 fails
+            await session.wait_for_send()  # attempt 3: 4 is being retried
+            tg.start_soon(_stop_holding_once_blocked, session)
+
+    assert [n.progress for n in session.notifications] == [1, 4]
+    assert session.attempts == 3
+
+
+@pytest.mark.anyio
+async def test_set_below_in_flight_value_raises() -> None:
+    """Monotonicity is checked against the in-flight state, not just the last delivered one."""
+    session = HeldSession()
+
+    async with with_request_context(token="tok", session=session):
+        async with progress(total=10, config=_HELD_CONFIG) as tracker:
+            await tracker.set(1)
+            await session.wait_for_send()
+            session.release()  # 1 delivered
+            await tracker.set(3)
+            await session.wait_for_send()  # 3 is in flight
+            try:
+                with pytest.raises(ValueError):
+                    await tracker.set(2)
+            finally:
+                session.stop_holding()
+
+    _assert_monotonic(session.notifications)
+    assert session.notifications[-1].progress == 3

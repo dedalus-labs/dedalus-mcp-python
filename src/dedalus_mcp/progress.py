@@ -223,6 +223,9 @@ class _ProgressEmitter:
         self._lock = anyio.Lock()
         self._latest: _ProgressState | None = None
         self._last_emitted: _ProgressState | None = None
+        # State taken by ``run`` but not yet delivered (it may be sleeping out the
+        # throttle delay or retrying). It is newer than ``_last_emitted``.
+        self._in_flight: _ProgressState | None = None
         self._last_emit_ns: int = 0
         self._closed = False
         self._pending_updates = 0
@@ -258,8 +261,10 @@ class _ProgressEmitter:
     async def close(self) -> None:
         async with self._lock:
             if not self._closed:
-                if self._latest is None and self._last_emitted is not None:
+                if self._latest is None and self._in_flight is None and self._last_emitted is not None:
                     # Re-emit the final state to guarantee at-least-once delivery.
+                    # Skip when a newer state is in flight: it will be delivered, and
+                    # re-queueing ``_last_emitted`` would send a stale, lower value after it.
                     self._latest = self._last_emitted
                 self._closed = True
         self._event.set()
@@ -281,6 +286,7 @@ class _ProgressEmitter:
                             self._event = anyio.Event()
                             break
                         self._latest = None
+                        self._in_flight = state
                         delay = self._compute_delay(state.timestamp_ns)
                     if delay:
                         await anyio.sleep(delay)
@@ -295,17 +301,18 @@ class _ProgressEmitter:
             if not self._drained.is_set():
                 self._drained.set()
 
+    def _newest_state_locked(self) -> _ProgressState | None:
+        """Most recent state: queued, then in flight, then last delivered."""
+        return self._latest or self._in_flight or self._last_emitted
+
     def _current_progress_locked(self) -> float:
-        if self._latest is not None:
-            return self._latest.progress
-        if self._last_emitted is not None:
-            return self._last_emitted.progress
-        return 0.0
+        newest = self._newest_state_locked()
+        return newest.progress if newest is not None else 0.0
 
     def _store_state_locked(
         self, progress: float, *, message: str | None, total_override: float | None
     ) -> tuple[_ProgressState, bool]:
-        previous = self._latest or self._last_emitted
+        previous = self._newest_state_locked()
         if previous and progress < previous.progress:
             raise ValueError(
                 "progress must be monotonically increasing per MCP specification "
@@ -395,6 +402,8 @@ class _ProgressEmitter:
             else:
                 async with self._lock:
                     self._last_emitted = state
+                    if self._in_flight is state:
+                        self._in_flight = None
                     self._last_emit_ns = time.monotonic_ns()
                 self._emitted_count += 1
                 self._logger.debug(
